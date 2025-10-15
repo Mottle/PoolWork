@@ -1,0 +1,22 @@
+{
+  "configurations": [
+    {
+      "type": "debugpy",
+      "request": "launch",
+      "name": "Launch benchmark/main.py",
+      "program": "${workspaceFolder}/benchmark/${input:pythonFile}"
+    }
+  ],
+  "inputs": [
+    {
+      "type": "pickString",
+      "id": "pythonFile",
+      "description": "Select the Python file to debug",
+      "options": [
+        "main.py",
+        "context.py",
+        "model.py"
+      ]
+    }
+  ]
+}
