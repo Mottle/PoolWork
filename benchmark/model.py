@@ -4,6 +4,9 @@ from torch_geometric.nn import GCNConv, GINConv
 from torch_geometric.nn.pool import TopKPooling, ASAPooling, EdgePooling, SAGPooling, PANPooling
 from torch_geometric.nn import global_mean_pool, global_max_pool
 from torch import nn
+from torch_sparse import SparseTensor
+from struct_pooling import StructPooling
+from mincut_pooling import MinCutPooling
 
 activate = F.leaky_relu
 
@@ -75,6 +78,10 @@ class Pooler(torch.nn.Module):
                 self.pool.append(SAGPooling(in_channels=in_d))
             elif self.pool_type.lower() == 'pan':
                 self.pool.append(PANPooling(in_channels=in_d))
+            elif self.pool_type.lower() == 'struct':
+                self.pool.append(StructPooling(in_channels=in_d))
+            elif self.pool_type.lower() == 'mincut':
+                self.pool.append(MinCutPooling(in_channels=in_d))
             else:
                 raise ValueError(f'Invalid pool type: {self.pool_type}')
 
@@ -102,8 +109,12 @@ class Pooler(torch.nn.Module):
             elif self.pool_type.lower() == 'sag':
                 x, edge_index, _, batch, _, _ = self.pool[i](x, edge_index, batch=batch)
             elif self.pool_type.lower() == 'pan':
-                adj_matrix = torch.sparse_coo_tensor(edge_index, torch.ones(edge_index.size(1)).to(x.device), (x.size(0), x.size(0)))
-                x, edge_index, _, batch, _, _ = self.pool[i](x, adj_matrix, batch=batch)
+                row, col = edge_index
+                edge_attr = torch.ones(row.size(0))
+                sparse_adj = SparseTensor(row=row.to(x.device), col=col.to(x.device), value=edge_attr.to(x.device), sparse_sizes=(x.size(0), x.size(0))).to_device(x.device)
+                x, edge_index, _, batch, _, _ = self.pool[i](x, sparse_adj, batch=batch)
+            elif self.pool_type.lower() == 'struct':
+                x, edge_index, batch = self.pool[i](x, edge_index, batch=batch)
             
             global_feat = (global_max_pool(x, batch), global_mean_pool(x, batch))
             global_feat = torch.cat([global_feat[0], global_feat[1]], dim=1)

@@ -174,7 +174,7 @@ def save_result(result, filename, spent_time):
 if __name__ == '__main__':
     config = {
         'backbone': 'gcn',
-        'pooler': 'sag'
+        'pooler': 'struct'
     }
 
     all_start = perf_counter()
