@@ -19,7 +19,10 @@ def train_model(pooler, classifier, train_loader, optimizer, criterion, device):
     correct = 0
     total = 0
     
-    for data in train_loader:
+    all = len(train_loader)
+    cnt = 0
+    for data in track(train_loader, description=f"Run train batch: {cnt}/{all}"):
+        cnt += 1
         optimizer.zero_grad()
         if data.x == None or data.x.size(1) <= 0:
             data.x = torch.ones((data.num_nodes, 1))
@@ -45,8 +48,10 @@ def test_model(pooler, classifier, test_loader, criterion, device):
     correct = 0
     total = 0
     
+    all = len(test_loader)
+    cnt = 0
     with torch.no_grad():
-        for data in test_loader:
+        for data in track(test_loader,  description=f"Run test batch: {cnt}/{all}"):
             if data.x == None or data.x.size(1) <= 0:
                 data.x = torch.ones((data.num_nodes, 1))
             data = data.to(device)
@@ -86,7 +91,7 @@ def run(dataset, config):
     print(f"测试集大小: {len(test_dataset)}")
     
     # 数据加载器
-    batch_size = 128
+    batch_size = config['batch_size']
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
     
@@ -98,7 +103,7 @@ def run(dataset, config):
     num_classes = dataset.num_classes
     
     # 创建模型
-    pooler = Pooler(input_dim, hidden_dim, num_layers=num_layers, pool_type=config['pooler'], gnn_type=config['backbone']).to(device)
+    pooler = Pooler(input_dim, hidden_dim, num_layers=num_layers, pool_type=config['pooler'], gnn_type=config['backbone'], layer_norm=config['graph_norm']).to(device)
     classifier = Classifier(pooler.get_out_dim(), pooler.get_out_dim(), num_classes).to(device)
     
     # print(f"模型参数数量: {sum(p.numel() for p in pooler.parameters()) + sum(p.numel() for p in classifier.parameters())}")
@@ -116,7 +121,9 @@ def run(dataset, config):
     test_loss_list = []
     test_acc_list = []
     
-    for epoch in track(range(epochs), description=f'训练 {dataset}'):
+    e = 1
+    for epoch in track(range(epochs), description=f'训练 {dataset}, Epoch: {e}'):
+        e = epoch + 1
         train_loss, train_acc = train_model(pooler, classifier, train_loader, optimizer, criterion, device)
         test_loss, test_acc = test_model(pooler, classifier, test_loader, criterion, device)
 
@@ -128,7 +135,7 @@ def run(dataset, config):
         if test_acc > best_test_acc:
             best_test_acc = test_acc
         
-        if (epoch + 1) % 10 == 0:
+        if (epoch + 1) % 10 == 0 or True:
             print(f'Epoch {epoch+1:03d}, '
                   f'Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, '
                   f'Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}')
@@ -147,8 +154,8 @@ def run(dataset, config):
 
 def datasets():
     datasets = [
-        'DD',
-        'PROTEINS',
+        # 'DD',
+        # 'PROTEINS',
         'NCI1',
         'NCI109',
         'COX2',
@@ -166,15 +173,17 @@ def format_result(result):
 
 def save_result(result, filename, spent_time):
     with open(filename, 'a', encoding='utf-8') as f:
-        f.write(f'backbone: {config["backbone"]}, pooler: {config["pooler"]}\n')
+        f.write(f'backbone: {config["backbone"]}, pooler: {config["pooler"]}, graph_norm: {config["graph_norm"]}, batch_size: {config["batch_size"]}\n')
         for result in results:
             f.write(f'{format_result(result)}\n')
-        f.write(f'总运行时间: {spent_time * 1000:.2f} ms\n')
+        f.write(f'总运行时间: {spent_time / 60:.2f} min\n')
 
 if __name__ == '__main__':
     config = {
         'backbone': 'gcn',
-        'pooler': 'struct'
+        'pooler': 'mambo_edge',
+        'graph_norm': True,
+        'batch_size': 32
     }
 
     all_start = perf_counter()
@@ -191,8 +200,8 @@ if __name__ == '__main__':
 
     all_end = perf_counter()
 
-    print(f'backbone: {config["backbone"]}, pooler: {config["pooler"]}')
+    print(f'backbone: {config["backbone"]}, pooler: {config["pooler"]}, graph_norm: {config["graph_norm"]}, batch_size: {config["batch_size"]}')
     for result in results:
         print(format_result(result))
-    print(f'总运行时间: {(all_end - all_start) * 1000:.2f} ms')
+    print(f'总运行时间: {(all_end - all_start) / 60:.2f} min')
     save_result(results, f'./benchmark/result/{config["backbone"]}_{config["pooler"]}.txt', all_end - all_start)

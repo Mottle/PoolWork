@@ -2,27 +2,29 @@ import torch
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, GINConv
 from torch_geometric.nn.pool import TopKPooling, ASAPooling, EdgePooling, SAGPooling, PANPooling
+from torch_geometric.nn import GraphNorm
 from torch_geometric.nn import global_mean_pool, global_max_pool
 from torch import nn
 from torch_sparse import SparseTensor
 from struct_pooling import StructPooling
 from mincut_pooling import MinCutPooling
+from mambo.mambo_pooling import MamboPoolingWithEdgeGraphScore
+# from mambo.linize import convert_to_line_graph_with_batch_vectorized_clean
 
 activate = F.leaky_relu
 
 class Pooler(torch.nn.Module):
-    def __init__(self, in_dim, hidden_dim, out_dim = None, num_layers = 3, pool_type = "topk", gnn_type = "gcn", skip_link = True):
+    def __init__(self, in_dim, hidden_dim, num_layers = 3, pool_type = "topk", gnn_type = "gcn", skip_link = True, layer_norm = False):
         super().__init__()
         self.pool_type = pool_type
         self.in_dim = in_dim
         self.hidden_dim = hidden_dim
-        self.out_dim = out_dim
         self.gnn_type = gnn_type
         self.num_layers = num_layers
         self.skip_link = skip_link
+        self.layer_norm = layer_norm
 
-        if out_dim == None:
-            out_dim = hidden_dim
+        out_dim = hidden_dim
 
         if num_layers < 2:
             raise ValueError("Number of layers must be at least 2")
@@ -41,6 +43,7 @@ class Pooler(torch.nn.Module):
     def build_model(self):
         self.conv = torch.nn.ModuleList()
         self.pool = torch.nn.ModuleList()
+        self.norm = torch.nn.ModuleList()
 
         for i in range(self.num_layers):
             if i == 0:
@@ -59,6 +62,9 @@ class Pooler(torch.nn.Module):
                 self.conv.append(GINConv(nn.Linear(in_d, out_d)))
             else:
                 raise ValueError(f'Invalid GNN type: {self.gnn_type}')
+            
+            if self.layer_norm:
+                self.norm.append(GraphNorm(out_d))
 
         for i in range(self.num_layers):
             in_d = self.hidden_dim
@@ -82,6 +88,8 @@ class Pooler(torch.nn.Module):
                 self.pool.append(StructPooling(in_channels=in_d))
             elif self.pool_type.lower() == 'mincut':
                 self.pool.append(MinCutPooling(in_channels=in_d))
+            elif self.pool_type.lower() == 'mambo_edge':
+                self.pool.append(MamboPoolingWithEdgeGraphScore(in_channels=in_d))
             else:
                 raise ValueError(f'Invalid pool type: {self.pool_type}')
 
@@ -91,6 +99,8 @@ class Pooler(torch.nn.Module):
     def forward(self, x, edge_index, batch = None):
         if batch is None:
             batch = torch.zeros(x.size(0), dtype=torch.long, device=x.device)
+
+        # convert_to_line_graph_with_batch_vectorized_clean(x, edge_index, batch)
         
         # 存储各层特征
         layer_features = []
@@ -98,6 +108,8 @@ class Pooler(torch.nn.Module):
 
         for i in range(self.num_layers):
             x = self.conv[i](x, edge_index)
+            if self.layer_norm:
+                x = self.norm[i](x)
             x = activate(x)
             
             if self.pool_type.lower() == 'topk':
@@ -115,6 +127,8 @@ class Pooler(torch.nn.Module):
                 x, edge_index, _, batch, _, _ = self.pool[i](x, sparse_adj, batch=batch)
             elif self.pool_type.lower() == 'struct':
                 x, edge_index, batch = self.pool[i](x, edge_index, batch=batch)
+            elif self.pool_type.lower() == 'mambo_edge':
+                x, edge_index, batch, _, _ = self.pool[i](x, edge_index, batch=batch)
             
             global_feat = (global_max_pool(x, batch), global_mean_pool(x, batch))
             global_feat = torch.cat([global_feat[0], global_feat[1]], dim=1)
