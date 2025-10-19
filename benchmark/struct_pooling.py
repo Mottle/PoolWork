@@ -7,7 +7,7 @@ from torch_scatter import scatter_mean, scatter_max
 import math
 
 
-class StructPooling(nn.Module):
+class StructPool(nn.Module):
     """
     StructPool: 结构化图池化层
     基于节点特征和图结构信息进行池化，保留图的重要结构特性
@@ -23,7 +23,7 @@ class StructPooling(nn.Module):
             dropout (float): Dropout比率
             negative_slope (float): LeakyReLU负斜率
         """
-        super(StructPooling, self).__init__()
+        super(StructPool, self).__init__()
         
         self.in_channels = in_channels
         self.ratio = ratio
@@ -223,7 +223,7 @@ class StructPoolingWithGlobal(nn.Module):
         self.ratio = ratio
         
         # 基础 StructPool
-        self.struct_pool = StructPooling(
+        self.struct_pool = StructPool(
             in_channels, ratio, dropout, negative_slope
         )
         
@@ -278,7 +278,7 @@ if __name__ == "__main__":
     batch = torch.tensor([0, 0, 0, 0, 0, 1, 1, 1, 1, 1], dtype=torch.long)
     
     # 测试基础版 StructPool
-    struct_pool = StructPooling(in_channels=in_channels, ratio=0.6)
+    struct_pool = StructPool(in_channels=in_channels, ratio=0.6)
     x_pooled, edge_index_pooled, batch_pooled = struct_pool(x, edge_index, batch)
     
     print("基础版 StructPool:")

@@ -10,3 +10,8 @@ backbone: gcn, pooler: edge
 数据集: COLLAB(5000), 测试准确率: 66.26% ± 3.53%
 数据集: REDDIT-BINARY(2000), 测试准确率: 84.07% ± 4.65%
 总运行时间: 34812684.20 ms
+backbone: gcn, pooler: edge, graph_norm: True, batch_size: 128, early_stop: True
+数据集: NCI1(4110), 测试准确率: 74.91% ± 3.54%
+数据集: COX2(467), 测试准确率: 79.82% ± 2.15%
+数据集: IMDB-BINARY(1000), 测试准确率: 69.38% ± 2.39%
+总运行时间: 8.80 min

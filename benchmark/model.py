@@ -6,9 +6,10 @@ from torch_geometric.nn import GraphNorm
 from torch_geometric.nn import global_mean_pool, global_max_pool
 from torch import nn
 from torch_sparse import SparseTensor
-from struct_pooling import StructPooling
-from mincut_pooling import MinCutPooling
-from mambo.mambo_pooling import MamboPoolingWithEdgeGraphScore
+from struct_pooling import StructPool
+from mincut_pooling import MincutPool
+from mambo.mambo_pooling_edge import MamboPoolingWithEdgeGraphScore
+from mambo.mambo_pooling_attention import MamboPoolingWithNodeAttention
 # from mambo.linize import convert_to_line_graph_with_batch_vectorized_clean
 
 activate = F.leaky_relu
@@ -85,11 +86,16 @@ class Pooler(torch.nn.Module):
             elif self.pool_type.lower() == 'pan':
                 self.pool.append(PANPooling(in_channels=in_d))
             elif self.pool_type.lower() == 'struct':
-                self.pool.append(StructPooling(in_channels=in_d))
+                self.pool.append(StructPool(in_channels=in_d))
             elif self.pool_type.lower() == 'mincut':
-                self.pool.append(MinCutPooling(in_channels=in_d))
+                pow = 6 - i + self.num_layers - 3
+                self.pool.append(MincutPool(in_channels=in_d, hidden_channels=64, out_channels=64, num_clusters=2**pow))
             elif self.pool_type.lower() == 'mambo_edge':
-                self.pool.append(MamboPoolingWithEdgeGraphScore(in_channels=in_d))
+                p = MamboPoolingWithEdgeGraphScore(in_channels=in_d)
+                p.enable_logging()
+                self.pool.append(p)
+            elif self.pool_type.lower() == 'mambo_att':
+                self.pool.append(MamboPoolingWithNodeAttention(in_channels=in_d))
             else:
                 raise ValueError(f'Invalid pool type: {self.pool_type}')
 
@@ -127,8 +133,14 @@ class Pooler(torch.nn.Module):
                 x, edge_index, _, batch, _, _ = self.pool[i](x, sparse_adj, batch=batch)
             elif self.pool_type.lower() == 'struct':
                 x, edge_index, batch = self.pool[i](x, edge_index, batch=batch)
+            elif self.pool_type.lower() == 'mincut':
+                x, edge_index, batch, mincut_loss = self.pool[i](x, edge_index, batch=batch, return_loss_components=True)
+                l0 = mincut_loss['mincut_loss']
+                l1 = mincut_loss['ortho_loss']
             elif self.pool_type.lower() == 'mambo_edge':
                 x, edge_index, batch, _, _ = self.pool[i](x, edge_index, batch=batch)
+            elif self.pool_type.lower() == 'mambo_att':
+                x, edge_index, batch, _ = self.pool[i](x, edge_index, batch=batch)
             
             global_feat = (global_max_pool(x, batch), global_mean_pool(x, batch))
             global_feat = torch.cat([global_feat[0], global_feat[1]], dim=1)
@@ -136,7 +148,10 @@ class Pooler(torch.nn.Module):
         
         x = torch.cat(layer_features, dim=1)
 
-        return x
+        additional_loss = 0
+        if self.pool_type.lower() == 'mincut':
+            additional_loss = l0 + l1
+        return x, additional_loss
     
 class Classifier(torch.nn.Module):
     def __init__(self, in_dim, hidden_dim, num_classes):

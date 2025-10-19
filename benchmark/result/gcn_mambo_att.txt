@@ -1,0 +1,10 @@
+backbone: gcn, pooler: mambo_att, graph_norm: True, batch_size: 128
+数据集: NCI1(4110), 测试准确率: 76.96% ± 2.00%
+数据集: COX2(467), 测试准确率: 81.18% ± 3.94%
+数据集: IMDB-BINARY(1000), 测试准确率: 73.21% ± 2.63%
+总运行时间: 28.84 min
+backbone: gcn, pooler: mambo_att, graph_norm: True, batch_size: 128, early_stop: True
+数据集: NCI1(4110), 测试准确率: 75.78% ± 2.96%
+数据集: COX2(467), 测试准确率: 78.44% ± 2.56%
+数据集: IMDB-BINARY(1000), 测试准确率: 71.56% ± 4.22%
+总运行时间: 7.20 min

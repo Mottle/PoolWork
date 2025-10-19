@@ -1,0 +1,5 @@
+backbone: gcn, pooler: struct, graph_norm: True, batch_size: 128, early_stop: True
+数据集: NCI1(4110), 测试准确率: 80.53% ± 1.72%, 最佳测试准确率: 83.58%
+数据集: COX2(467), 测试准确率: 80.82% ± 2.35%, 最佳测试准确率: 86.17%
+数据集: IMDB-BINARY(1000), 测试准确率: 68.72% ± 1.68%, 最佳测试准确率: 71.50%
+总运行时间: 5.19 min

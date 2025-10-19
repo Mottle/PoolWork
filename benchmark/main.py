@@ -1,13 +1,14 @@
 import torch
 import context
 import numpy as np
-from time import perf_counter
+# from time import perf_counter
 from constant import DATASET_PATH
 from torch import nn
 from torch_geometric.datasets import TUDataset
 from torch_geometric.loader import DataLoader
 from model import Pooler, Classifier
 from rich.progress import track
+from perf_counter import get_time_sync, measure_time
 
 # proteins_dataset = TUDataset(root=DATASET_PATH, name='PROTEINS')
 
@@ -21,15 +22,15 @@ def train_model(pooler, classifier, train_loader, optimizer, criterion, device):
     
     all = len(train_loader)
     cnt = 0
-    for data in track(train_loader, description=f"Run train batch: {cnt}/{all}"):
+    for data in track(train_loader, description=f"Run train batch: {all}", disable=True):
         cnt += 1
         optimizer.zero_grad()
         if data.x == None or data.x.size(1) <= 0:
             data.x = torch.ones((data.num_nodes, 1))
         data = data.to(device)
-        pooled = pooler(data.x, data.edge_index, data.batch)
+        pooled, additional_loss = pooler(data.x, data.edge_index, data.batch)
         out = classifier(pooled)
-        loss = criterion(out, data.y)
+        loss = criterion(out, data.y) + additional_loss
         loss.backward()
         optimizer.step()
         
@@ -49,13 +50,12 @@ def test_model(pooler, classifier, test_loader, criterion, device):
     total = 0
     
     all = len(test_loader)
-    cnt = 0
     with torch.no_grad():
-        for data in track(test_loader,  description=f"Run test batch: {cnt}/{all}"):
+        for data in track(test_loader,  description=f"Run test batch: {all}", disable=True):
             if data.x == None or data.x.size(1) <= 0:
                 data.x = torch.ones((data.num_nodes, 1))
             data = data.to(device)
-            pooled = pooler(data.x, data.edge_index, data.batch)
+            pooled, _ = pooler(data.x, data.edge_index, data.batch)
             out = classifier(pooled)
             loss = criterion(out, data.y)
             
@@ -67,7 +67,7 @@ def test_model(pooler, classifier, test_loader, criterion, device):
     return total_loss / len(test_loader), correct / total
 
 def run(dataset, config):
-    stamp_start = perf_counter()
+    stamp_start = get_time_sync()
     # 加载数据集
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -121,26 +121,38 @@ def run(dataset, config):
     test_loss_list = []
     test_acc_list = []
     
-    e = 1
-    for epoch in track(range(epochs), description=f'训练 {dataset}, Epoch: {e}'):
-        e = epoch + 1
+    no_increased_times = 0
+    no_record_epoch_num = 20
+    early_stop_epoch_num = 30
+
+    for epoch in track(range(epochs), description=f'训练 {dataset}'):
         train_loss, train_acc = train_model(pooler, classifier, train_loader, optimizer, criterion, device)
         test_loss, test_acc = test_model(pooler, classifier, test_loader, criterion, device)
 
-        train_loss_list.append(train_loss)
-        train_acc_list.append(train_acc)
-        test_loss_list.append(test_loss)
-        test_acc_list.append(test_acc)
+        if epoch > no_record_epoch_num:
+            train_loss_list.append(train_loss)
+            train_acc_list.append(train_acc)
+            test_loss_list.append(test_loss)
+            test_acc_list.append(test_acc)
         
-        if test_acc > best_test_acc:
+        if test_acc > best_test_acc and epoch > no_record_epoch_num:
             best_test_acc = test_acc
         
-        if (epoch + 1) % 10 == 0 or True:
+        if config['early_stop'] and epoch > no_record_epoch_num:
+            if test_acc < best_test_acc:
+                no_increased_times += 1
+            else:
+                no_increased_times = 0
+            if no_increased_times >= early_stop_epoch_num:
+                print(f'Early stop at epoch {epoch+1}')
+                break
+        
+        if (epoch + 1) % 10 == 0:
             print(f'Epoch {epoch+1:03d}, '
                   f'Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, '
                   f'Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}')
     
-    stamp_end = perf_counter()
+    stamp_end = get_time_sync()
 
     train_acc_mean = np.mean(train_acc_list)
     train_acc_std = np.std(train_acc_list)
@@ -150,30 +162,39 @@ def run(dataset, config):
     print('训练准确率: {:.2f} ± {:.2f}, 测试准确率 {:.2f} ± {:.2f}'.format(train_acc_mean * 100, train_acc_std * 100, test_acc_mean * 100, test_acc_std * 100))
     print(f'最佳测试准确率: {best_test_acc:.2f}')
     print(f'总运行时间: {(stamp_end - stamp_start) * 1000:.2f} ms\n')
-    return (f'{dataset}', test_acc_mean, test_acc_std)
+    return (f'{dataset}', test_acc_mean, test_acc_std, best_test_acc)
 
-def datasets():
-    datasets = [
-        # 'DD',
-        # 'PROTEINS',
-        'NCI1',
-        'NCI109',
-        'COX2',
-        'IMDB-BINARY',
-        'IMDB-MULTI',
-        'FRANKENSTEIN',
-        'COLLAB',
-        'REDDIT-BINARY'
-    ]
-    for i in range(len(datasets)):
-        yield TUDataset(root=DATASET_PATH, name=datasets[i])
+def datasets(simple=False):
+    if simple:
+        datasets = [
+            'NCI1',
+            'COX2',
+            'IMDB-BINARY',
+        ]
+        for i in range(len(datasets)):
+            yield TUDataset(root=DATASET_PATH, name=datasets[i])
+    else:
+        datasets = [
+            'DD',
+            'PROTEINS',
+            'NCI1',
+            'NCI109',
+            'COX2',
+            'IMDB-BINARY',
+            'IMDB-MULTI',
+            'FRANKENSTEIN',
+            'COLLAB',
+            'REDDIT-BINARY'
+        ]
+        for i in range(len(datasets)):
+            yield TUDataset(root=DATASET_PATH, name=datasets[i])
 
 def format_result(result):
-    return f'数据集: {result[0]}, 测试准确率: {result[1] * 100:.2f}% ± {result[2] * 100:.2f}%'
+    return f'数据集: {result[0]}, 测试准确率: {result[1] * 100:.2f}% ± {result[2] * 100:.2f}%, 最佳测试准确率: {result[3] * 100:.2f}%'
 
 def save_result(result, filename, spent_time):
     with open(filename, 'a', encoding='utf-8') as f:
-        f.write(f'backbone: {config["backbone"]}, pooler: {config["pooler"]}, graph_norm: {config["graph_norm"]}, batch_size: {config["batch_size"]}\n')
+        f.write(f'backbone: {config["backbone"]}, pooler: {config["pooler"]}, graph_norm: {config["graph_norm"]}, batch_size: {config["batch_size"]}, early_stop: {config["early_stop"]}\n')
         for result in results:
             f.write(f'{format_result(result)}\n')
         f.write(f'总运行时间: {spent_time / 60:.2f} min\n')
@@ -181,27 +202,39 @@ def save_result(result, filename, spent_time):
 if __name__ == '__main__':
     config = {
         'backbone': 'gcn',
-        'pooler': 'mambo_edge',
+        'pooler': 'mambo_att',
         'graph_norm': True,
-        'batch_size': 32
+        'batch_size': 128,
+        'simple': True,
+        'catch_error': False,
+        'early_stop': True
     }
 
-    all_start = perf_counter()
+    all_start = get_time_sync()
     results = []
     
-    for dataset in track(datasets()):
-        try:
+    for dataset in track(datasets(config['simple']), description="All"):
+        if config['catch_error']:
+            try:
+                result = run(dataset, config)
+                results.append(result)
+            except Exception as e:
+                print(f'运行 {dataset} 时出错: {e}')
+                results.append((dataset, -1, -1))
+                continue
+        else:
             result = run(dataset, config)
             results.append(result)
-        except Exception as e:
-            print(f'运行 {dataset} 时出错: {e}')
-            results.append((dataset, -1, -1))
-            continue
 
-    all_end = perf_counter()
+    all_end = get_time_sync()
 
-    print(f'backbone: {config["backbone"]}, pooler: {config["pooler"]}, graph_norm: {config["graph_norm"]}, batch_size: {config["batch_size"]}')
+    print(f'backbone: {config["backbone"]}, pooler: {config["pooler"]}, graph_norm: {config["graph_norm"]}, batch_size: {config["batch_size"]}, early_stop: {config["early_stop"]}')
     for result in results:
         print(format_result(result))
     print(f'总运行时间: {(all_end - all_start) / 60:.2f} min')
-    save_result(results, f'./benchmark/result/{config["backbone"]}_{config["pooler"]}.txt', all_end - all_start)
+
+    if config['simple']:
+        save_result(results, f'./benchmark/result_simple/{config["backbone"]}_{config["pooler"]}.txt', all_end - all_start)
+    else:
+        save_result(results, f'./benchmark/result/{config["backbone"]}_{config["pooler"]}.txt', all_end - all_start)
+    
