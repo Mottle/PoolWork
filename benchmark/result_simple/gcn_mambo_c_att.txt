@@ -33,3 +33,8 @@ backbone: gcn, pooler: mambo_c_att, graph_norm: True, batch_size: 128, early_sto
 数据集: COX2(467), 测试准确率: 81.94% ± 3.30%, 最佳测试准确率: 87.23%
 数据集: IMDB-BINARY(1000), 测试准确率: 75.48% ± 1.56%, 最佳测试准确率: 79.50%
 总运行时间: 9.91 min
+backbone: gcn, pooler: mambo_c_att, graph_norm: True, batch_size: 128, early_stop: True, seed: None 0.2 4 4 点乘注意力
+数据集: NCI1(4110), 测试准确率: 76.27% ± 1.06%, 最佳测试准确率: 78.22%
+数据集: COX2(467), 测试准确率: 82.40% ± 3.89%, 最佳测试准确率: 89.36%
+数据集: IMDB-BINARY(1000), 测试准确率: 75.40% ± 1.32%, 最佳测试准确率: 78.00%
+总运行时间: 9.18 min

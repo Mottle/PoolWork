@@ -66,7 +66,7 @@ def test_model(pooler, classifier, test_loader, criterion, device):
     
     return total_loss / len(test_loader), correct / total
 
-def run(dataset, config):
+def run_model(dataset, config):
     stamp_start = get_time_sync()
     # 加载数据集
 
@@ -147,7 +147,7 @@ def run(dataset, config):
                 print(f'Early stop at epoch {epoch+1}')
                 break
         
-        if (epoch + 1) % 10 == 0 or True:
+        if (epoch + 1) % 10 == 0:
             print(f'Epoch {epoch+1:03d}, '
                   f'Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, '
                   f'Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}')
@@ -175,7 +175,7 @@ def datasets(simple=False):
             yield TUDataset(root=DATASET_PATH, name=datasets[i])
     else:
         datasets = [
-            'DD',
+            # 'DD',
             'PROTEINS',
             'NCI1',
             'NCI109',
@@ -184,7 +184,13 @@ def datasets(simple=False):
             'IMDB-MULTI',
             'FRANKENSTEIN',
             'COLLAB',
-            'REDDIT-BINARY'
+            # 'REDDIT-BINARY',
+            'Synthie',
+            'SYNTHETIC',
+            # 'COIL-DEL',
+            # 'Fingerprint'
+            'MSRC_9',
+            'MSRC_21',
         ]
         for i in range(len(datasets)):
             yield TUDataset(root=DATASET_PATH, name=datasets[i])
@@ -199,7 +205,7 @@ def set_random_seed(seed):
 def format_result(result):
     return f'数据集: {result[0]}, 测试准确率: {result[1] * 100:.2f}% ± {result[2] * 100:.2f}%, 最佳测试准确率: {result[3] * 100:.2f}%'
 
-def save_result(result, filename, spent_time):
+def save_result(results, filename, spent_time):
     with open(filename, 'a', encoding='utf-8') as f:
         f.write(
             f'backbone: {config["backbone"]}, pooler: {config["pooler"]}, graph_norm: {config["graph_norm"]}, batch_size: {config["batch_size"]}, early_stop: {config["early_stop"]}, seed: {config['seed']}\n')
@@ -207,38 +213,24 @@ def save_result(result, filename, spent_time):
             f.write(f'{format_result(result)}\n')
         f.write(f'总运行时间: {spent_time / 60:.2f} min\n')
 
-if __name__ == '__main__':
-    config = {
-        'backbone': 'gcn',
-        'pooler': 'mambo_c_att',
-        'graph_norm': True,
-        'batch_size': 128,
-        'simple': True,
-        'catch_error': False,
-        'early_stop': True,
-        # 'seed': 3407
-        'seed': None
-    }
-
+def run(config):
     if config['seed']:
         set_random_seed(config['seed'])
 
-    all_start = get_time_sync()
     results = []
-    
+    all_start = get_time_sync()
     for dataset in track(datasets(config['simple']), description="All"):
         if config['catch_error']:
             try:
-                result = run(dataset, config)
+                result = run_model(dataset, config)
                 results.append(result)
             except Exception as e:
                 print(f'运行 {dataset} 时出错: {e}')
                 results.append((dataset, -1, -1))
                 continue
         else:
-            result = run(dataset, config)
+            result = run_model(dataset, config)
             results.append(result)
-
     all_end = get_time_sync()
 
     print(f'backbone: {config["backbone"]}, pooler: {config["pooler"]}, graph_norm: {config["graph_norm"]}, batch_size: {config["batch_size"]}, early_stop: {config["early_stop"]}')
@@ -250,4 +242,27 @@ if __name__ == '__main__':
         save_result(results, f'./benchmark/result_simple/{config["backbone"]}_{config["pooler"]}.txt', all_end - all_start)
     else:
         save_result(results, f'./benchmark/result/{config["backbone"]}_{config["pooler"]}.txt', all_end - all_start)
+
+if __name__ == '__main__':
+    config = {
+        'backbone': 'gcn',
+        'pooler': 'struct',
+        'graph_norm': True,
+        'batch_size': 128,
+        'simple': False,
+        'catch_error': False,
+        'early_stop': True,
+        # 'seed': 3407
+        'seed': None
+    }
+
+    models = ['sag', 'asap', 'topk', 'pan', 'struct', 'mincut', 'edge', 'mambo_c_att']
+    seeds = [114514, 1919810, 77777]
+    for model in models:
+        config['pooler'] = model
+        config['seed'] = seeds[0]
+        try:
+            run(config)
+        except Exception as e:
+            print(f'运行 {config["backbone"]}_{config["pooler"]} 时出错: {e}')
     
