@@ -10,6 +10,7 @@ from struct_pooling import StructPool
 from mincut_pooling import MincutPool
 from mambo.mambo_pooling_edge import MamboPoolingWithEdgeGraphScore
 from mambo.mambo_pooling_attention import MamboPoolingWithNodeAttention
+from mambo.mambo_pooling_cluster_attention import MamboPoolingWithClusterAttention
 # from mambo.linize import convert_to_line_graph_with_batch_vectorized_clean
 
 activate = F.leaky_relu
@@ -96,6 +97,8 @@ class Pooler(torch.nn.Module):
                 self.pool.append(p)
             elif self.pool_type.lower() == 'mambo_att':
                 self.pool.append(MamboPoolingWithNodeAttention(in_channels=in_d))
+            elif self.pool_type.lower() == 'mambo_c_att':
+                self.pool.append(MamboPoolingWithClusterAttention(input_dim=in_d))
             else:
                 raise ValueError(f'Invalid pool type: {self.pool_type}')
 
@@ -141,6 +144,10 @@ class Pooler(torch.nn.Module):
                 x, edge_index, batch, _, _ = self.pool[i](x, edge_index, batch=batch)
             elif self.pool_type.lower() == 'mambo_att':
                 x, edge_index, batch, _ = self.pool[i](x, edge_index, batch=batch)
+            elif self.pool_type.lower() == 'mambo_c_att':
+                x, edge_index, batch = self.pool[i](x, edge_index, batch=batch)
+            else:
+                raise ValueError(f'Invalid pool type: {self.pool_type}')
             
             global_feat = (global_max_pool(x, batch), global_mean_pool(x, batch))
             global_feat = torch.cat([global_feat[0], global_feat[1]], dim=1)

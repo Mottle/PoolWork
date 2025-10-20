@@ -3,3 +3,8 @@ backbone: gcn, pooler: topk, graph_norm: True, batch_size: 128, early_stop: True
 数据集: COX2(467), 测试准确率: 83.45% ± 2.19%, 最佳测试准确率: 88.30%
 数据集: IMDB-BINARY(1000), 测试准确率: 62.81% ± 2.10%, 最佳测试准确率: 67.00%
 总运行时间: 1.06 min
+backbone: gcn, pooler: topk, graph_norm: True, batch_size: 128, early_stop: True, seed: 3407
+数据集: NCI1(4110), 测试准确率: 73.76% ± 1.24%, 最佳测试准确率: 75.79%
+数据集: COX2(467), 测试准确率: 83.57% ± 2.00%, 最佳测试准确率: 87.23%
+数据集: IMDB-BINARY(1000), 测试准确率: 60.17% ± 2.38%, 最佳测试准确率: 64.50%
+总运行时间: 0.80 min

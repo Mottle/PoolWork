@@ -113,7 +113,7 @@ def run(dataset, config):
     criterion = nn.CrossEntropyLoss()
     
     # 训练循环
-    epochs = 100
+    epochs = 200
     best_test_acc = 0
 
     train_loss_list = []
@@ -147,7 +147,7 @@ def run(dataset, config):
                 print(f'Early stop at epoch {epoch+1}')
                 break
         
-        if (epoch + 1) % 10 == 0:
+        if (epoch + 1) % 10 == 0 or True:
             print(f'Epoch {epoch+1:03d}, '
                   f'Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, '
                   f'Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}')
@@ -189,12 +189,20 @@ def datasets(simple=False):
         for i in range(len(datasets)):
             yield TUDataset(root=DATASET_PATH, name=datasets[i])
 
+def set_random_seed(seed):
+    import random
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+
 def format_result(result):
     return f'数据集: {result[0]}, 测试准确率: {result[1] * 100:.2f}% ± {result[2] * 100:.2f}%, 最佳测试准确率: {result[3] * 100:.2f}%'
 
 def save_result(result, filename, spent_time):
     with open(filename, 'a', encoding='utf-8') as f:
-        f.write(f'backbone: {config["backbone"]}, pooler: {config["pooler"]}, graph_norm: {config["graph_norm"]}, batch_size: {config["batch_size"]}, early_stop: {config["early_stop"]}\n')
+        f.write(
+            f'backbone: {config["backbone"]}, pooler: {config["pooler"]}, graph_norm: {config["graph_norm"]}, batch_size: {config["batch_size"]}, early_stop: {config["early_stop"]}, seed: {config['seed']}\n')
         for result in results:
             f.write(f'{format_result(result)}\n')
         f.write(f'总运行时间: {spent_time / 60:.2f} min\n')
@@ -202,13 +210,18 @@ def save_result(result, filename, spent_time):
 if __name__ == '__main__':
     config = {
         'backbone': 'gcn',
-        'pooler': 'mambo_att',
+        'pooler': 'mambo_c_att',
         'graph_norm': True,
         'batch_size': 128,
         'simple': True,
         'catch_error': False,
-        'early_stop': True
+        'early_stop': True,
+        # 'seed': 3407
+        'seed': None
     }
+
+    if config['seed']:
+        set_random_seed(config['seed'])
 
     all_start = get_time_sync()
     results = []

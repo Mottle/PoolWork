@@ -1,0 +1,35 @@
+backbone: gcn, pooler: mambo_c_att, graph_norm: True, batch_size: 128, early_stop: True, seed: 3407
+数据集: NCI1(4110), 测试准确率: 75.14% ± 1.26%, 最佳测试准确率: 77.74%
+数据集: COX2(467), 测试准确率: 83.96% ± 2.10%, 最佳测试准确率: 88.30%
+数据集: IMDB-BINARY(1000), 测试准确率: 69.13% ± 1.63%, 最佳测试准确率: 73.50%
+总运行时间: 39.10 min
+backbone: gcn, pooler: mambo_c_att, graph_norm: True, batch_size: 128, early_stop: True, seed: None
+数据集: NCI1(4110), 测试准确率: 75.40% ± 0.92%, 最佳测试准确率: 77.13%
+数据集: COX2(467), 测试准确率: 82.75% ± 2.52%, 最佳测试准确率: 87.23%
+数据集: IMDB-BINARY(1000), 测试准确率: 72.69% ± 2.93%, 最佳测试准确率: 81.00%
+总运行时间: 11.03 min
+backbone: gcn, pooler: mambo_c_att, graph_norm: True, batch_size: 128, early_stop: True, seed: None 0.7 4head
+数据集: NCI1(4110), 测试准确率: 75.49% ± 0.81%, 最佳测试准确率: 76.89%
+数据集: COX2(467), 测试准确率: 80.34% ± 2.22%, 最佳测试准确率: 85.11%
+数据集: IMDB-BINARY(1000), 测试准确率: 69.60% ± 2.10%, 最佳测试准确率: 75.50%
+总运行时间: 11.35 min
+backbone: gcn, pooler: mambo_c_att, graph_norm: True, batch_size: 128, early_stop: True, seed: None 0.5 4 1
+数据集: NCI1(4110), 测试准确率: 77.50% ± 1.19%, 最佳测试准确率: 79.93%
+数据集: COX2(467), 测试准确率: 83.67% ± 2.62%, 最佳测试准确率: 88.30%
+数据集: IMDB-BINARY(1000), 测试准确率: 74.25% ± 2.13%, 最佳测试准确率: 77.50%
+总运行时间: 14.56 min
+backbone: gcn, pooler: mambo_c_att, graph_norm: True, batch_size: 128, early_stop: True, seed: None 0.5 4 4
+数据集: NCI1(4110), 测试准确率: 77.43% ± 1.34%, 最佳测试准确率: 80.29%
+数据集: COX2(467), 测试准确率: 83.71% ± 2.46%, 最佳测试准确率: 89.36%
+数据集: IMDB-BINARY(1000), 测试准确率: 73.74% ± 1.61%, 最佳测试准确率: 77.50%
+总运行时间: 13.37 min
+backbone: gcn, pooler: mambo_c_att, graph_norm: True, batch_size: 128, early_stop: True, seed: None 0.8 4 4
+数据集: NCI1(4110), 测试准确率: 76.78% ± 1.01%, 最佳测试准确率: 79.08%
+数据集: COX2(467), 测试准确率: 84.81% ± 2.14%, 最佳测试准确率: 89.36%
+数据集: IMDB-BINARY(1000), 测试准确率: 74.17% ± 1.48%, 最佳测试准确率: 77.50%
+总运行时间: 8.38 min
+backbone: gcn, pooler: mambo_c_att, graph_norm: True, batch_size: 128, early_stop: True, seed: None 0.2 4 4
+数据集: NCI1(4110), 测试准确率: 76.77% ± 1.12%, 最佳测试准确率: 79.08%
+数据集: COX2(467), 测试准确率: 81.94% ± 3.30%, 最佳测试准确率: 87.23%
+数据集: IMDB-BINARY(1000), 测试准确率: 75.48% ± 1.56%, 最佳测试准确率: 79.50%
+总运行时间: 9.91 min
