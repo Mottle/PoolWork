@@ -8,6 +8,7 @@ from torch import nn
 from torch_sparse import SparseTensor
 from struct_pooling import StructPool
 from mincut_pooling import MincutPool
+from enah_pooling import ENAHPool
 from mambo.mambo_pooling_edge import MamboPoolingWithEdgeGraphScore
 from mambo.mambo_pooling_attention import MamboPoolingWithNodeAttention
 from mambo.mambo_pooling_cluster_attention import MamboPoolingWithClusterAttention
@@ -87,10 +88,14 @@ class Pooler(torch.nn.Module):
             elif self.pool_type.lower() == 'pan':
                 self.pool.append(PANPooling(in_channels=in_d))
             elif self.pool_type.lower() == 'struct':
-                self.pool.append(StructPool(in_channels=in_d))
+                pow = - i + self.num_layers
+                self.pool.append(StructPool(in_channels=in_d, hidden_channels=in_d, num_clusters=2**pow))
             elif self.pool_type.lower() == 'mincut':
                 pow = 6 - i + self.num_layers - 3
                 self.pool.append(MincutPool(in_channels=in_d, hidden_channels=64, out_channels=64, num_clusters=2**pow))
+            elif self.pool_type.lower() == 'enah':
+                pow = - i + self.num_layers
+                self.pool.append(ENAHPool(in_channels=in_d, hidden_channels=in_d, max_clusters=2**pow))
             elif self.pool_type.lower() == 'mambo_edge':
                 p = MamboPoolingWithEdgeGraphScore(in_channels=in_d)
                 p.enable_logging()
@@ -135,11 +140,13 @@ class Pooler(torch.nn.Module):
                 sparse_adj = SparseTensor(row=row.to(x.device), col=col.to(x.device), value=edge_attr.to(x.device), sparse_sizes=(x.size(0), x.size(0))).to_device(x.device)
                 x, edge_index, _, batch, _, _ = self.pool[i](x, sparse_adj, batch=batch)
             elif self.pool_type.lower() == 'struct':
-                x, edge_index, batch = self.pool[i](x, edge_index, batch=batch)
+                x, edge_index, _, batch = self.pool[i](x, edge_index, batch=batch)
             elif self.pool_type.lower() == 'mincut':
                 x, edge_index, batch, mincut_loss = self.pool[i](x, edge_index, batch=batch, return_loss_components=True)
                 l0 = mincut_loss['mincut_loss']
                 l1 = mincut_loss['ortho_loss']
+            elif self.pool_type.lower() == 'enah':
+                x, edge_index,_, batch = self.pool[i](x, edge_index, batch=batch)
             elif self.pool_type.lower() == 'mambo_edge':
                 x, edge_index, batch, _, _ = self.pool[i](x, edge_index, batch=batch)
             elif self.pool_type.lower() == 'mambo_att':

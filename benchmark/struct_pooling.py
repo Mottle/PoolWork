@@ -1,13 +1,12 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch_geometric.nn import global_mean_pool, global_max_pool
-from torch_geometric.utils import to_dense_batch, to_dense_adj, degree
-from torch_scatter import scatter_mean, scatter_max
+from torch_geometric.nn import global_mean_pool, global_max_pool, GCNConv
+from torch_geometric.utils import to_dense_adj, degree, dense_to_sparse
 import math
 
 
-class StructPool(nn.Module):
+class BadStructPool(nn.Module):
     """
     StructPool: 结构化图池化层
     基于节点特征和图结构信息进行池化，保留图的重要结构特性
@@ -23,7 +22,7 @@ class StructPool(nn.Module):
             dropout (float): Dropout比率
             negative_slope (float): LeakyReLU负斜率
         """
-        super(StructPool, self).__init__()
+        super(BadStructPool, self).__init__()
         
         self.in_channels = in_channels
         self.ratio = ratio
@@ -210,91 +209,118 @@ class StructPool(nn.Module):
         return (f'{self.__class__.__name__}({self.in_channels}, '
                 f'ratio={self.ratio})')
 
+# ℓ-hop 邻接矩阵构建
+def compute_l_hop_adj(adj, l=2):
+    adj_l = adj.clone()
+    for _ in range(l - 1):
+        adj_l = torch.matmul(adj_l, adj)
+    adj_l = (adj_l > 0).float()
+    return adj_l
 
-class StructPoolingWithGlobal(nn.Module):
-    """
-    增强版 StructPool，包含全局信息聚合
-    """
-    
-    def __init__(self, in_channels, ratio=0.5, dropout=0.1, negative_slope=0.2):
-        super(StructPoolingWithGlobal, self).__init__()
-        
-        self.in_channels = in_channels
-        self.ratio = ratio
-        
-        # 基础 StructPool
-        self.struct_pool = StructPool(
-            in_channels, ratio, dropout, negative_slope
-        )
-        
-        # 全局信息聚合
-        self.global_proj = nn.Sequential(
-            nn.Linear(in_channels * 2, in_channels),
-            nn.LeakyReLU(negative_slope=negative_slope),
-            nn.Dropout(dropout)
-        )
-        
-        # 门控机制
-        self.gate = nn.Sequential(
-            nn.Linear(in_channels * 2, in_channels),
-            nn.Sigmoid()
-        )
-    
-    def forward(self, x, edge_index, batch=None):
-        if batch is None:
-            batch = torch.zeros(x.size(0), dtype=torch.long, device=x.device)
-        
-        # 获取全局图表示
-        global_mean = global_mean_pool(x, batch)
-        global_max = global_max_pool(x, batch)
-        global_info = torch.cat([global_mean, global_max], dim=1)
-        global_info = self.global_proj(global_info)
-        
-        # 应用 StructPool
-        x_pooled, edge_index_pooled, batch_pooled = self.struct_pool(
-            x, edge_index, batch
-        )
-        
-        # 将全局信息广播到每个节点
-        global_broadcast = global_info[batch_pooled]
-        
-        # 门控融合
-        gate_values = self.gate(torch.cat([x_pooled, global_broadcast], dim=1))
-        x_pooled = gate_values * x_pooled + (1 - gate_values) * global_broadcast
-        
-        return x_pooled, edge_index_pooled, batch_pooled
+# 高斯核模块
+class GaussianKernel(nn.Module):
+    def __init__(self, in_channels, num_kernels=2):
+        super().__init__()
+        self.means = nn.Parameter(torch.randn(num_kernels, in_channels))
+        self.scales = nn.Parameter(torch.ones(num_kernels, in_channels))
+        self.weights = nn.Parameter(torch.ones(num_kernels))
 
+    def forward(self, f_i, f_j):
+        # f_i, f_j: [N, D]
+        N = f_i.size(0)
+        K = self.means.size(0)
 
-# 使用示例
-if __name__ == "__main__":
-    # 创建测试数据
-    num_nodes = 10
-    in_channels = 16
-    x = torch.randn(num_nodes, in_channels)
-    edge_index = torch.tensor([
-        [0, 1, 1, 2, 2, 3, 4, 5, 5, 6, 6, 7, 8, 9],
-        [1, 0, 2, 1, 3, 2, 5, 4, 6, 5, 7, 6, 9, 8]
-    ], dtype=torch.long)
-    batch = torch.tensor([0, 0, 0, 0, 0, 1, 1, 1, 1, 1], dtype=torch.long)
-    
-    # 测试基础版 StructPool
-    struct_pool = StructPool(in_channels=in_channels, ratio=0.6)
-    x_pooled, edge_index_pooled, batch_pooled = struct_pool(x, edge_index, batch)
-    
-    print("基础版 StructPool:")
-    print(f"输入节点数: {x.size(0)}")
-    print(f"池化后节点数: {x_pooled.size(0)}")
-    print(f"输入边数: {edge_index.size(1)}")
-    print(f"池化后边数: {edge_index_pooled.size(1)}")
-    print(f"输入批次: {batch.unique_consecutive()}")
-    print(f"池化后批次: {batch_pooled.unique_consecutive()}")
-    
-    # 测试增强版 StructPool
-    struct_pool_global = StructPoolingWithGlobal(in_channels=in_channels, ratio=0.6)
-    x_pooled_global, edge_index_pooled_global, batch_pooled_global = struct_pool_global(
-        x, edge_index, batch
-    )
-    
-    print("\n增强版 StructPool:")
-    print(f"池化后节点数: {x_pooled_global.size(0)}")
-    print(f"池化后边数: {edge_index_pooled_global.size(1)}")
+        f_i_exp = f_i.unsqueeze(1).expand(N, K, -1)
+        f_j_exp = f_j.unsqueeze(1).expand(N, K, -1)
+
+        diff_i = (f_i_exp - self.means) / self.scales
+        diff_j = (f_j_exp - self.means) / self.scales
+
+        dist_i = -torch.sum(diff_i ** 2, dim=-1)  # [N, K]
+        dist_j = -torch.sum(diff_j ** 2, dim=-1)  # [N, K]
+
+        kernel = dist_i.unsqueeze(1) + dist_j.unsqueeze(0)  # [N, N, K]
+        kernel = torch.exp(kernel)  # 高斯核值
+        weighted = torch.matmul(kernel, self.weights)  # [N, N]
+        return weighted
+
+# 标签兼容性矩阵
+class CompatibilityMatrix(nn.Module):
+    def __init__(self, num_clusters):
+        super().__init__()
+        self.mu = nn.Parameter(torch.randn(num_clusters, num_clusters))
+
+    def forward(self, Q):
+        return torch.matmul(Q, self.mu)  # [N, C]
+
+# Mean-field 推理
+class MeanFieldCRF(nn.Module):
+    def __init__(self, num_clusters, num_iter=5, sharpen_temp=0.5):
+        super().__init__()
+        self.num_clusters = num_clusters
+        self.num_iter = num_iter
+        self.sharpen_temp = sharpen_temp
+        self.compatibility = CompatibilityMatrix(num_clusters)
+
+    def forward(self, unary, pairwise_weight):
+        Q = F.softmax(unary, dim=-1)  # [N, C]
+        for _ in range(self.num_iter):
+            compat = self.compatibility(Q)  # [N, C]
+            message = torch.matmul(pairwise_weight, compat)  # [N, C]
+            Q = unary + message
+            Q = F.softmax(Q / self.sharpen_temp, dim=-1)
+        return Q
+
+# StructPool 主模块
+class StructPool(nn.Module):
+    def __init__(self, in_channels, hidden_channels, num_clusters, num_iter=5, l_hop=2, num_kernels=2):
+        super().__init__()
+        self.encoder = GCNConv(in_channels, hidden_channels)
+        self.unary = nn.Linear(hidden_channels, num_clusters)
+        self.kernel = GaussianKernel(hidden_channels, num_kernels)
+        self.crf = MeanFieldCRF(num_clusters, num_iter)
+        self.l_hop = l_hop
+        self.num_clusters = num_clusters
+
+    def forward(self, x, edge_index, batch):
+        # x, edge_index, batch = data.x, data.edge_index, data.batch
+        x = F.relu(self.encoder(x, edge_index))  # [N, D]
+
+        outputs = []
+        for b in batch.unique():
+            mask = batch == b
+            if mask.sum() == 0:
+                continue  # 跳过空图
+
+            x_b = x[mask]
+            if x_b.size(0) == 0:
+                continue  # 跳过无节点图
+
+            edge_index_b = edge_index[:, (mask[edge_index[0]] & mask[edge_index[1]])]
+            if edge_index_b.size(1) == 0:
+                # 构造一个空邻接矩阵
+                adj_b = torch.zeros((x_b.size(0), x_b.size(0)), device=x.device)
+            else:
+                node_offset = mask.nonzero()[0].item()
+                edge_index_b = edge_index_b - node_offset
+                adj_b = to_dense_adj(edge_index_b)[0]
+            adj_l = compute_l_hop_adj(adj_b, self.l_hop)  # ℓ-hop 邻接
+
+            unary_b = self.unary(x_b)  # [n, C]
+            pairwise_b = self.kernel(x_b, x_b) * adj_l  # [n, n]
+
+            assign_b = self.crf(unary_b, pairwise_b)  # [n, C]
+            x_pooled = torch.matmul(assign_b.T, x_b)  # [C, D]
+            adj_pooled = torch.matmul(assign_b.T, torch.matmul(adj_b, assign_b))  # [C, C]
+            edge_index_pooled, edge_weight_pooled = dense_to_sparse(adj_pooled)
+
+            batch_pooled = torch.full((self.num_clusters,), b, device=x.device)
+            outputs.append((x_pooled, edge_index_pooled, edge_weight_pooled, batch_pooled))
+
+        x_all, ei_all, ew_all, batch_all = zip(*outputs)
+        x_out = torch.cat(x_all, dim=0)
+        edge_index_out = torch.cat(ei_all, dim=1)
+        edge_weight_out = torch.cat(ew_all, dim=0)
+        batch_out = torch.cat(batch_all, dim=0)
+
+        return x_out, edge_index_out, edge_weight_out, batch_out
