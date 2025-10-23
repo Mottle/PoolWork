@@ -5,15 +5,18 @@ from constant import DATASET_PATH
 from torch import nn
 from torch_geometric.datasets import TUDataset
 from torch_geometric.loader import DataLoader
-from model import Pooler, Classifier
 from rich.progress import track
 from perf_counter import get_time_sync, measure_time
 from sklearn.model_selection import KFold
 from torch.utils.data import SubsetRandomSampler
 from benchmark_config import BenchmarkConfig
 from benchmark_result import BenchmarkResult
-from optim import GCAdam, ALRS
+# from optim import GCAdam, ALRS
 from torch.optim import Adam
+# from benchmark.model import Classifier
+from classifier import Classifier
+from span_tree_gnn import SpanTreeGNN
+from baseline import BaseLine
 
 
 def train_model(pooler, classifier, train_loader, optimizer, criterion, device):
@@ -150,9 +153,15 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
     gnn_type = config.backbone
     layer_norm = config.graph_norm
     
-    # 创建模型
-    pooler = Pooler(input_dim, hidden_dim, num_layers=num_layers, pool_type=pooler_type, gnn_type=gnn_type, layer_norm=layer_norm).to(run_device)
-    classifier = Classifier(pooler.get_out_dim(), pooler.get_out_dim(), num_classes).to(run_device)
+    # 创建模型####
+    # pooler = Pooler(input_dim, hidden_dim, num_layers=num_layers, pool_type=pooler_type, gnn_type=gnn_type, layer_norm=layer_norm).to(run_device)
+    
+    if config.pooler == 'mst':
+        pooler = SpanTreeGNN(input_dim, hidden_dim, hidden_dim).to(run_device)
+    elif config.pooler == 'gcn' or config.pooler == 'gin':
+        pooler = BaseLine(input_dim, hidden_dim, hidden_dim, backbone=config.backbone).to(run_device)
+
+    classifier = Classifier(hidden_dim, hidden_dim, num_classes).to(run_device)
 
     return pooler, classifier
 
@@ -328,8 +337,8 @@ if __name__ == '__main__':
     config.seed = None
     config.kfold = 10
 
-    # models = ['sag', 'asap', 'topk', 'pan', 'struct', 'mincut', 'mambo_c_att', 'enah']
-    models = ['enah']
+    models = ['mst']
+    # models = ['topk']
     seeds = [0, 114514, 1919810, 77777]
     for model in models:
         config.pooler = model

@@ -195,7 +195,7 @@ class Classifier(torch.nn.Module):
         x = self.liner0(x)
         # x = activate(x)
         x = F.leaky_relu(x)
-        x = torch.dropout(x, p=0.4, train=self.training)
+        x = torch.dropout(x, p=0.5, train=self.training)
         x = self.liner1(x)
 
         return x

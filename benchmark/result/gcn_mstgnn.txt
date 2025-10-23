@@ -1,0 +1,8 @@
+fold: 1 acc = 61.40 ± 2.54 (best = 65.18) fold: 1 总运行时间: 0.0806min   GCN           
+fold: 1 acc = 65.41 ± 3.07 (best = 70.54) fold: 1 总运行时间: 83.9385min      config setting:
+config setting:
+hid_dim: 128
+layers: 3 backbone: gcn pooler: mstgnn graph_norm: True batch_size: 128
+epochs: 500 kfold: 10 seed: 0 early_stop: True use_simple_datasets: False
+PROTEINS(1113): acc = 72.97 ± 5.63 (best = 83.78)
+总运行时间: 21.50 min

@@ -1,0 +1,26 @@
+config setting:
+hid_dim: 128
+layers: 3 backbone: gcn pooler: mst graph_norm: True batch_size: 128
+epochs: 500 kfold: 10 seed: 0 early_stop: True use_simple_datasets: False
+PROTEINS(1113): acc = 72.68 ± 5.89 (best = 84.68)
+总运行时间: 25.47 min
+NCI1(4110): acc = 74.51 ± 4.28 (best = 84.43)
+总运行时间: 68.74 min
+NCI109(4127): acc = 72.28 ± 3.79 (best = 80.87)
+总运行时间: 66.64 min
+COX2(467): acc = 79.85 ± 3.93 (best = 93.62)
+总运行时间: 9.55 min
+IMDB-BINARY(1000): acc = 51.20 ± 7.00 (best = 71.00)
+总运行时间: 26.76 min
+IMDB-MULTI(1500): acc = 32.98 ± 2.96 (best = 43.33)
+总运行时间: 17.07 min
+FRANKENSTEIN(4337): acc = 58.18 ± 3.58 (best = 68.20)
+总运行时间: 57.12 min
+Synthie(400): acc = 38.46 ± 14.42 (best = 70.00)
+总运行时间: 26.12 min
+SYNTHETIC(300): acc = 41.02 ± 3.46 (best = 56.67)
+总运行时间: 50.53 min
+MSRC_9(221): acc = 85.24 ± 18.15 (best = 100.00)
+总运行时间: 11.13 min
+MSRC_21(563): acc = 83.81 ± 17.27 (best = 98.21)
+总运行时间: 104.13 min

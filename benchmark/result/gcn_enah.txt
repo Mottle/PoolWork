@@ -1,0 +1,6 @@
+config setting:
+hid_dim: 128
+layers: 3 backbone: gcn pooler: enah graph_norm: True batch_size: 128
+epochs: 500 kfold: 10 seed: 0 early_stop: True use_simple_datasets: False
+PROTEINS(1113): acc = 73.61 ± 4.02 (best = 82.88)
+总运行时间: 112.71 min
