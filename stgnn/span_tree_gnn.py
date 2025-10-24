@@ -2,11 +2,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-from torch_geometric.nn import GCNConv, GINConv, GATConv, global_mean_pool, global_max_pool, global_add_pool
+from torch_geometric.nn import GCNConv, GINConv, GATConv, global_mean_pool, global_max_pool, global_add_pool, GraphNorm
 from torch_geometric.nn import MessagePassing
-from torch_geometric.utils import add_self_loops, degree
+from torch_geometric.utils import add_self_loops, degree, to_undirected
 from torch_geometric.data import Data
-from torch_geometric.utils import to_networkx
 import networkx as nx
 from perf_counter import get_time_sync
 
@@ -93,57 +92,59 @@ def kruskal_mst(edge_index: torch.Tensor, edge_weight: torch.Tensor, num_nodes: 
     return mst_edge_index
 
 class SpanTreeConv(nn.Module):
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, in_channels, out_channels, dropout = 0.5):
         super(SpanTreeConv, self).__init__()
         self.edge_score_conv = nn.Linear(in_channels, 1)
         self.mst_conv = GCNConv(in_channels, out_channels)
-        self.edge_attr_conv = nn.Linear(in_channels, out_channels)
+        # self.edge_attr_conv = nn.Linear(in_channels, out_channels)
+        self.dropout = dropout
 
     def forward(self, x, edge_index, edge_attr):
         edge_score = self.edge_score_conv(edge_attr).squeeze(-1)
+        edge_score = F.dropout(edge_score, self.dropout, training=self.training)
         edge_weight = F.softmax(edge_score, dim=0)  # 所有边归一化
 
         edge_attr = edge_attr * edge_weight.view(-1, 1)
 
         # t0 = get_time_sync()
-        # 构造临时图
-        # temp_data = Data(edge_index=edge_index, edge_attr=edge_weight, num_nodes=x.size(0))
-        # G = to_networkx(temp_data, edge_attrs=['edge_attr'], to_undirected=True)
-
-        # # 生成最大生成树
-        # mst = nx.maximum_spanning_tree(G, weight='edge_attr')
-
-        # # 提取边索引
-        # mst_edges = list(mst.edges())
-        # span_tree_edge_index = torch.tensor(mst_edges, dtype=torch.long).t().contiguous().to(x.device)
         with torch.no_grad():
             span_tree_edge_index = kruskal_mst(edge_index.to('cpu'), edge_weight.to('cpu'), num_nodes=x.size(0)).to(x.device)
         # t1 = get_time_sync()
         # print(f"mst time: {t1 - t0}")
 
+        # 初始化一个与 x 同形状的张量，用于累加边特征
+        edge_agg = torch.zeros_like(x)
+        # 将边特征加到源节点
+        edge_agg.index_add_(0, edge_index[0], edge_attr)
+        # 将边特征加到目标节点
+        edge_agg.index_add_(0, edge_index[1], edge_attr)
+        x = x + edge_agg
+
+        # span_tree_edge_index = to_undirected(span_tree_edge_index)
         mst_x = self.mst_conv(x, span_tree_edge_index)
         mst_x = F.leaky_relu(mst_x)
 
         # 将边特征加到节点特征上
-        edge_agg = torch.zeros_like(x).to(x.device)
-        edge_agg.index_add_(0, edge_index[0], edge_attr)
-        edge_agg.index_add_(0, edge_index[1], edge_attr)
-        # mst_feature = mst_feature + torch.mean(edge_attr)
-        # mst_x = mst_x + edge_attr.mean(dim=0)  # [F]
+        # edge_agg = torch.zeros_like(x).to(x.device)
+        # edge_agg.index_add_(0, edge_index[0], edge_attr)
+        # edge_agg.index_add_(0, edge_index[1], edge_attr)
 
-        return mst_x + edge_agg
+        # return mst_x + edge_agg
+        return mst_x
     
 class SpanTreeGNN(nn.Module):
-    def __init__(self, in_channels: int, hidden_channels: int, out_channels: int, num_layers: int = 3):
+    def __init__(self, in_channels: int, hidden_channels: int, out_channels: int, num_layers: int = 3, dropout = 0.5):
         super(SpanTreeGNN, self).__init__()
         self.num_layers = num_layers
         self.in_channels = in_channels
         self.hidden_channels = hidden_channels
         self.out_channels = out_channels
+        self.dropout = dropout
         
         self.build_convs()
         self.build_mst_convs()
         self.build_edge_attr_convs()
+        self.build_graph_norms()
         self.merge_linear = nn.Linear(in_features=2 * hidden_channels, out_features=hidden_channels)
 
     def build_convs(self):
@@ -156,10 +157,17 @@ class SpanTreeGNN(nn.Module):
             else:
                 self.convs.append(GCNConv(self.hidden_channels, self.hidden_channels))
 
+    def build_graph_norms(self):
+        self.norms = nn.ModuleList()
+        self.mst_norms = nn.ModuleList()
+        for i in range(self.num_layers):
+            self.norms.append(GraphNorm(self.hidden_channels))
+            self.mst_norms.append(GraphNorm(self.hidden_channels))
+
     def build_mst_convs(self):
         self.mst_convs = nn.ModuleList()
         for i in range(self.num_layers):
-            self.mst_convs.append(SpanTreeConv(self.hidden_channels, self.hidden_channels))
+            self.mst_convs.append(SpanTreeConv(self.hidden_channels, self.hidden_channels, dropout=self.dropout))
 
     def build_edge_attr_convs(self):
         # self.edge_attr_convs = nn.ModuleList()
@@ -176,6 +184,7 @@ class SpanTreeGNN(nn.Module):
         edge_attr = torch.cat([src_x, dst_x], dim=1)  # [E, 2F]
         # edge_attr = self.edge_attr_convs[i](edge_attr)  # [E, F]
         edge_attr = self.edge_attr_convs(edge_attr)  # [E, F]
+        edge_attr = F.dropout(edge_attr, p = self.dropout, training=self.training)
         edge_attr = F.leaky_relu(edge_attr)
         return edge_attr
     
@@ -183,16 +192,22 @@ class SpanTreeGNN(nn.Module):
         merged_all = []
         for i in range(self.num_layers):
             x = self.convs[i](x, edge_index)
+            x = self.norms[i](x, batch)
             x = F.leaky_relu(x)
             edge_attr = self.compute_edge_attr(x, edge_index, i)
+
             mst_x = self.mst_convs[i](x, edge_index, edge_attr)
+            mst_x = self.mst_norms[i](x, batch)
             mst_x = F.leaky_relu(mst_x)
+            
             graph_feature = global_mean_pool(x, batch)
             mst_feature = global_mean_pool(mst_x, batch)
             merged = torch.cat([graph_feature, mst_feature], dim=1)
             merged = self.merge_linear(merged)
+            merged = F.dropout(merged, p=self.dropout, training=self.training)
             merged = F.leaky_relu(merged)
             merged_all.append(merged)
         merge_feature = torch.mean(torch.stack(merged_all, dim=0), dim=0)
+        # merge_feature = torch.sum(torch.stack(merged_all, dim=0), dim=0)
 
         return merge_feature, 0

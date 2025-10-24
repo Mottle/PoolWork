@@ -2,25 +2,25 @@ config setting:
 hid_dim: 128
 layers: 3 backbone: gcn pooler: mst graph_norm: True batch_size: 128
 epochs: 500 kfold: 10 seed: 0 early_stop: True use_simple_datasets: False
-PROTEINS(1113): acc = 72.68 ± 5.89 (best = 84.68)
-总运行时间: 25.47 min
-NCI1(4110): acc = 74.51 ± 4.28 (best = 84.43)
-总运行时间: 68.74 min
-NCI109(4127): acc = 72.28 ± 3.79 (best = 80.87)
-总运行时间: 66.64 min
-COX2(467): acc = 79.85 ± 3.93 (best = 93.62)
-总运行时间: 9.55 min
-IMDB-BINARY(1000): acc = 51.20 ± 7.00 (best = 71.00)
-总运行时间: 26.76 min
-IMDB-MULTI(1500): acc = 32.98 ± 2.96 (best = 43.33)
-总运行时间: 17.07 min
-FRANKENSTEIN(4337): acc = 58.18 ± 3.58 (best = 68.20)
-总运行时间: 57.12 min
-Synthie(400): acc = 38.46 ± 14.42 (best = 70.00)
-总运行时间: 26.12 min
-SYNTHETIC(300): acc = 41.02 ± 3.46 (best = 56.67)
-总运行时间: 50.53 min
-MSRC_9(221): acc = 85.24 ± 18.15 (best = 100.00)
-总运行时间: 11.13 min
-MSRC_21(563): acc = 83.81 ± 17.27 (best = 98.21)
-总运行时间: 104.13 min
+PROTEINS(1113): mean0.7209610570340124, max0.8378378378378378
+总运行时间: 23.18 min
+NCI1(4110): mean0.7482186254596803, max0.8223844282238443
+总运行时间: 70.66 min
+NCI109(4127): mean0.7387216651526576, max0.8135593220338984
+总运行时间: 55.56 min
+COX2(467): mean0.7959053205363746, max0.9574468085106383
+总运行时间: 11.11 min
+IMDB-BINARY(1000): mean0.627926483442807, max0.81
+总运行时间: 30.43 min
+IMDB-MULTI(1500): mean0.39627350015131124, max0.47333333333333333
+总运行时间: 26.71 min
+FRANKENSTEIN(4337): mean0.6792711838858534, max0.7695852534562212
+总运行时间: 35.82 min
+Synthie(400): mean0.48470599231427, max0.675
+总运行时间: 29.64 min
+SYNTHETIC(300): mean0.4254776219104877, max0.6
+总运行时间: 65.24 min
+MSRC_9(221): mean0.6516081828080427, max1.0
+总运行时间: 14.44 min
+MSRC_21(563): mean0.6646388324935714, max0.9649122807017544
+总运行时间: 54.41 min

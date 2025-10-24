@@ -191,17 +191,20 @@ def run_k_fold4dataset(dataset, config: BenchmarkConfig):
     all_end = get_time_sync()
 
     #合并k-fold实验结果
-    result = merge_results(results)
+    mean_result, max_result = merge_results(results)
     print(f'总运行时间: {(all_end - all_start) / 60:.2f} min\n')
-    print(f'{dataset}-{config.kfold}fold: {result.format()}')
+    print(f'{dataset}-{config.kfold}fold: mean {mean_result.get_mean()}, max {max_result.get_max()}')
 
-    return result
+    return mean_result, max_result
 
-def merge_results(results: list[BenchmarkResult]) -> BenchmarkResult:
-    new = BenchmarkResult()
+def merge_results(results: list[BenchmarkResult]):
+    mean_result = BenchmarkResult()
+    max_result = BenchmarkResult()
     for result in results:
-        new.merge(result)
-    return new
+        mean_result.append(result.get_mean())
+        max_result.append(result.get_max())
+
+    return mean_result, max_result
 
 def split_train_val(train_idx, kfold):
     val_ratio = 1.0 / float(kfold - 1)
@@ -266,8 +269,8 @@ def set_random_seed(seed):
 
 def format_result(result):
     try:
-        (ds, result) = result
-        return f'数据集: {ds}, {result.format()}'
+        (ds, mean_result, max_result) = result
+        return f'数据集: {ds}, mean: {mean_result.get_mean()}, max: {max_result.get_max()}'
     except:
         return 'NONE'
 
@@ -279,8 +282,8 @@ def save_result(results, filename, spent_time, config: BenchmarkConfig, config_d
             return
         if config_disp:
             f.write(f'{config.format()}')
-        for (name, result) in results:
-            f.write(f'{name}: {result.format()}\n')
+        for (name, mean_result, max_result) in results:
+            f.write(f'{name}: mean{mean_result.get_mean()}, max{max_result.get_max()}\n')
         f.write(f'总运行时间: {spent_time / 60:.2f} min\n')
         f.close()
 
@@ -295,21 +298,21 @@ def run(config: BenchmarkConfig):
         if config.catch_error:
             try:
                 # result = run_fold(dataset, config)
-                result = run_k_fold4dataset(dataset, config)
-                results.append((f'{dataset}', result))
+                mean_result, max_result = run_k_fold4dataset(dataset, config)
+                results.append((f'{dataset}', mean_result, max_result))
             except Exception as e:
                 print(f'运行 {dataset} 时出错: {e}')
-                results.append((f'{dataset}', BenchmarkResult()))
+                results.append((f'{dataset}', BenchmarkResult(), BenchmarkResult()))
                 continue
         else:
-            result = run_k_fold4dataset(dataset, config)
-            results.append((f'{dataset}', result))
+            mean_result, max_result  = run_k_fold4dataset(dataset, config)
+            results.append((f'{dataset}', mean_result, max_result))
         dataset_end = get_time_sync()
         
         if config.use_simple_datasets:
-            save_result([(f'{dataset}', result)], f'./benchmark/result_simple/{config.backbone}_{config.pooler}.txt', dataset_end - dataset_start, config, id == 0)
+            save_result([(f'{dataset}', mean_result, max_result)], f'./benchmark/result_simple/{config.backbone}_{config.pooler}.txt', dataset_end - dataset_start, config, id == 0)
         else:
-            save_result([(f'{dataset}', result)], f'./benchmark/result/{config.backbone}_{config.pooler}.txt', dataset_end - dataset_start, config, id == 0)
+            save_result([(f'{dataset}', mean_result, max_result)], f'./benchmark/result/{config.backbone}_{config.pooler}.txt', dataset_end - dataset_start, config, id == 0)
     all_end = get_time_sync()
 
     print(f'{config.format()}\n')
@@ -349,7 +352,7 @@ if __name__ == '__main__':
             try:
                 run(config)
             except Exception as e:
-                print(f'运行 {config["backbone"]}_{config["pooler"]} 时出错: {e}')
+                print(f'运行 {config.backbone}_{config.pooler} 时出错: {e}')
         else:
             run(config)
     

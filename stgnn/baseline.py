@@ -4,15 +4,17 @@ from torch_geometric.nn import GCNConv, GINConv, global_mean_pool
 import torch.nn.functional as F
 
 class BaseLine(nn.Module):
-    def __init__(self, in_channels: int, hidden_channels: int, out_channels: int, num_layers: int = 3, backbone = 'gcn'):
+    def __init__(self, in_channels: int, hidden_channels: int, out_channels: int, num_layers: int = 3, backbone = 'gcn', dropout = 0.5):
         super(BaseLine, self).__init__()
         self.num_layers = num_layers
         self.in_channels = in_channels
         self.hidden_channels = hidden_channels
         self.out_channels = out_channels
         self.backbone = backbone
+        self.dropout = 0.5
         
         self.build_convs()
+        self.build_norms()
 
     def build_convs(self):
         if self.num_layers < 2:
@@ -28,14 +30,21 @@ class BaseLine(nn.Module):
         if self.backbone == 'gcn':
             return GCNConv(in_channels, out_channels)
         elif self.backbone == 'gin':
-            return GINConv(nn.Sequential(nn.Linear(in_channels, out_channels), nn.ReLU(), nn.Linear(out_channels, out_channels)))
+            fnn = nn.Sequential(nn.Linear(in_channels, out_channels), nn.LeakyReLU(), nn.Linear(out_channels, out_channels), nn.Dropout(p=self.dropout))
+            return GINConv(fnn)
         else:
             raise ValueError("backbone must be 'gcn'")
+        
+    def build_norms(self):
+        self.norms = nn.ModuleList()
+        for i in range(self.num_layers):
+            self.norms.append(nn.BatchNorm1d(self.hidden_channels))
     
     def forward(self, x, edge_index, batch):
         feature_all = []
         for i in range(self.num_layers):
             x = self.convs[i](x, edge_index)
+            x = self.norms[i](x, batch)
             x = F.leaky_relu(x)
             feature = global_mean_pool(x, batch)
             feature_all.append(feature)
