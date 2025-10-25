@@ -9,14 +9,27 @@ class BenchmarkResult:
         self._result.append(result)
         self._best = max(self._best, result)
 
-    def get_max(self) -> float:
-        return self._best
+    def get_max(self, last = None) -> float:
+        if last is None:
+            return self._best
+        else:
+            last_list = self._result[-last:]
+            return max(last_list)
 
-    def get_mean(self) -> float:
-        return np.mean(self._result)
+    def get_mean(self, last = None) -> float:
+        if last is None:
+            return np.mean(self._result)
+        else:
+            last_list = self._result[-last:]
+            return np.mean(last_list)
 
-    def get_std(self) -> float:
-        return np.std(self._result)
+    def get_std(self, last = None) -> float:
+        if last is None:
+            return np.std(self._result)
+        else:
+            last_list = self._result[-last:]
+            return np.std(last_list)
+        
     
     def format(self, name: str = 'acc') -> str:
         return f'{name} = {self.get_mean() * 100:.2f} ± {self.get_std() * 100:.2f} (best = {self.get_max() * 100:.2f})'

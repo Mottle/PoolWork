@@ -11,9 +11,7 @@ from sklearn.model_selection import KFold
 from torch.utils.data import SubsetRandomSampler
 from benchmark_config import BenchmarkConfig
 from benchmark_result import BenchmarkResult
-# from optim import GCAdam, ALRS
 from torch.optim import Adam
-# from benchmark.model import Classifier
 from classifier import Classifier
 from span_tree_gnn import SpanTreeGNN
 from baseline import BaseLine
@@ -310,9 +308,9 @@ def run(config: BenchmarkConfig):
         dataset_end = get_time_sync()
         
         if config.use_simple_datasets:
-            save_result([(f'{dataset}', mean_result, max_result)], f'./benchmark/result_simple/{config.backbone}_{config.pooler}.txt', dataset_end - dataset_start, config, id == 0)
+            save_result([(f'{dataset}', mean_result, max_result)], f'./stgnn/result_simple/{config.backbone}_{config.pooler}.txt', dataset_end - dataset_start, config, id == 0)
         else:
-            save_result([(f'{dataset}', mean_result, max_result)], f'./benchmark/result/{config.backbone}_{config.pooler}.txt', dataset_end - dataset_start, config, id == 0)
+            save_result([(f'{dataset}', mean_result, max_result)], f'./stgnn/result/{config.backbone}_{config.pooler}.txt', dataset_end - dataset_start, config, id == 0)
     all_end = get_time_sync()
 
     print(f'{config.format()}\n')
@@ -328,12 +326,10 @@ if __name__ == '__main__':
     config = BenchmarkConfig()
     config.hidden_channels = 128
     config.num_layers = 3
-    config.backbone = 'gcn'
-    config.pooler = 'topk'
     config.graph_norm = True
     config.batch_size = 128
     config.epochs = 500
-    config.simple = False
+    config.use_simple_datasets = False
     config.catch_error = True
     config.early_stop = True
     config.early_stop_epochs = 50
