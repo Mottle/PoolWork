@@ -1,0 +1,66 @@
+config setting:
+hid_dim: 128, layers: 3, model: mst, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+PROTEINS(1113) all   : 71.97% ± 4.70%
+PROTEINS(1113) last  : 73.05% ± 0.00%
+PROTEINS(1113) last10: 72.19% ± 1.91%
+PROTEINS(1113) last50: 72.51% ± 2.22%
+总运行时间: 33.39 min
+NCI1(4110) all   : 75.38% ± 4.72%
+NCI1(4110) last  : 77.88% ± 0.00%
+NCI1(4110) last10: 77.34% ± 1.49%
+NCI1(4110) last50: 77.17% ± 1.66%
+总运行时间: 67.48 min
+NCI109(4127) all   : 73.62% ± 4.63%
+NCI109(4127) last  : 74.61% ± 0.00%
+NCI109(4127) last10: 75.24% ± 1.43%
+NCI109(4127) last50: 75.27% ± 1.56%
+总运行时间: 58.15 min
+COX2(467) all   : 79.39% ± 4.06%
+COX2(467) last  : 80.49% ± 0.00%
+COX2(467) last10: 79.43% ± 2.75%
+COX2(467) last50: 79.52% ± 3.00%
+总运行时间: 11.37 min
+IMDB-BINARY(1000) all   : 63.09% ± 5.60%
+IMDB-BINARY(1000) last  : 65.20% ± 0.00%
+IMDB-BINARY(1000) last10: 64.99% ± 2.63%
+IMDB-BINARY(1000) last50: 64.98% ± 3.35%
+总运行时间: 29.85 min
+IMDB-MULTI(1500) all   : 39.46% ± 2.04%
+IMDB-MULTI(1500) last  : 39.27% ± 0.00%
+IMDB-MULTI(1500) last10: 39.76% ± 1.79%
+IMDB-MULTI(1500) last50: 39.55% ± 1.89%
+总运行时间: 24.69 min
+FRANKENSTEIN(4337) all   : 68.29% ± 4.52%
+FRANKENSTEIN(4337) last  : 69.49% ± 0.00%
+FRANKENSTEIN(4337) last10: 70.30% ± 1.53%
+FRANKENSTEIN(4337) last50: 70.23% ± 1.56%
+总运行时间: 45.22 min
+Synthie(400) all   : 47.82% ± 10.75%
+Synthie(400) last  : 49.75% ± 0.00%
+Synthie(400) last10: 53.32% ± 2.09%
+Synthie(400) last50: 53.62% ± 2.06%
+总运行时间: 26.68 min
+SYNTHETIC(300) all   : 42.55% ± 1.88%
+SYNTHETIC(300) last  : 42.00% ± 0.00%
+SYNTHETIC(300) last10: 42.00% ± 0.00%
+SYNTHETIC(300) last50: 42.00% ± 0.00%
+总运行时间: 62.94 min
+MSRC_9(221) all   : 62.63% ± 30.11%
+MSRC_9(221) last  : 88.66% ± 0.00%
+MSRC_9(221) last10: 84.16% ± 3.87%
+MSRC_9(221) last50: 82.84% ± 3.32%
+总运行时间: 13.34 min
+MSRC_21(563) all   : 64.98% ± 34.39%
+MSRC_21(563) last  : 88.62% ± 0.00%
+MSRC_21(563) last10: 88.96% ± 1.95%
+MSRC_21(563) last50: 89.16% ± 2.06%
+总运行时间: 52.10 min
+config setting:
+hid_dim: 128, layers: 3, model: mst, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+DD(1178) all   : 67.53% ± 6.00%
+DD(1178) last  : 70.19% ± 0.00%
+DD(1178) last10: 70.75% ± 2.45%
+DD(1178) last50: 71.23% ± 2.47%
+总运行时间: 247.91 min

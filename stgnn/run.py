@@ -1,6 +1,7 @@
 import context
 import torch
 import numpy as np
+from datetime import datetime
 from constant import DATASET_PATH
 from torch import nn
 from torch_geometric.datasets import TUDataset
@@ -10,12 +11,11 @@ from perf_counter import get_time_sync, measure_time
 from sklearn.model_selection import KFold
 from torch.utils.data import SubsetRandomSampler
 from benchmark_config import BenchmarkConfig
-from benchmark_result import BenchmarkResult
+from utils.benchmark_result import BenchmarkResult
 from torch.optim import Adam
 from classifier import Classifier
 from span_tree_gnn import SpanTreeGNN
 from baseline import BaseLine
-
 
 def train_model(pooler, classifier, train_loader, optimizer, criterion, device):
     pooler.train()
@@ -85,12 +85,12 @@ def run_fold(dataset, loader, current_fold: int, config: BenchmarkConfig):
     num_classes = dataset.num_classes
     
     # 创建模型
-    pooler, classifier = build_models(num_node_features, num_classes, config)
+    model, classifier = build_models(num_node_features, num_classes, config)
     
     # print(f"模型参数数量: {sum(p.numel() for p in pooler.parameters()) + sum(p.numel() for p in classifier.parameters())}")
     
     # 优化器和损失函数
-    optimizer = build_optimizer(pooler, classifier, config)
+    optimizer = build_optimizer(model, classifier, config)
     criterion = nn.CrossEntropyLoss()
     
     # 训练循环
@@ -111,9 +111,9 @@ def run_fold(dataset, loader, current_fold: int, config: BenchmarkConfig):
     # alrs = ALRS(optimizer)
 
     for epoch in track(range(epochs), description=f'{log_prefix} 训练 {dataset}'):
-        train_loss, train_acc = train_model(pooler, classifier, train_loader, optimizer, criterion, run_device)
-        val_loss, val_acc     = test_model(pooler, classifier, val_loader, criterion, run_device)
-        test_loss, test_acc   = test_model(pooler, classifier, test_loader, criterion, run_device)
+        train_loss, train_acc = train_model(model, classifier, train_loader, optimizer, criterion, run_device)
+        val_loss, val_acc     = test_model(model, classifier, val_loader, criterion, run_device)
+        test_loss, test_acc   = test_model(model, classifier, test_loader, criterion, run_device)
 
         if epoch > no_record_epoch_num:
             train_loss_list.append(train_loss)
@@ -133,35 +133,39 @@ def run_fold(dataset, loader, current_fold: int, config: BenchmarkConfig):
                 break
         
         if (epoch + 1) % 10 == 0:
-            print(f'{log_prefix}, Epoch {epoch+1:03d}, '
+            print(f'{log_prefix}, Epoch {epoch+1:03d}'
                   f'Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, '
                   f'Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}, '
                   f'Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}')
     
     stamp_end = get_time_sync()
 
-    print(f'{log_prefix} {test_acc_res.format()}', f'{log_prefix} 总运行时间: {(stamp_end - stamp_start) / 60:.4f}min')
+    print(f'{log_prefix} {test_acc_res.format()}\n' +
+          f'{log_prefix} {test_acc_res.format(last=1)}\n' +
+          f'{log_prefix} {test_acc_res.format(last=10)}\n' +
+          f'{log_prefix} {test_acc_res.format(last=50)}\n' +
+          f'{log_prefix} 总运行时间: {(stamp_end - stamp_start) / 60:.4f}min')
     return train_acc_res, test_acc_res
 
 def build_models(num_node_features, num_classes, config: BenchmarkConfig):
     input_dim = num_node_features
     hidden_dim = config.hidden_channels
     num_layers = config.num_layers
-    pooler_type = config.pooler
-    gnn_type = config.backbone
+    model_type = config.model
     layer_norm = config.graph_norm
+    dropout = config.dropout
     
     # 创建模型####
     # pooler = Pooler(input_dim, hidden_dim, num_layers=num_layers, pool_type=pooler_type, gnn_type=gnn_type, layer_norm=layer_norm).to(run_device)
     
-    if config.pooler == 'mst':
-        pooler = SpanTreeGNN(input_dim, hidden_dim, hidden_dim).to(run_device)
-    elif config.pooler == 'gcn' or config.pooler == 'gin':
-        pooler = BaseLine(input_dim, hidden_dim, hidden_dim, backbone=config.backbone).to(run_device)
+    if model_type == 'mst':
+        model = SpanTreeGNN(input_dim, hidden_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
+    elif model_type == 'gcn' or model_type == 'gin':
+        model = BaseLine(input_dim, hidden_dim, hidden_dim, backbone=model_type, num_layers=num_layers, dropout=dropout).to(run_device)
 
     classifier = Classifier(hidden_dim, hidden_dim, num_classes).to(run_device)
 
-    return pooler, classifier
+    return model, classifier
 
 def build_optimizer(pooler, classifier, config: BenchmarkConfig):
     # return torch.optim.Adam(list(pooler.parameters()) + list(classifier.parameters()), lr=0.001)
@@ -174,7 +178,7 @@ def run_k_fold4dataset(dataset, config: BenchmarkConfig):
     all_start = get_time_sync()
 
     for fold, (train_idx, test_idx) in track(enumerate(kfold_dataset), total=config.kfold, description='k-fold'):
-        print(f'Run model: {config.pooler}')
+        print(f'Run model: {config.model}')
         train_idx, val_idx = split_train_val(train_idx, config.kfold)
         train_loader, val_loader, test_loader = process_dataset(dataset, train_idx, val_idx, test_idx, config.batch_size)
         if config.catch_error:
@@ -189,20 +193,47 @@ def run_k_fold4dataset(dataset, config: BenchmarkConfig):
     all_end = get_time_sync()
 
     #合并k-fold实验结果
-    mean_result, max_result = merge_results(results)
+    # mean_result, max_result = merge_results(results)
+    all, last, last_10, last_50 = process_results(results)
     print(f'总运行时间: {(all_end - all_start) / 60:.2f} min\n')
-    print(f'{dataset}-{config.kfold}fold: mean {mean_result.get_mean()}, max {max_result.get_max()}')
+    print(f'{dataset}-{config.kfold}fold: \n', 
+          f'all   : {format_result(all[0], all[1])}\n',
+          f'last  : {format_result(last[0], last[1])}\n',
+          f'last10: {format_result(last_10[0], last_10[1])}\n',
+          f'last50: {format_result(last_50[0], last_50[1])}'
+    )
 
-    return mean_result, max_result
+    return all, last, last_10, last_50
 
-def merge_results(results: list[BenchmarkResult]):
-    mean_result = BenchmarkResult()
-    max_result = BenchmarkResult()
+# def merge_results(results: list[BenchmarkResult]):
+#     mean_result = BenchmarkResult()
+#     max_result = BenchmarkResult()
+#     for result in results:
+#         mean_result.append(result.get_mean())
+#         max_result.append(result.get_max())
+
+#     return mean_result, max_result
+
+def format_result(mean, std):
+    return f'{mean * 100:.2f}% ± {std * 100:.2f}%'
+
+def process_results(results: list[BenchmarkResult]):
+    size = float(len(results))
+    all_mean, all_std = 0, 0
+    last_mean, last_std = 0, 0
+    last_10_mean, last_10_std = 0, 0
+    last_50_mean, last_50_std = 0, 0
     for result in results:
-        mean_result.append(result.get_mean())
-        max_result.append(result.get_max())
+        all_mean += result.get_mean() / size
+        last_mean += result.get_mean(1) / size
+        last_10_mean += result.get_mean(10) / size
+        last_50_mean += result.get_mean(50) / size
+        all_std += result.get_std() / size
+        last_std += result.get_std(1) / size
+        last_10_std += result.get_std(10) / size
+        last_50_std += result.get_std(50) / size
 
-    return mean_result, max_result
+    return (all_mean, all_std), (last_mean, last_std), (last_10_mean, last_10_std), (last_50_mean, last_50_std)
 
 def split_train_val(train_idx, kfold):
     val_ratio = 1.0 / float(kfold - 1)
@@ -240,20 +271,20 @@ def datasets(simple=False):
             yield TUDataset(root=DATASET_PATH, name=datasets[i])
     else:
         datasets = [
-            # 'DD',
-            'PROTEINS',
-            'NCI1',
-            'NCI109',
-            'COX2',
-            'IMDB-BINARY',
-            'IMDB-MULTI',
-            'FRANKENSTEIN',
-            # 'COLLAB',
-            # 'REDDIT-BINARY',
-            'Synthie',
-            'SYNTHETIC',
-            'MSRC_9',
-            'MSRC_21',
+            'DD',
+            # 'PROTEINS',
+            # 'NCI1',
+            # 'NCI109',
+            # 'COX2',
+            # 'IMDB-BINARY',
+            # 'IMDB-MULTI',
+            # 'FRANKENSTEIN',
+            'COLLAB',
+            'REDDIT-BINARY',
+            # 'Synthie',
+            # 'SYNTHETIC',
+            # 'MSRC_9',
+            # 'MSRC_21',
         ]
         for i in range(len(datasets)):
             yield TUDataset(root=DATASET_PATH, name=datasets[i])
@@ -265,12 +296,12 @@ def set_random_seed(seed):
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
 
-def format_result(result):
-    try:
-        (ds, mean_result, max_result) = result
-        return f'数据集: {ds}, mean: {mean_result.get_mean()}, max: {max_result.get_max()}'
-    except:
-        return 'NONE'
+# def format_result(result):
+#     try:
+#         (ds, mean_result, max_result) = result
+#         return f'数据集: {ds}, mean: {mean_result.get_mean()}, max: {max_result.get_max()}'
+#     except:
+#         return 'NONE'
 
 
 def save_result(results, filename, spent_time, config: BenchmarkConfig, config_disp = False):
@@ -280,12 +311,15 @@ def save_result(results, filename, spent_time, config: BenchmarkConfig, config_d
             return
         if config_disp:
             f.write(f'{config.format()}')
-        for (name, mean_result, max_result) in results:
-            f.write(f'{name}: mean{mean_result.get_mean()}, max{max_result.get_max()}\n')
+        for (name, all, last, last10, last50) in results:
+            f.write(f'{name} all   : {format_result(all[0], all[1])}\n')
+            f.write(f'{name} last  : {format_result(last[0], last[1])}\n')
+            f.write(f'{name} last10: {format_result(last10[0], last10[1])}\n')
+            f.write(f'{name} last50: {format_result(last50[0], last50[1])}\n')
         f.write(f'总运行时间: {spent_time / 60:.2f} min\n')
         f.close()
 
-#对模型运行k-fold - dataset
+#对模型运行k-fold - dataset 
 def run(config: BenchmarkConfig):
     results = []
     all_start = get_time_sync()
@@ -296,21 +330,21 @@ def run(config: BenchmarkConfig):
         if config.catch_error:
             try:
                 # result = run_fold(dataset, config)
-                mean_result, max_result = run_k_fold4dataset(dataset, config)
-                results.append((f'{dataset}', mean_result, max_result))
+                all, last, last10, last50 = run_k_fold4dataset(dataset, config)
+                results.append((f'{dataset}', all, last, last10, last50))
             except Exception as e:
                 print(f'运行 {dataset} 时出错: {e}')
                 results.append((f'{dataset}', BenchmarkResult(), BenchmarkResult()))
                 continue
         else:
-            mean_result, max_result  = run_k_fold4dataset(dataset, config)
-            results.append((f'{dataset}', mean_result, max_result))
+            all, last, last10, last50  = run_k_fold4dataset(dataset, config)
+            results.append((f'{dataset}', all, last, last10, last50))
         dataset_end = get_time_sync()
         
         if config.use_simple_datasets:
-            save_result([(f'{dataset}', mean_result, max_result)], f'./stgnn/result_simple/{config.backbone}_{config.pooler}.txt', dataset_end - dataset_start, config, id == 0)
+            save_result([(f'{dataset}', all, last, last10, last50)], f'./stgnn/result_simple/{config.model}.txt', dataset_end - dataset_start, config, id == 0)
         else:
-            save_result([(f'{dataset}', mean_result, max_result)], f'./stgnn/result/{config.backbone}_{config.pooler}.txt', dataset_end - dataset_start, config, id == 0)
+            save_result([(f'{dataset}', all, last, last10, last50)], f'./stgnn/result/{config.model}.txt', dataset_end - dataset_start, config, id == 0)
     all_end = get_time_sync()
 
     print(f'{config.format()}\n')
@@ -323,6 +357,9 @@ if __name__ == '__main__':
     global run_device
     run_device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+    # now = datetime.now()
+    # now_str = now.strftime('%Y-%m-%d-%H-%M')
+
     config = BenchmarkConfig()
     config.hidden_channels = 128
     config.num_layers = 3
@@ -330,17 +367,17 @@ if __name__ == '__main__':
     config.batch_size = 128
     config.epochs = 500
     config.use_simple_datasets = False
-    config.catch_error = True
+    config.catch_error = False
     config.early_stop = True
     config.early_stop_epochs = 50
     config.seed = None
     config.kfold = 10
 
-    models = ['mst']
+    models = ['gcn']
     # models = ['topk']
     seeds = [0, 114514, 1919810, 77777]
     for model in models:
-        config.pooler = model
+        config.model = model
         config.seed = seeds[0]
         config.apply_random_seed()
 
@@ -348,7 +385,7 @@ if __name__ == '__main__':
             try:
                 run(config)
             except Exception as e:
-                print(f'运行 {config.backbone}_{config.pooler} 时出错: {e}')
+                print(f'运行 {config.model} 时出错: {e}')
         else:
             run(config)
     

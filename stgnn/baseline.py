@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 from torch_geometric.nn import GCNConv, GINConv, global_mean_pool
+from torch_geometric.nn.norm import GraphNorm
 import torch.nn.functional as F
 
 class BaseLine(nn.Module):
@@ -38,7 +39,7 @@ class BaseLine(nn.Module):
     def build_norms(self):
         self.norms = nn.ModuleList()
         for i in range(self.num_layers):
-            self.norms.append(nn.BatchNorm1d(self.hidden_channels))
+            self.norms.append(GraphNorm(self.hidden_channels))
     
     def forward(self, x, edge_index, batch):
         feature_all = []
