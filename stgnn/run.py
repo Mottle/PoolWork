@@ -271,20 +271,20 @@ def datasets(simple=False):
             yield TUDataset(root=DATASET_PATH, name=datasets[i])
     else:
         datasets = [
-            'DD',
-            # 'PROTEINS',
-            # 'NCI1',
-            # 'NCI109',
-            # 'COX2',
-            # 'IMDB-BINARY',
-            # 'IMDB-MULTI',
-            # 'FRANKENSTEIN',
-            'COLLAB',
-            'REDDIT-BINARY',
-            # 'Synthie',
-            # 'SYNTHETIC',
-            # 'MSRC_9',
-            # 'MSRC_21',
+            # 'DD',
+            'PROTEINS',
+            'NCI1',
+            'NCI109',
+            'COX2',
+            'IMDB-BINARY',
+            'IMDB-MULTI',
+            'FRANKENSTEIN',
+            # 'COLLAB',
+            # 'REDDIT-BINARY',
+            'Synthie',
+            'SYNTHETIC',
+            'MSRC_9',
+            'MSRC_21',
         ]
         for i in range(len(datasets)):
             yield TUDataset(root=DATASET_PATH, name=datasets[i])
@@ -350,7 +350,7 @@ def run(config: BenchmarkConfig):
     print(f'{config.format()}\n')
 
     for result in results:
-        print(format_result(result))
+        print(format_result(result[0], result[1]))
     print(f'总运行时间: {(all_end - all_start) / 60:.2f} min')
 
 if __name__ == '__main__':

@@ -189,6 +189,7 @@ class SpanTreeGNN(nn.Module):
         return edge_attr
     
     def forward(self, x, edge_index, batch):
+        ori_x = x
         merged_all = []
         for i in range(self.num_layers):
             x = self.convs[i](x, edge_index)
