@@ -15,7 +15,11 @@ from utils.benchmark_result import BenchmarkResult
 from torch.optim import Adam
 from classifier import Classifier
 from span_tree_gnn import SpanTreeGNN
+from span_tree_gnn_with_loss import SpanTreeGNNWithOrt
 from baseline import BaseLine
+
+def compute_loss(loss1, loss2):
+    return loss1 + loss2 / (loss1 + loss2 + 1e-6).detach()
 
 def train_model(pooler, classifier, train_loader, optimizer, criterion, device):
     pooler.train()
@@ -35,7 +39,7 @@ def train_model(pooler, classifier, train_loader, optimizer, criterion, device):
         data = data.to(device)
         pooled, additional_loss = pooler(data.x, data.edge_index, data.batch)
         out = classifier(pooled)
-        loss = criterion(out, data.y) + additional_loss
+        loss = compute_loss(criterion(out, data.y), additional_loss)
         loss.backward()
         optimizer.step()
 
@@ -62,9 +66,9 @@ def test_model(pooler, classifier, test_loader, criterion, device):
             if data.x == None or data.x.size(1) <= 0:
                 data.x = torch.ones((data.num_nodes, 1))
             data = data.to(device)
-            pooled, _ = pooler(data.x, data.edge_index, data.batch)
+            pooled, additional_loss = pooler(data.x, data.edge_index, data.batch)
             out = classifier(pooled)
-            loss = criterion(out, data.y)
+            loss = compute_loss(criterion(out, data.y), additional_loss)
             
             total_loss += loss.item()
             pred = out.argmax(dim=1)
@@ -162,6 +166,8 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
         model = SpanTreeGNN(input_dim, hidden_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
     elif model_type == 'gcn' or model_type == 'gin':
         model = BaseLine(input_dim, hidden_dim, hidden_dim, backbone=model_type, num_layers=num_layers, dropout=dropout).to(run_device)
+    elif model_type == 'mstort':
+        model = SpanTreeGNNWithOrt(input_dim, hidden_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
 
     classifier = Classifier(hidden_dim, hidden_dim, num_classes).to(run_device)
 
@@ -373,7 +379,7 @@ if __name__ == '__main__':
     config.seed = None
     config.kfold = 10
 
-    models = ['gcn']
+    models = ['mst']
     # models = ['topk']
     seeds = [0, 114514, 1919810, 77777]
     for model in models:

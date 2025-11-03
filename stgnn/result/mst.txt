@@ -64,3 +64,31 @@ DD(1178) last  : 70.19% ± 0.00%
 DD(1178) last10: 70.75% ± 2.45%
 DD(1178) last50: 71.23% ± 2.47%
 总运行时间: 247.91 min
+config setting:
+hid_dim: 128, layers: 3, model: mst, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+PROTEINS(1113) all   : 72.18% ± 4.85%
+PROTEINS(1113) last  : 72.96% ± 0.00%
+PROTEINS(1113) last10: 73.57% ± 2.10%
+PROTEINS(1113) last50: 73.63% ± 2.34%
+总运行时间: 21.86 min
+NCI1(4110) all   : 74.87% ± 5.10%
+NCI1(4110) last  : 76.89% ± 0.00%
+NCI1(4110) last10: 76.92% ± 1.58%
+NCI1(4110) last50: 77.04% ± 1.58%
+总运行时间: 58.95 min
+NCI109(4127) all   : 73.56% ± 4.63%
+NCI109(4127) last  : 75.84% ± 0.00%
+NCI109(4127) last10: 75.42% ± 1.52%
+NCI109(4127) last50: 75.30% ± 1.81%
+总运行时间: 58.06 min
+COX2(467) all   : 79.19% ± 4.04%
+COX2(467) last  : 79.84% ± 0.00%
+COX2(467) last10: 80.59% ± 2.29%
+COX2(467) last50: 80.16% ± 3.21%
+总运行时间: 9.95 min
+IMDB-BINARY(1000) all   : 62.37% ± 5.95%
+IMDB-BINARY(1000) last  : 65.30% ± 0.00%
+IMDB-BINARY(1000) last10: 65.00% ± 3.49%
+IMDB-BINARY(1000) last50: 64.37% ± 3.25%
+总运行时间: 28.84 min

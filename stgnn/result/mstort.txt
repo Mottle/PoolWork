@@ -1,0 +1,16 @@
+config setting:
+hid_dim: 128, layers: 3, model: mstort, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+PROTEINS(1113) all   : 69.34% ± 4.41%
+PROTEINS(1113) last  : 71.26% ± 0.00%
+PROTEINS(1113) last10: 70.49% ± 2.11%
+PROTEINS(1113) last50: 71.34% ± 2.42%
+总运行时间: 28.78 min
+config setting:
+hid_dim: 128, layers: 3, model: mstort, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+PROTEINS(1113) all   : 71.35% ± 4.74%
+PROTEINS(1113) last  : 72.78% ± 0.00%
+PROTEINS(1113) last10: 73.97% ± 2.21%
+PROTEINS(1113) last50: 73.53% ± 2.39%
+总运行时间: 35.31 min
