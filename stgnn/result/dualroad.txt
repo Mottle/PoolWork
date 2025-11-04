@@ -1,0 +1,61 @@
+config setting:
+hid_dim: 128, layers: 3, model: dualroad, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+PROTEINS(1113) all   : 70.28% ± 3.61%
+PROTEINS(1113) last  : 70.53% ± 0.00%
+PROTEINS(1113) last10: 70.85% ± 2.13%
+PROTEINS(1113) last50: 71.06% ± 2.11%
+总运行时间: 3.69 min
+NCI1(4110) all   : 74.31% ± 6.12%
+NCI1(4110) last  : 78.64% ± 0.00%
+NCI1(4110) last10: 78.32% ± 0.89%
+NCI1(4110) last50: 77.82% ± 1.07%
+总运行时间: 37.17 min
+NCI109(4127) all   : 74.34% ± 5.58%
+NCI109(4127) last  : 77.47% ± 0.00%
+NCI109(4127) last10: 77.57% ± 1.00%
+NCI109(4127) last50: 77.47% ± 1.02%
+总运行时间: 25.39 min
+COX2(467) all   : 80.67% ± 2.82%
+COX2(467) last  : 83.08% ± 0.00%
+COX2(467) last10: 82.88% ± 1.59%
+COX2(467) last50: 82.47% ± 1.92%
+总运行时间: 3.95 min
+config setting:
+hid_dim: 128, layers: 3, model: dualroad, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+IMDB-BINARY(1000) all   : 59.44% ± 6.12%
+IMDB-BINARY(1000) last  : 64.30% ± 0.00%
+IMDB-BINARY(1000) last10: 64.46% ± 2.25%
+IMDB-BINARY(1000) last50: 63.67% ± 2.67%
+总运行时间: 5.24 min
+IMDB-MULTI(1500) all   : 38.36% ± 2.24%
+IMDB-MULTI(1500) last  : 38.53% ± 0.00%
+IMDB-MULTI(1500) last10: 37.94% ± 1.52%
+IMDB-MULTI(1500) last50: 37.81% ± 1.87%
+总运行时间: 4.87 min
+FRANKENSTEIN(4337) all   : 65.74% ± 2.96%
+FRANKENSTEIN(4337) last  : 68.02% ± 0.00%
+FRANKENSTEIN(4337) last10: 68.08% ± 1.01%
+FRANKENSTEIN(4337) last50: 67.87% ± 1.08%
+总运行时间: 22.59 min
+Synthie(400) all   : 50.18% ± 8.89%
+Synthie(400) last  : 53.25% ± 0.00%
+Synthie(400) last10: 53.97% ± 1.79%
+Synthie(400) last50: 53.66% ± 2.31%
+总运行时间: 5.44 min
+SYNTHETIC(300) all   : 45.82% ± 1.86%
+SYNTHETIC(300) last  : 46.00% ± 0.00%
+SYNTHETIC(300) last10: 46.20% ± 0.60%
+SYNTHETIC(300) last50: 46.04% ± 0.28%
+总运行时间: 3.00 min
+MSRC_9(221) all   : 65.21% ± 31.49%
+MSRC_9(221) last  : 90.49% ± 0.00%
+MSRC_9(221) last10: 89.63% ± 2.88%
+MSRC_9(221) last50: 88.66% ± 3.04%
+总运行时间: 2.87 min
+MSRC_21(563) all   : 72.70% ± 30.75%
+MSRC_21(563) last  : 90.21% ± 0.00%
+MSRC_21(563) last10: 91.21% ± 1.24%
+MSRC_21(563) last50: 91.06% ± 1.36%
+总运行时间: 4.60 min

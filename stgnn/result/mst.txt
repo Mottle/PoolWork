@@ -92,3 +92,8 @@ IMDB-BINARY(1000) last  : 65.30% ± 0.00%
 IMDB-BINARY(1000) last10: 65.00% ± 3.49%
 IMDB-BINARY(1000) last50: 64.37% ± 3.25%
 总运行时间: 28.84 min
+IMDB-MULTI(1500) all   : 39.75% ± 2.08%
+IMDB-MULTI(1500) last  : 40.93% ± 0.00%
+IMDB-MULTI(1500) last10: 40.75% ± 1.31%
+IMDB-MULTI(1500) last50: 40.38% ± 1.62%
+总运行时间: 28.99 min

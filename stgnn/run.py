@@ -16,6 +16,7 @@ from torch.optim import Adam
 from classifier import Classifier
 from span_tree_gnn import SpanTreeGNN
 from span_tree_gnn_with_loss import SpanTreeGNNWithOrt
+from dual_road_gnn import DualRoadGNN
 from baseline import BaseLine
 
 def compute_loss(loss1, loss2):
@@ -168,6 +169,9 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
         model = BaseLine(input_dim, hidden_dim, hidden_dim, backbone=model_type, num_layers=num_layers, dropout=dropout).to(run_device)
     elif model_type == 'mstort':
         model = SpanTreeGNNWithOrt(input_dim, hidden_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
+    elif model_type == 'dualroad':
+        model = DualRoadGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, k = 3).to(run_device)
+
 
     classifier = Classifier(hidden_dim, hidden_dim, num_classes).to(run_device)
 
@@ -278,10 +282,10 @@ def datasets(simple=False):
     else:
         datasets = [
             # 'DD',
-            'PROTEINS',
-            'NCI1',
-            'NCI109',
-            'COX2',
+            # 'PROTEINS',
+            # 'NCI1',
+            # 'NCI109',
+            # 'COX2',
             'IMDB-BINARY',
             'IMDB-MULTI',
             'FRANKENSTEIN',
@@ -379,7 +383,7 @@ if __name__ == '__main__':
     config.seed = None
     config.kfold = 10
 
-    models = ['mst']
+    models = ['dualroad']
     # models = ['topk']
     seeds = [0, 114514, 1919810, 77777]
     for model in models:
