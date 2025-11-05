@@ -333,6 +333,8 @@ def save_result(results, filename, spent_time, config: BenchmarkConfig, config_d
 
 #对模型运行k-fold - dataset 
 def run(config: BenchmarkConfig):
+    config.apply_random_seed()
+
     results = []
     all_start = get_time_sync()
     id = -1
