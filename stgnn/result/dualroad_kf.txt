@@ -1,0 +1,33 @@
+config setting:
+hid_dim: 128, layers: 3, model: dualroad_kf, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+DD(1178) all   : 73.59% ± 4.84%
+DD(1178) last  : 74.35% ± 0.00%
+DD(1178) last10: 74.61% ± 2.89%
+DD(1178) last50: 74.97% ± 2.82%
+总运行时间: 7.88 min
+PROTEINS(1113) all   : 75.05% ± 2.57%
+PROTEINS(1113) last  : 75.20% ± 0.00%
+PROTEINS(1113) last10: 75.13% ± 1.50%
+PROTEINS(1113) last50: 75.03% ± 1.77%
+总运行时间: 12.57 min
+NCI1(4110) all   : 76.27% ± 3.34%
+NCI1(4110) last  : 78.39% ± 0.00%
+NCI1(4110) last10: 78.73% ± 0.74%
+NCI1(4110) last50: 78.33% ± 0.97%
+总运行时间: 55.85 min
+NCI109(4127) all   : 76.55% ± 3.06%
+NCI109(4127) last  : 78.65% ± 0.00%
+NCI109(4127) last10: 78.49% ± 0.85%
+NCI109(4127) last50: 78.42% ± 0.87%
+总运行时间: 78.50 min
+COX2(467) all   : 80.75% ± 2.62%
+COX2(467) last  : 83.08% ± 0.00%
+COX2(467) last10: 82.84% ± 1.49%
+COX2(467) last50: 82.50% ± 1.69%
+总运行时间: 9.68 min
+IMDB-BINARY(1000) all   : 66.72% ± 4.79%
+IMDB-BINARY(1000) last  : 68.40% ± 0.00%
+IMDB-BINARY(1000) last10: 69.73% ± 1.90%
+IMDB-BINARY(1000) last50: 69.61% ± 2.21%
+总运行时间: 17.21 min
