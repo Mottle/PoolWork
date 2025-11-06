@@ -160,6 +160,8 @@ MSRC_21(563) last10: 91.77% ± 1.27%
 MSRC_21(563) last50: 91.95% ± 1.49%
 总运行时间: 3.12 min
 
+GATED Res
+
 config setting:
 hid_dim: 128, layers: 3, model: dualroad, graph_norm: True, batch_size: 128
 epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True

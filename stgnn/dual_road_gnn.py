@@ -9,6 +9,7 @@ import networkx as nx
 from perf_counter import get_time_sync
 from torch import Tensor
 from typing import Optional
+from torch_geometric.utils import scatter
 
 
 class DualRoadGNN(nn.Module):
@@ -90,6 +91,10 @@ class DualRoadGNN(nn.Module):
 class KFNDualRoadGNN(DualRoadGNN):
     def _build_auxiliary_graph(self, x, batch):
         return k_farthest_graph(x, self.k, batch, loop=True, cosine=True)
+    
+class KRNDualRoadGNN(DualRoadGNN):
+    def _build_auxiliary_graph(self, x, batch):
+        return k_random_graph(x, self.k, batch, loop=True)
 
 def k_farthest_graph(
     x: Tensor,
@@ -112,7 +117,6 @@ def k_farthest_graph(
     返回:
         torch.Tensor: 图的边索引 (edge_index)，形状为 [2, num_edges]。
     """
-    from torch_geometric.utils import scatter
     # 如果 batch 为 None，我们创建一个单图 batch 向量，并调用核心逻辑
     if batch is None:
         batch = x.new_zeros(x.size(0), dtype=torch.long)
@@ -182,4 +186,77 @@ def k_farthest_graph(
         
     final_edge_index = torch.cat(all_edge_indices, dim=1)
     
+    return final_edge_index
+
+def k_random_graph(
+    x: Tensor,
+    k: int,
+    batch: Optional[Tensor] = None,
+    loop: bool = False
+) -> Tensor:
+    """
+    构建基于随机选择 K 个邻居的图的边索引 (edge_index)，支持批处理。
+    使用向量化采样以提升性能，允许重复邻居但可选是否包含自环。
+
+    参数:
+        x (Tensor): 节点特征矩阵，形状为 [num_nodes, num_features]。
+        k (int): 每个节点要连接的随机邻居数量。
+        batch (Optional[Tensor]): 批次向量，形状为 [num_nodes]。
+        loop (bool): 是否允许自环。
+
+    返回:
+        Tensor: 边索引，形状为 [2, num_edges]。
+    """
+    
+    if batch is None:
+        batch = x.new_zeros(x.size(0), dtype=torch.long)
+    
+    num_nodes = x.size(0)
+    num_graphs = batch.max().item() + 1
+
+    ptr = scatter(torch.ones(num_nodes, dtype=torch.long, device=x.device),
+                  batch, dim=0, dim_size=num_graphs, reduce='sum').cumsum(0)
+    ptr = torch.cat([x.new_zeros(1, dtype=torch.long), ptr])
+
+    all_edge_indices = []
+
+    for i in range(num_graphs):
+        start_idx = ptr[i]
+        end_idx = ptr[i + 1]
+        n_i = end_idx - start_idx
+
+        if n_i <= 1:
+            continue
+
+        k_sample = k if loop else min(k, n_i - 1)
+        if k_sample <= 0:
+            continue
+
+        source_nodes_local = torch.arange(n_i, device=x.device)
+
+        # 向量化采样目标节点（允许重复）
+        target_nodes_local_matrix = torch.randint(
+            low=0, high=n_i, size=(n_i, k_sample), device=x.device
+        )
+
+        if not loop:
+            # 排除自环：重新采样冲突位置直到无自环
+            source_matrix = source_nodes_local.view(-1, 1).expand(-1, k_sample)
+            mask = target_nodes_local_matrix == source_matrix
+            while mask.any():
+                resample = torch.randint(0, n_i, size=mask.shape, device=x.device)
+                target_nodes_local_matrix[mask] = resample[mask]
+                mask = target_nodes_local_matrix == source_matrix
+
+        target_nodes_local = target_nodes_local_matrix.flatten()
+        source_nodes_local_repeat = source_nodes_local.repeat_interleave(k_sample)
+
+        edge_index_local = torch.stack([source_nodes_local_repeat, target_nodes_local], dim=0)
+        edge_index_global = edge_index_local + start_idx
+        all_edge_indices.append(edge_index_global)
+
+    if len(all_edge_indices) == 0:
+        return x.new_empty((2, 0), dtype=torch.long)
+
+    final_edge_index = torch.cat(all_edge_indices, dim=1)
     return final_edge_index
