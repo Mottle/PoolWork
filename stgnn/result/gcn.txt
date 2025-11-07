@@ -74,3 +74,5 @@ REDDIT-BINARY(2000) last  : 90.95% ± 0.00%
 REDDIT-BINARY(2000) last10: 91.59% ± 1.33%
 REDDIT-BINARY(2000) last50: 91.28% ± 2.06%
 总运行时间: 13.59 min
+
+--re

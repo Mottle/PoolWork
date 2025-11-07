@@ -11,7 +11,7 @@ class BenchmarkConfig:
         self.batch_size: int = 128
         self.epochs: int = 100
         self.use_simple_datasets: bool = False
-        self.catch_error: bool = False
+        self.catch_error: bool = True
         self.early_stop: bool = True
         self.early_stop_epochs: int = 50
         self.seed: int = None

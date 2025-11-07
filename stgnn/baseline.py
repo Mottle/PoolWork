@@ -13,6 +13,9 @@ class BaseLine(nn.Module):
         self.out_channels = out_channels
         self.backbone = backbone
         self.dropout = 0.5
+
+        if self.in_channels < 1:
+            self.in_channels = 1
         
         self.build_convs()
         self.build_norms()
@@ -31,7 +34,15 @@ class BaseLine(nn.Module):
         if self.backbone == 'gcn':
             return GCNConv(in_channels, out_channels)
         elif self.backbone == 'gin':
-            fnn = nn.Sequential(nn.Linear(in_channels, out_channels), nn.LeakyReLU(), nn.Linear(out_channels, out_channels), nn.Dropout(p=self.dropout))
+            fnn = nn.Sequential(
+                nn.Linear(in_channels, out_channels),
+                nn.ReLU(),
+                nn.BatchNorm1d(out_channels),
+                nn.Linear(out_channels, out_channels),
+                nn.ReLU(),
+                nn.BatchNorm1d(out_channels),
+                nn.Dropout(p=self.dropout)
+            )
             return GINConv(fnn)
         else:
             raise ValueError("backbone must be 'gcn'")

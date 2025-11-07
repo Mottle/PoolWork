@@ -13,13 +13,14 @@ from torch_geometric.utils import scatter
 
 
 class DualRoadGNN(nn.Module):
-    def __init__(self, in_channels, hidden_channels, num_layers=3, dropout=0.5, k = 3):
+    def __init__(self, in_channels, hidden_channels, num_layers=3, dropout=0.5, k = 3, backbone = 'gcn'):
         super(DualRoadGNN, self).__init__()
         self.in_channels = max(in_channels, 1)
         self.hidden_channels = hidden_channels
         self.num_layers = num_layers
         self.dropout = dropout
         self.k = k
+        self.backbone = backbone
 
         if num_layers < 2:
             raise ValueError("Number of layers should be greater than 1.")
@@ -41,7 +42,8 @@ class DualRoadGNN(nn.Module):
     def _build_convs(self):
         convs = nn.ModuleList()
         for i in range(self.num_layers):
-            convs.append(GCNConv(self.hidden_channels, self.hidden_channels))
+            if self.backbone == 'gcn':
+                convs.append(GCNConv(self.hidden_channels, self.hidden_channels))
         return convs
 
     def _build_graph_norms(self):

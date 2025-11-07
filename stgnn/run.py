@@ -236,15 +236,29 @@ def process_results(results: list[BenchmarkResult]):
     last_mean, last_std = 0, 0
     last_10_mean, last_10_std = 0, 0
     last_50_mean, last_50_std = 0, 0
-    for result in results:
-        all_mean += result.get_mean() / size
-        last_mean += result.get_mean(1) / size
-        last_10_mean += result.get_mean(10) / size
-        last_50_mean += result.get_mean(50) / size
-        all_std += result.get_std() / size
-        last_std += result.get_std(1) / size
-        last_10_std += result.get_std(10) / size
-        last_50_std += result.get_std(50) / size
+
+    last_res = [result.get_mean(1) for result in results]
+    last_10_res = [result.get_mean(10) for result in results]
+    last_50_res = [result.get_mean(50) for result in results]
+    last_all_res = [result.get_mean() for result in results]
+
+    all_mean = np.mean(last_all_res)
+    all_std = np.std(last_all_res)
+    last_mean = np.mean(last_res)
+    last_std = np.std(last_res)
+    last_10_mean = np.mean(last_10_res)
+    last_10_std = np.std(last_10_res)
+    last_50_mean = np.mean(last_50_res)
+    last_50_std = np.std(last_50_res)
+    # for result in results:
+    #     all_mean += result.get_mean() / size
+    #     last_mean += result.get_mean(1) / size
+    #     last_10_mean += result.get_mean(10) / size
+    #     last_50_mean += result.get_mean(50) / size
+    #     all_std += result.get_std() / size
+    #     last_std += result.get_std(1) / size
+    #     last_10_std += result.get_std(10) / size
+    #     last_50_std += result.get_std(50) / size
 
     return (all_mean, all_std), (last_mean, last_std), (last_10_mean, last_10_std), (last_50_mean, last_50_std)
 
@@ -388,7 +402,7 @@ if __name__ == '__main__':
     config.seed = None
     config.kfold = 10
 
-    models = ['dualroad_kr']
+    models = ['gin', 'gcn']
     # models = ['topk']
     seeds = [0, 114514, 1919810, 77777]
     for model in models:
