@@ -378,8 +378,8 @@ def run(config: BenchmarkConfig):
 
     print(f'{config.format()}\n')
 
-    for result in results:
-        print(format_result(result[0], result[1]))
+    # for result in results:
+    #     print(format_result(result[0], result[1]))
     print(f'总运行时间: {(all_end - all_start) / 60:.2f} min')
 
 if __name__ == '__main__':
