@@ -1,0 +1,86 @@
+config setting:
+hid_dim: 128, layers: 5, model: gcn, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+PROTEINS(1113) all   : 70.80% ± 2.80%
+PROTEINS(1113) last  : 71.07% ± 3.82%
+PROTEINS(1113) last10: 71.41% ± 3.45%
+PROTEINS(1113) last50: 71.97% ± 2.96%
+总运行时间: 2.67 min
+COX2(467) all   : 79.60% ± 3.51%
+COX2(467) last  : 80.49% ± 7.75%
+COX2(467) last10: 80.24% ± 6.66%
+COX2(467) last50: 80.22% ± 6.11%
+总运行时间: 3.81 min
+IMDB-BINARY(1000) all   : 60.69% ± 3.58%
+IMDB-BINARY(1000) last  : 65.10% ± 5.13%
+IMDB-BINARY(1000) last10: 63.25% ± 4.65%
+IMDB-BINARY(1000) last50: 62.90% ± 4.16%
+总运行时间: 3.67 min
+IMDB-MULTI(1500) all   : 39.62% ± 1.52%
+IMDB-MULTI(1500) last  : 40.20% ± 1.23%
+IMDB-MULTI(1500) last10: 39.91% ± 1.67%
+IMDB-MULTI(1500) last50: 39.84% ± 1.77%
+总运行时间: 3.60 min
+MSRC_21(563) all   : 72.66% ± 5.76%
+MSRC_21(563) last  : 89.86% ± 3.60%
+MSRC_21(563) last10: 90.97% ± 2.61%
+MSRC_21(563) last50: 91.11% ± 2.60%
+总运行时间: 2.68 min
+
+config setting:
+hid_dim: 128, layers: 10, model: gcn, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+PROTEINS(1113) all   : 67.92% ± 2.15%
+PROTEINS(1113) last  : 67.30% ± 3.00%
+PROTEINS(1113) last10: 67.53% ± 1.92%
+PROTEINS(1113) last50: 68.11% ± 1.43%
+总运行时间: 3.68 min
+COX2(467) all   : 79.22% ± 2.92%
+COX2(467) last  : 79.86% ± 5.36%
+COX2(467) last10: 79.22% ± 4.95%
+COX2(467) last50: 79.98% ± 4.27%
+总运行时间: 2.46 min
+IMDB-BINARY(1000) all   : 57.09% ± 3.57%
+IMDB-BINARY(1000) last  : 62.90% ± 4.55%
+IMDB-BINARY(1000) last10: 60.65% ± 4.41%
+IMDB-BINARY(1000) last50: 59.89% ± 4.25%
+总运行时间: 8.49 min
+IMDB-MULTI(1500) all   : 39.43% ± 1.60%
+IMDB-MULTI(1500) last  : 39.27% ± 3.35%
+IMDB-MULTI(1500) last10: 38.98% ± 1.64%
+IMDB-MULTI(1500) last50: 39.36% ± 1.64%
+总运行时间: 10.77 min
+MSRC_21(563) all   : 53.01% ± 11.87%
+MSRC_21(563) last  : 73.13% ± 14.27%
+MSRC_21(563) last10: 73.29% ± 13.83%
+MSRC_21(563) last50: 73.09% ± 14.12%
+总运行时间: 5.78 min
+
+config setting:
+hid_dim: 128, layers: 20, model: gcn, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+PROTEINS(1113) all   : 66.62% ± 2.55%
+PROTEINS(1113) last  : 66.95% ± 5.50%
+PROTEINS(1113) last10: 67.57% ± 3.50%
+PROTEINS(1113) last50: 67.44% ± 2.89%
+总运行时间: 6.85 min
+COX2(467) all   : 79.08% ± 1.82%
+COX2(467) last  : 81.99% ± 4.09%
+COX2(467) last10: 79.95% ± 3.35%
+COX2(467) last50: 79.96% ± 3.37%
+总运行时间: 3.88 min
+IMDB-BINARY(1000) all   : 54.52% ± 4.62%
+IMDB-BINARY(1000) last  : 58.50% ± 4.63%
+IMDB-BINARY(1000) last10: 58.78% ± 4.37%
+IMDB-BINARY(1000) last50: 58.27% ± 4.02%
+总运行时间: 11.35 min
+IMDB-MULTI(1500) all   : 39.53% ± 1.86%
+IMDB-MULTI(1500) last  : 39.73% ± 3.14%
+IMDB-MULTI(1500) last10: 40.09% ± 2.38%
+IMDB-MULTI(1500) last50: 40.07% ± 1.85%
+总运行时间: 17.59 min
+MSRC_21(563) all   : 18.94% ± 8.14%
+MSRC_21(563) last  : 30.19% ± 12.77%
+MSRC_21(563) last10: 31.22% ± 13.32%
+MSRC_21(563) last50: 30.39% ± 13.51%
+总运行时间: 9.23 min
