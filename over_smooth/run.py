@@ -19,30 +19,30 @@ from baseline import BaseLine
 def compute_loss(loss1, loss2):
     return loss1 + loss2 / (loss1 + loss2 + 1e-6).detach()
 
-def compute_dirichlet_info(model):
-    num_layers = model.num_layers
+# def compute_dirichlet_info(model):
+#     num_layers = model.num_layers
 
-    dirichlet_energies = [[] for i in range(num_layers + 1)]
-    dirichlet_energy_rates = [[] for i in range(num_layers)]
+#     dirichlet_energies = [[] for i in range(num_layers + 1)]
+#     dirichlet_energy_rates = [[] for i in range(num_layers)]
 
-    for i in range(num_layers + 1):
-        dirichlet_energies[i].append(model.dirichlet_energies[i].to('cpu').detach().numpy())
+#     for i in range(num_layers + 1):
+#         dirichlet_energies[i].append(model.dirichlet_energies[i].to('cpu').detach().numpy())
 
-    for i in range(num_layers):
-        dirichlet_energy_rates[i].append(model.dirichlet_energy_rates[i].to('cpu').detach().numpy())
+#     for i in range(num_layers):
+#         dirichlet_energy_rates[i].append(model.dirichlet_energy_rates[i].to('cpu').detach().numpy())
 
-    de_info = []
-    for i in range(num_layers + 1):
-        de_info.append((np.mean(dirichlet_energies[i]), np.std(np.mean(dirichlet_energies[i]))))
+#     de_info = []
+#     for i in range(num_layers + 1):
+#         de_info.append((np.mean(dirichlet_energies[i]), np.std(np.mean(dirichlet_energies[i]))))
 
-    der_info = []
-    for i in range(num_layers):
-        der_info.append((np.mean(dirichlet_energy_rates[i]), np.std(np.mean(dirichlet_energy_rates[i]))))
+#     der_info = []
+#     for i in range(num_layers):
+#         der_info.append((np.mean(dirichlet_energy_rates[i]), np.std(np.mean(dirichlet_energy_rates[i]))))
 
-    for (de_ave, de_std) in de_info:
-        print(f'de: {de_ave:.2f}±{de_std:.2f}')
-    for (der_ave, der_std) in der_info:
-        print(f'der: {der_ave:.2f}±{der_std:.2f}')
+#     for (de_ave, de_std) in de_info:
+#         print(f'de: {de_ave:.2f}±{de_std:.2f}')
+#     for (der_ave, der_std) in der_info:
+#         print(f'der: {der_ave:.2f}±{der_std:.2f}')
 
 def train_model(model, classifier, train_loader, optimizer, criterion, device):
     model.train()
@@ -57,6 +57,8 @@ def train_model(model, classifier, train_loader, optimizer, criterion, device):
     num_layers = model.num_layers
     dirichlet_energies = [[] for i in range(num_layers + 1)]
     dirichlet_energy_rates = [[] for i in range(num_layers)]
+    mads = [[] for i in range(num_layers + 1)]
+    mag_rates = [[] for i in range(num_layers)]
     
     for data in track(train_loader, description=f"Run train", disable=True):
         cnt += 1
@@ -77,24 +79,36 @@ def train_model(model, classifier, train_loader, optimizer, criterion, device):
         correct += (pred == data.y).sum().item()
         total += data.y.size(0)
         
-        # for i in range(num_layers + 1):
-        #     dirichlet_energies[i].append(model.dirichlet_energies[i].to('cpu').detach().numpy())
-        # for i in range(num_layers):
-        #     dirichlet_energy_rates[i].append(model.dirichlet_energy_rates[i].to('cpu').detach().numpy())
+        for i in range(num_layers + 1):
+            dirichlet_energies[i].append(model.dirichlet_energies[i].to('cpu').detach().numpy())
+            mads[i].append(model.mads[i].to('cpu').detach().numpy())
+        for i in range(num_layers):
+            dirichlet_energy_rates[i].append(model.dirichlet_energy_rates[i].to('cpu').detach().numpy())
+            mag_rates[i].append(model.mad_rates[i].to('cpu').detach().numpy())
     
     # de_info = []
+    mad_info = []
     # for i in range(num_layers + 1):
     #     de_info.append((np.mean(dirichlet_energies[i]), np.std(dirichlet_energies[i])))
+    for i in range(num_layers + 1):
+        mad_info.append((np.mean(mads[i]), np.std(mads[i])))
 
-    # der_info = []
+    der_info = []
+    magr_info = []
     # for i in range(num_layers):
     #     der_info.append((np.mean(dirichlet_energy_rates[i]), np.std(dirichlet_energy_rates[i])))
+    #     magr_info.append((np.mean(mag_rates[i]), np.std(mag_rates[i])))
 
     # for (de_ave, de_std) in de_info:
     #     print(f'de: {de_ave:.2f}±{de_std:.2f}')
+    for (mad_ave, mad_std) in mad_info:
+        print(f'mad: {mad_ave:.2f}±{mad_std:.2f}')
+
     # for (der_ave, der_std) in der_info:
     #     print(f'der: {der_ave:.4f}±{der_std:.4f}')
-    # print('\n')
+    # for (magr_ave, magr_std) in magr_info:
+    #     print(f'magr: {magr_ave:.4f}±{magr_std:.4f}')
+    print('\n')
 
     return total_loss / len(train_loader), correct / total
 

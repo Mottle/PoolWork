@@ -5,6 +5,7 @@ from torch import nn
 from torch_geometric.nn import GCNConv, GINConv, global_mean_pool
 from torch_geometric.nn.norm import GraphNorm
 from utils.dirichlet_energy import compute_dirichlet_energy
+from utils.mean_average_distance import compute_mean_average_distance
 
 class BaseLine(nn.Module):
     def __init__(self, in_channels: int, hidden_channels: int, out_channels: int, num_layers: int = 3, backbone = 'gcn', dropout = 0.5):
@@ -61,21 +62,27 @@ class BaseLine(nn.Module):
 
         feature_all = []
         self.dirichlet_energies = [compute_dirichlet_energy(x, edge_index, batch)]
+        self.mads = [compute_mean_average_distance(x, batch)]
 
         for i in range(self.num_layers):
             x = self.convs[i](x, edge_index)
             x = self.norms[i](x, batch)
             x = F.leaky_relu(x)
+            
             self.dirichlet_energies.append(compute_dirichlet_energy(x, edge_index, batch))
+            self.mads.append(compute_mean_average_distance(x, batch))
 
             feature = global_mean_pool(x, batch)
             feature_all.append(feature)
         merge_feature = torch.mean(torch.stack(feature_all, dim=0), dim=0)
 
         self.dirichlet_energy_rates = []
+        self.mad_rates = []
         for i in range(self.num_layers):
-            rate = self.dirichlet_energies[i + 1] / self.dirichlet_energies[i]
+            rate = self.dirichlet_energies[i + 1] / self.dirichlet_energies[0]
             self.dirichlet_energy_rates.append(rate)
+            mag_rate = self.mads[i + 1] / self.mads[0]
+            self.mad_rates.append(mag_rate)
             # print(f'rate: {rate}')
         # average = self.sum(dirichlet_energy_rates) / self.num_layers
         # print(f'average rate: {average}')
