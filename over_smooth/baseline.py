@@ -55,6 +55,10 @@ class BaseLine(nn.Module):
         self.norms = nn.ModuleList()
         for i in range(self.num_layers):
             self.norms.append(GraphNorm(self.hidden_channels))
+
+    def _dirichlet_loss(self):
+        loss = torch.mean(torch.stack(self.dirichlet_energy_rates))
+        return loss
     
     def forward(self, x, edge_index, batch):
         ori_x = x
@@ -68,23 +72,25 @@ class BaseLine(nn.Module):
             x = self.convs[i](x, edge_index)
             x = self.norms[i](x, batch)
             x = F.leaky_relu(x)
-            
+
             self.dirichlet_energies.append(compute_dirichlet_energy(x, edge_index, batch))
-            self.mads.append(compute_mean_average_distance(x, batch))
+            # self.mads.append(compute_mean_average_distance(x, batch))
+            self.mads.append(torch.tensor(0))
 
             feature = global_mean_pool(x, batch)
             feature_all.append(feature)
-        merge_feature = torch.mean(torch.stack(feature_all, dim=0), dim=0)
+        # merge_feature = torch.mean(torch.stack(feature_all, dim=0), dim=0)
+        merge_feature = feature_all[-1]
 
         self.dirichlet_energy_rates = []
         self.mad_rates = []
         for i in range(self.num_layers):
-            rate = self.dirichlet_energies[i + 1] / self.dirichlet_energies[0]
+            rate = self.dirichlet_energies[i + 1] / self.dirichlet_energies[i]
             self.dirichlet_energy_rates.append(rate)
-            mag_rate = self.mads[i + 1] / self.mads[0]
+            mag_rate = self.mads[i + 1] / self.mads[i]
             self.mad_rates.append(mag_rate)
             # print(f'rate: {rate}')
         # average = self.sum(dirichlet_energy_rates) / self.num_layers
         # print(f'average rate: {average}')
 
-        return merge_feature, 0
+        return merge_feature, self._dirichlet_loss()

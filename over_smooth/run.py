@@ -17,7 +17,7 @@ from classifier import Classifier
 from baseline import BaseLine
 
 def compute_loss(loss1, loss2):
-    return loss1 + loss2 / (loss1 + loss2 + 1e-6).detach()
+    return loss1 + loss2 #/ (loss1 + loss2 + 1e-6).detach()
 
 # def compute_dirichlet_info(model):
 #     num_layers = model.num_layers
@@ -95,17 +95,17 @@ def train_model(model, classifier, train_loader, optimizer, criterion, device):
 
     der_info = []
     magr_info = []
-    # for i in range(num_layers):
-    #     der_info.append((np.mean(dirichlet_energy_rates[i]), np.std(dirichlet_energy_rates[i])))
+    for i in range(num_layers):
+        der_info.append((np.mean(dirichlet_energy_rates[i]), np.std(dirichlet_energy_rates[i])))
     #     magr_info.append((np.mean(mag_rates[i]), np.std(mag_rates[i])))
 
     # for (de_ave, de_std) in de_info:
     #     print(f'de: {de_ave:.2f}±{de_std:.2f}')
-    for (mad_ave, mad_std) in mad_info:
-        print(f'mad: {mad_ave:.2f}±{mad_std:.2f}')
+    # for (mad_ave, mad_std) in mad_info:
+    #     print(f'mad: {mad_ave:.2f}±{mad_std:.2f}')
 
-    # for (der_ave, der_std) in der_info:
-    #     print(f'der: {der_ave:.4f}±{der_std:.4f}')
+    for (der_ave, der_std) in der_info:
+        print(f'der: {der_ave:.4f}±{der_std:.4f}')
     # for (magr_ave, magr_std) in magr_info:
     #     print(f'magr: {magr_ave:.4f}±{magr_std:.4f}')
     print('\n')
@@ -450,7 +450,7 @@ if __name__ == '__main__':
 
     config = BenchmarkConfig()
     config.hidden_channels = 128
-    config.num_layers = 20
+    config.num_layers = 10
     config.graph_norm = True
     config.batch_size = 128
     config.epochs = 500

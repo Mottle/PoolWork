@@ -84,3 +84,31 @@ MSRC_21(563) last  : 30.19% ± 12.77%
 MSRC_21(563) last10: 31.22% ± 13.32%
 MSRC_21(563) last50: 30.39% ± 13.51%
 总运行时间: 9.23 min
+
+config setting:
+hid_dim: 128, layers: 10, model: gcn, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+PROTEINS(1113) all   : 68.01% ± 2.05%
+PROTEINS(1113) last  : 66.40% ± 3.71%
+PROTEINS(1113) last10: 67.70% ± 1.69%
+PROTEINS(1113) last50: 68.45% ± 2.21%
+总运行时间: 7.77 min
+COX2(467) all   : 78.67% ± 2.28%
+COX2(467) last  : 79.42% ± 6.97%
+COX2(467) last10: 78.73% ± 4.90%
+COX2(467) last50: 78.94% ± 4.27%
+总运行时间: 9.19 min
+
+config setting:
+hid_dim: 128, layers: 10, model: gcn, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+PROTEINS(1113) all   : 68.73% ± 2.39%
+PROTEINS(1113) last  : 68.55% ± 2.96%
+PROTEINS(1113) last10: 67.92% ± 2.59%
+PROTEINS(1113) last50: 68.68% ± 2.24%
+总运行时间: 7.07 min
+COX2(467) all   : 78.69% ± 2.66%
+COX2(467) last  : 77.93% ± 4.32%
+COX2(467) last10: 77.82% ± 4.55%
+COX2(467) last50: 78.55% ± 4.07%
+总运行时间: 5.36 min
