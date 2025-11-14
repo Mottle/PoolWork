@@ -1,0 +1,33 @@
+config setting:
+hid_dim: 128, layers: 3, model: dualroad_rev_attn, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+PROTEINS(1113) all   : 73.96% ± 3.99%
+PROTEINS(1113) last  : 73.87% ± 4.41%
+PROTEINS(1113) last10: 74.40% ± 4.11%
+PROTEINS(1113) last50: 74.12% ± 4.03%
+总运行时间: 9.43 min
+NCI1(4110) all   : 72.34% ± 2.18%
+NCI1(4110) last  : 74.60% ± 3.35%
+NCI1(4110) last10: 74.30% ± 2.38%
+NCI1(4110) last50: 74.18% ± 2.47%
+总运行时间: 45.87 min
+NCI109(4127) all   : 71.73% ± 2.20%
+NCI109(4127) last  : 74.19% ± 2.84%
+NCI109(4127) last10: 73.85% ± 2.43%
+NCI109(4127) last50: 73.50% ± 2.46%
+总运行时间: 46.92 min
+COX2(467) all   : 81.05% ± 2.87%
+COX2(467) last  : 81.79% ± 3.92%
+COX2(467) last10: 81.19% ± 4.48%
+COX2(467) last50: 81.63% ± 4.20%
+总运行时间: 8.24 min
+IMDB-BINARY(1000) all   : 60.98% ± 3.27%
+IMDB-BINARY(1000) last  : 61.40% ± 2.76%
+IMDB-BINARY(1000) last10: 63.01% ± 2.44%
+IMDB-BINARY(1000) last50: 62.09% ± 3.49%
+总运行时间: 5.38 min
+IMDB-MULTI(1500) all   : 40.54% ± 2.09%
+IMDB-MULTI(1500) last  : 41.27% ± 2.56%
+IMDB-MULTI(1500) last10: 41.09% ± 2.12%
+IMDB-MULTI(1500) last50: 40.95% ± 1.81%
+总运行时间: 9.02 min
