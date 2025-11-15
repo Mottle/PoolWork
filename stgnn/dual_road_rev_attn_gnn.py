@@ -10,7 +10,7 @@ from perf_counter import get_time_sync
 from torch import Tensor
 from typing import Optional
 from torch_geometric.utils import scatter
-from reverse_attention import reverse_self_attention
+from reverse_attention import bidirectional_reverse_self_attention
 
 
 class DualRoadRevAttnGNN(nn.Module):
@@ -74,7 +74,7 @@ class DualRoadRevAttnGNN(nn.Module):
             # feature_x = F.leaky_relu(feature_x)
             # feature_x = F.dropout(feature_x, p=self.dropout, training=self.training)
 
-            rev_attn_x, _, _ = reverse_self_attention(x, batch)
+            rev_attn_x, _, _ = bidirectional_reverse_self_attention(x, batch)
 
             combined = torch.cat([x, rev_attn_x], dim=-1)
             gate = torch.sigmoid(self.fusion_gate_linear(combined))

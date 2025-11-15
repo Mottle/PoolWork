@@ -1,7 +1,8 @@
 import torch
 from torch.nn import functional as F
-from torch_scatter import scatter_max, scatter_sum
+from torch_scatter import scatter_max, scatter_sum, scatter_mean
 from torch_geometric.utils import softmax
+from typing import Tuple, Optional
 
 # def reverse_self_attention(
 #     x: torch.Tensor, 
@@ -132,3 +133,73 @@ def reverse_self_attention(
     x_out.index_add_(0, row_idx, attention_weights.unsqueeze(-1) * x[col_idx])
 
     return x_out, reverse_scores, attention_weights
+
+def centered_tanh_attention_weights(
+    pre_activation_scores: torch.Tensor,
+    group_index: torch.Tensor,
+    num_groups: Optional[int] = None
+) -> torch.Tensor:
+    """
+    使用 tanh 生成 [-1, 1] 范围的得分，然后对每个组进行中心化，
+    使得每个组内的权重平均值为 0。
+    
+    Args:
+        pre_activation_scores: 原始的注意力得分，形状为 [num_edges]。
+        group_index: 分组索引 (例如，边的目标节点索引)，形状为 [num_edges]。
+        num_groups: 分组的总数 (例如，图中的节点总数)。
+        
+    Returns:
+        中心化后的注意力权重，每个组的总和趋于 0。
+    """
+    # 1. 应用 tanh 函数，范围在 [-1, 1]
+    tanh_scores = torch.tanh(pre_activation_scores)
+    
+    # 2. 计算每个分组的平均值 (Mean Aggregation)
+    # scatter_mean(src, index, dim=0, dim_size=None)
+    # 计算具有相同 group_index 的元素的平均值。
+    group_mean = scatter_mean(
+        src=tanh_scores, 
+        index=group_index, 
+        dim=0, 
+        dim_size=num_groups
+    )
+    
+    # 3. 对每个元素减去其所在分组的平均值 (中心化)
+    # 使用 group_index 来广播 group_mean 到对应的边上。
+    # group_mean[group_index] 会将计算出的平均值对齐到原始的边张量。
+    centered_scores = tanh_scores - group_mean[group_index]
+    
+    return centered_scores
+
+def bidirectional_reverse_self_attention(
+    x: torch.Tensor,
+    batch: torch.Tensor
+) -> torch.Tensor:
+    # 构造图内所有 (i, j) 边索引
+    edge_index_i = []
+    edge_index_j = []
+
+    for b in batch.unique():
+        idx = (batch == b).nonzero(as_tuple=False).view(-1)
+        row, col = torch.meshgrid(idx, idx, indexing='ij')
+        edge_index_i.append(row.flatten())
+        edge_index_j.append(col.flatten())
+
+    row_idx = torch.cat(edge_index_i, dim=0)
+    col_idx = torch.cat(edge_index_j, dim=0)
+    # edge_index = torch.stack([row_idx, col_idx], dim=0)  # (2, E)
+
+    # 计算 Reverse Score：负的点积
+    reverse_scores = -(x[row_idx] * x[col_idx]).sum(dim=-1)  # (E,)
+
+    # 分组 Softmax：按 query 节点 row_idx 分组
+    # attention_weights = softmax(reverse_scores, row_idx)
+    attention_weights = centered_tanh_attention_weights(reverse_scores, row_idx)
+
+    # 加权聚合：按 query 节点 row_idx 聚合 value 节点 col_idx 的特征
+    x_out = torch.zeros_like(x)
+    x_out.index_add_(0, row_idx, attention_weights.unsqueeze(-1) * x[col_idx])
+
+    return x_out, reverse_scores, attention_weights
+
+# class DynamicReverseAttention(torch.nn.Module):
