@@ -1,0 +1,28 @@
+config setting:
+hid_dim: 128, layers: 3, model: st_split, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+PROTEINS(1113) all   : 66.68% ± 2.30%
+PROTEINS(1113) last  : 68.10% ± 6.72%
+PROTEINS(1113) last10: 65.86% ± 4.45%
+PROTEINS(1113) last50: 66.17% ± 3.76%
+总运行时间: 28.87 min
+NCI1(4110) all   : 66.48% ± 1.01%
+NCI1(4110) last  : 67.93% ± 2.45%
+NCI1(4110) last10: 67.58% ± 1.74%
+NCI1(4110) last50: 67.56% ± 1.38%
+总运行时间: 69.44 min
+
+dense merge
+config setting:
+hid_dim: 128, layers: 3, model: st_split, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+PROTEINS(1113) all   : 69.53% ± 2.88%
+PROTEINS(1113) last  : 72.51% ± 4.68%
+PROTEINS(1113) last10: 70.56% ± 3.69%
+PROTEINS(1113) last50: 70.59% ± 3.50%
+总运行时间: 29.64 min
+NCI1(4110) all   : 67.26% ± 1.50%
+NCI1(4110) last  : 69.78% ± 3.40%
+NCI1(4110) last10: 68.76% ± 2.09%
+NCI1(4110) last50: 68.56% ± 1.79%
+总运行时间: 77.57 min
