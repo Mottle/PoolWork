@@ -35,6 +35,8 @@ def train_model(pooler, classifier, train_loader, optimizer, criterion, device):
     # all = len(train_loader)
     cnt = 0
     for data in track(train_loader, description=f"Run train", disable=True):
+        # if not data.is_undirected():
+        #     print('WARNING: dataset is NOT undirected!!!')
         cnt += 1
         optimizer.zero_grad()
         if data.x == None or data.x.size(1) <= 0:

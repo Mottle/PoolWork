@@ -26,3 +26,59 @@ NCI1(4110) last  : 69.78% ± 3.40%
 NCI1(4110) last10: 68.76% ± 2.09%
 NCI1(4110) last50: 68.56% ± 1.79%
 总运行时间: 77.57 min
+NCI109(4127) all   : 69.90% ± 1.85%
+NCI109(4127) last  : 73.40% ± 2.63%
+NCI109(4127) last10: 72.74% ± 2.12%
+NCI109(4127) last50: 72.45% ± 2.01%
+总运行时间: 114.29 min
+COX2(467) all   : 78.36% ± 2.09%
+COX2(467) last  : 78.79% ± 3.58%
+COX2(467) last10: 78.97% ± 2.84%
+COX2(467) last50: 79.23% ± 2.72%
+总运行时间: 17.16 min
+
+only local struct
+
+config setting:
+hid_dim: 128, layers: 3, model: st_split, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+PROTEINS(1113) all   : 69.94% ± 2.42%
+PROTEINS(1113) last  : 70.61% ± 4.39%
+PROTEINS(1113) last10: 70.73% ± 3.37%
+PROTEINS(1113) last50: 71.02% ± 3.81%
+总运行时间: 49.20 min
+NCI1(4110) all   : 63.22% ± 0.86%
+NCI1(4110) last  : 64.28% ± 3.70%
+NCI1(4110) last10: 65.47% ± 1.18%
+NCI1(4110) last50: 65.56% ± 1.26%
+总运行时间: 134.47 min
+NCI109(4127) all   : 63.97% ± 0.85%
+NCI109(4127) last  : 66.76% ± 2.14%
+NCI109(4127) last10: 66.63% ± 1.35%
+NCI109(4127) last50: 66.30% ± 1.52%
+总运行时间: 83.52 min
+
+fix direction bug:
+config setting:
+hid_dim: 128, layers: 3, model: st_split, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+PROTEINS(1113) all   : 71.71% ± 3.01%
+PROTEINS(1113) last  : 73.94% ± 3.24%
+PROTEINS(1113) last10: 73.80% ± 2.94%
+PROTEINS(1113) last50: 73.79% ± 2.94%
+总运行时间: 30.88 min
+NCI1(4110) all   : 70.45% ± 1.07%
+NCI1(4110) last  : 73.72% ± 1.87%
+NCI1(4110) last10: 73.66% ± 1.23%
+NCI1(4110) last50: 73.35% ± 1.18%
+总运行时间: 121.28 min
+NCI109(4127) all   : 70.75% ± 1.72%
+NCI109(4127) last  : 73.23% ± 2.65%
+NCI109(4127) last10: 73.48% ± 1.45%
+NCI109(4127) last50: 73.35% ± 1.82%
+总运行时间: 132.57 min
+COX2(467) all   : 79.50% ± 1.99%
+COX2(467) last  : 82.22% ± 3.49%
+COX2(467) last10: 81.45% ± 2.96%
+COX2(467) last50: 81.22% ± 3.00%
+总运行时间: 21.62 min

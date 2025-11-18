@@ -66,14 +66,19 @@ def split_graph(x: Tensor, edge_index: Tensor, num_splits: int):
 
     for i in range(num_splits):
         mst_edge_index, edge_weight = kruskal_mst_track_usage(edge_index, edge_weight, x.size(0))
-        edge_index_splited.append(mst_edge_index)
+
+        # 补全为双向边
+        reversed_edge_index = mst_edge_index[[1, 0], :]  # 交换行得到反向边
+        bidir_edge_index = torch.cat([mst_edge_index, reversed_edge_index], dim=1)
+
+        edge_index_splited.append(bidir_edge_index)
 
     return edge_index_splited
 
 class GNNs(nn.Module):
     def __init__(self, channels: int = 128, num_layers: int = 3, backbone: str = 'GCN', use_graph_norm: bool = True, dropout = 0.5):
         super(GNNs, self).__init__()
-        self.channel = channels
+        self.channel = max(channels, 1)
         self.num_layers = num_layers
         self.backbone = str.upper(backbone)
         self.convs = self._build_conv()
@@ -110,18 +115,18 @@ class SpanTreeSplitGNN(nn.Module):
     def __init__(self, in_channels: int, hidden_channels: int, num_layers: int = 3, dropout: float = 0.5, num_splits: int = 4):
         super(SpanTreeSplitGNN, self).__init__()
         self.num_splits = num_splits
-        self.in_channels = in_channels
+        self.in_channels = max(1, in_channels)
         self.hidden_channels = hidden_channels
         self.num_layers = num_layers
         self.dropout = dropout
 
-        self.gnns = self._build_gnns()
+        self.local_struct_gnns = self._build_gnns(self.num_splits)
         self.embedding = self._build_embedding()
-        self.dense_merge = nn.Linear(self.hidden_channels * (1 + self.num_splits), self.hidden_channels)
+        self.dense_merge = nn.Linear(self.hidden_channels * self.num_splits, self.hidden_channels)
 
-    def _build_gnns(self):
+    def _build_gnns(self, num: int):
         gnns = nn.ModuleList()
-        for _ in range(self.num_splits + 1):
+        for _ in range(num):
             gnns.append(GNNs(channels=self.hidden_channels, num_layers=self.num_layers, dropout=self.dropout))
         return gnns
     
@@ -129,22 +134,29 @@ class SpanTreeSplitGNN(nn.Module):
         return nn.Linear(in_features=self.in_channels, out_features=self.hidden_channels)
 
     def forward(self, x: Tensor, edge_index: Tensor, batch: Tensor):
+        ori_edge_index = edge_index
+        num_edges = edge_index.size(1)
+        perm = torch.randperm(num_edges)  # 生成一个随机排列
+        edge_index = edge_index[:, perm]  # 在边维度上打乱
+
         ori_x = x
         x = self.embedding(x)
-        edge_index_splited = split_graph(x, edge_index, self.num_splits)
-        edge_index_splited.insert(0, edge_index)  # 添加原始图作为第一个子图
-        edge_index_splited = list(map(lambda e: e.to(x.device), edge_index_splited))
+        
+        with torch.no_grad():
+            edge_index_splited = split_graph(x, edge_index, self.num_splits)
+            edge_index_splited.insert(0, edge_index)  # 添加原始图作为第一个子图
+            edge_index_splited = list(map(lambda e: e.to(x.device), edge_index_splited))
     
         xs = []
-        for i in range(self.num_splits + 1):
+        for i in range(self.num_splits):
             edge_index_i = edge_index_splited[i]
-            _, x_history = self.gnns[i](x, edge_index_i, batch)
+            _, x_history = self.local_struct_gnns[i](x, edge_index_i, batch)
             xs.append(x_history)
 
         x_layers = []
         g_layers = []
         for l in range(self.num_layers):
-            x_ls = [xs[s][l] for s in range(self.num_splits + 1)]
+            x_ls = [xs[s][l] for s in range(self.num_splits)]
             # x_l = torch.sum(torch.stack(x_ls), dim=0)
             x_l = torch.cat(x_ls, dim=1)
             x_l = self.dense_merge(x_l)
