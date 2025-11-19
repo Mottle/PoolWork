@@ -5,6 +5,7 @@ import numpy as np
 from torch import Tensor
 from numpy import ndarray
 from torch_geometric.nn import GCNConv, GINConv, GraphNorm, global_mean_pool
+from torch.nn import MultiheadAttention
 
 def kruskal_mst_track_usage(edge_index: Tensor, edge_weight: ndarray, num_nodes: int):
     # Step 1: 转为 numpy 并排序
@@ -120,7 +121,8 @@ class SpanTreeSplitGNN(nn.Module):
         self.num_layers = num_layers
         self.dropout = dropout
 
-        self.local_struct_gnns = self._build_gnns(self.num_splits)
+        self.main_gnn = GNNs(channels=self.hidden_channels, num_layers=self.num_layers, dropout=self.dropout)
+        self.local_struct_gnns = self._build_gnns(1)
         self.embedding = self._build_embedding()
         self.dense_merge = nn.Linear(self.hidden_channels * self.num_splits, self.hidden_channels)
 
@@ -142,6 +144,8 @@ class SpanTreeSplitGNN(nn.Module):
         ori_x = x
         x = self.embedding(x)
         
+        _, main_x_history = self.main_gnn(x, ori_edge_index, batch)
+        
         with torch.no_grad():
             edge_index_splited = split_graph(x, edge_index, self.num_splits)
             edge_index_splited.insert(0, edge_index)  # 添加原始图作为第一个子图
@@ -150,7 +154,7 @@ class SpanTreeSplitGNN(nn.Module):
         xs = []
         for i in range(self.num_splits):
             edge_index_i = edge_index_splited[i]
-            _, x_history = self.local_struct_gnns[i](x, edge_index_i, batch)
+            _, x_history = self.local_struct_gnns[0](x, edge_index_i, batch)
             xs.append(x_history)
 
         x_layers = []
@@ -159,11 +163,12 @@ class SpanTreeSplitGNN(nn.Module):
             x_ls = [xs[s][l] for s in range(self.num_splits)]
             # x_l = torch.sum(torch.stack(x_ls), dim=0)
             x_l = torch.cat(x_ls, dim=1)
-            x_l = self.dense_merge(x_l)
+            x_l = self.dense_merge(x_l) + main_x_history[l]
+
             x_layers.append(x_l)
             g_layers.append(global_mean_pool(x_l, batch))
 
         # x_all = torch.mean(torch.stack(x_layers), dim=0)
-        graph_all = torch.mean(torch.stack(g_layers), dim=0)
+        graph_all = torch.mean(torch.stack(g_layers), dim=0) + x
 
         return graph_all, 0
