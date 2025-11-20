@@ -125,6 +125,8 @@ class SpanTreeSplitGNN(nn.Module):
         self.local_struct_gnns = self._build_gnns(1)
         self.embedding = self._build_embedding()
         self.dense_merge = nn.Linear(self.hidden_channels * self.num_splits, self.hidden_channels)
+        self.alpha = nn.Parameter(torch.ones(self.hidden_channels))
+        # self.attention = MultiheadAttention(embed_dim=self.hidden_channels, num_heads=1, dropout=dropout)
 
     def _build_gnns(self, num: int):
         gnns = nn.ModuleList()
@@ -134,6 +136,44 @@ class SpanTreeSplitGNN(nn.Module):
     
     def _build_embedding(self):
         return nn.Linear(in_features=self.in_channels, out_features=self.hidden_channels)
+    
+    # def cross_attention(self, main_x: Tensor, local_struct_x: Tensor, batch: Tensor):
+    #     outputs = []
+    #     for i in batch.unique():
+    #         mask = batch == i
+    #         span_mask = batch.repeat_interleave(self.num_splits) == i
+    #         main_x_i = main_x[mask].unsqueeze(1)  # (N_i, 1, C)
+    #         local_x_i = local_struct_x[span_mask].unsqueeze(1)  # (M_i, 1, C)
+
+    #         attn_output, _ = self.attention(main_x_i, local_x_i, local_x_i)
+    #         outputs.append(attn_output.squeeze(1))  # (N_i, C)
+    #     return torch.cat(outputs, dim=0)
+
+    # def cross_attention(self, main_x: Tensor, local_struct_x: Tensor, batch: Tensor):
+    #     from torch_geometric.utils import to_dense_batch
+    #     # 构造 span_batch：每个节点复制 num_splits 次
+    #     span_batch = batch.repeat_interleave(self.num_splits)
+
+    #     # dense 化：每个图变成一个 [max_nodes, C] 的矩阵
+    #     q, q_mask = to_dense_batch(main_x, batch)                  # [B, L_q, C]
+    #     kv, kv_mask = to_dense_batch(local_struct_x, span_batch)   # [B, L_kv, C]
+
+    #     # 转为 (L, B, C) 以适配 MultiheadAttention（默认 batch_first=False）
+    #     q = q.transpose(0, 1)   # [L_q, B, C]
+    #     k = kv.transpose(0, 1)  # [L_kv, B, C]
+    #     v = kv.transpose(0, 1)  # [L_kv, B, C]
+
+    #     # 构造 mask：True 表示要 mask 掉
+    #     key_padding_mask = ~kv_mask  # [B, L_kv]
+
+    #     # 一次性计算所有 attention
+    #     attn_output, _ = self.attention(q, k, v, key_padding_mask=key_padding_mask)  # [L_q, B, C]
+
+    #     # 转回 [B, L_q, C]，再去掉 padding
+    #     attn_output = attn_output.transpose(0, 1)  # [B, L_q, C]
+    #     out = attn_output[q_mask]                 # [N, C]
+
+    #     return out
 
     def forward(self, x: Tensor, edge_index: Tensor, batch: Tensor):
         ori_edge_index = edge_index
@@ -162,13 +202,17 @@ class SpanTreeSplitGNN(nn.Module):
         for l in range(self.num_layers):
             x_ls = [xs[s][l] for s in range(self.num_splits)]
             # x_l = torch.sum(torch.stack(x_ls), dim=0)
+
             x_l = torch.cat(x_ls, dim=1)
-            x_l = self.dense_merge(x_l) + main_x_history[l]
+            x_l = self.dense_merge(x_l) * self.alpha + main_x_history[l]
+            
+            # x_l = torch.cat(x_ls, dim=0)
+            # x_l = self.cross_attention(main_x_history[l], x_l, batch) + main_x_history[l]
 
             x_layers.append(x_l)
             g_layers.append(global_mean_pool(x_l, batch))
 
         # x_all = torch.mean(torch.stack(x_layers), dim=0)
-        graph_all = torch.mean(torch.stack(g_layers), dim=0) + x
+        graph_all = torch.mean(torch.stack(g_layers), dim=0)
 
         return graph_all, 0

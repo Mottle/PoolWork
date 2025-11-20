@@ -129,4 +129,72 @@ MSRC_9(221) last10: 91.81% ± 4.94%
 MSRC_9(221) last50: 91.23% ± 4.77%
 总运行时间: 20.82 min
 
-with main road:
+with main road + ori:
+config setting:
+hid_dim: 128, layers: 3, model: st_split, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+PROTEINS(1113) all   : 72.42% ± 3.30%
+PROTEINS(1113) last  : 74.94% ± 3.64%
+PROTEINS(1113) last10: 74.24% ± 3.14%
+PROTEINS(1113) last50: 73.88% ± 3.21%
+总运行时间: 31.29 min
+NCI1(4110) all   : 70.71% ± 1.28%
+NCI1(4110) last  : 72.87% ± 2.25%
+NCI1(4110) last10: 73.25% ± 1.52%
+NCI1(4110) last50: 73.07% ± 1.44%
+总运行时间: 106.66 min
+NCI109(4127) all   : 68.93% ± 1.75%
+NCI109(4127) last  : 71.24% ± 1.81%
+NCI109(4127) last10: 70.79% ± 1.76%
+NCI109(4127) last50: 70.59% ± 1.78%
+总运行时间: 86.82 min
+COX2(467) all   : 79.92% ± 2.91%
+COX2(467) last  : 82.65% ± 3.42%
+COX2(467) last10: 82.30% ± 3.92%
+COX2(467) last50: 81.90% ± 3.94%
+总运行时间: 26.21 min
+IMDB-BINARY(1000) all   : 60.64% ± 3.32%
+IMDB-BINARY(1000) last  : 65.70% ± 3.03%
+IMDB-BINARY(1000) last10: 64.61% ± 3.10%
+IMDB-BINARY(1000) last50: 64.12% ± 3.63%
+总运行时间: 40.63 min
+IMDB-MULTI(1500) all   : 39.77% ± 1.56%
+IMDB-MULTI(1500) last  : 41.67% ± 2.97%
+IMDB-MULTI(1500) last10: 40.96% ± 2.58%
+IMDB-MULTI(1500) last50: 40.77% ± 2.35%
+总运行时间: 51.36 min
+
+attn
+config setting:
+hid_dim: 128, layers: 3, model: st_split, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+PROTEINS(1113) all   : 71.66% ± 2.47%
+PROTEINS(1113) last  : 74.39% ± 3.71%
+PROTEINS(1113) last10: 73.74% ± 2.54%
+PROTEINS(1113) last50: 73.19% ± 2.49%
+总运行时间: 36.52 min
+NCI1(4110) all   : 70.00% ± 1.89%
+NCI1(4110) last  : 72.36% ± 3.19%
+NCI1(4110) last10: 72.29% ± 2.48%
+NCI1(4110) last50: 72.07% ± 2.29%
+总运行时间: 131.30 min
+NCI109(4127) all   : 70.68% ± 2.00%
+NCI109(4127) last  : 73.22% ± 3.44%
+NCI109(4127) last10: 72.57% ± 3.00%
+NCI109(4127) last50: 72.62% ± 2.62%
+总运行时间: 143.51 min
+COX2(467) all   : 80.14% ± 2.76%
+COX2(467) last  : 81.36% ± 3.25%
+COX2(467) last10: 81.04% ± 3.58%
+COX2(467) last50: 81.08% ± 3.65%
+总运行时间: 32.36 min
+IMDB-BINARY(1000) all   : 61.89% ± 3.99%
+IMDB-BINARY(1000) last  : 64.10% ± 3.51%
+IMDB-BINARY(1000) last10: 64.59% ± 3.13%
+IMDB-BINARY(1000) last50: 63.98% ± 4.32%
+总运行时间: 37.29 min
+IMDB-MULTI(1500) all   : 39.90% ± 1.72%
+IMDB-MULTI(1500) last  : 41.40% ± 3.31%
+IMDB-MULTI(1500) last10: 40.24% ± 3.00%
+IMDB-MULTI(1500) last50: 40.49% ± 2.45%
+总运行时间: 44.25 min
