@@ -142,7 +142,7 @@ def run_fold(dataset, loader, current_fold: int, config: BenchmarkConfig):
                 break
         
         if (epoch + 1) % 10 == 0:
-            print(f'{log_prefix}, Epoch {epoch+1:03d}'
+            print(f'{log_prefix}, Epoch {epoch+1:03d} '
                   f'Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, '
                   f'Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}, '
                   f'Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}')

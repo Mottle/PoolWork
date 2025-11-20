@@ -38,7 +38,6 @@ COX2(467) last50: 79.23% ± 2.72%
 总运行时间: 17.16 min
 
 only local struct
-
 config setting:
 hid_dim: 128, layers: 3, model: st_split, graph_norm: True, batch_size: 128
 epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
@@ -84,7 +83,6 @@ COX2(467) last50: 81.22% ± 3.00%
 总运行时间: 21.62 min
 
 1 gcn layer:
-
 config setting:
 hid_dim: 128, layers: 3, model: st_split, graph_norm: True, batch_size: 128
 epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
@@ -198,3 +196,38 @@ IMDB-MULTI(1500) last  : 41.40% ± 3.31%
 IMDB-MULTI(1500) last10: 40.24% ± 3.00%
 IMDB-MULTI(1500) last50: 40.49% ± 2.45%
 总运行时间: 44.25 min
+
+dense merge with alpha:
+config setting:
+hid_dim: 128, layers: 3, model: st_split, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+PROTEINS(1113) all   : 72.14% ± 3.34%
+PROTEINS(1113) last  : 73.95% ± 5.15%
+PROTEINS(1113) last10: 74.11% ± 3.32%
+PROTEINS(1113) last50: 73.94% ± 3.14%
+总运行时间: 27.42 min
+NCI1(4110) all   : 70.32% ± 2.17%
+NCI1(4110) last  : 73.67% ± 2.25%
+NCI1(4110) last10: 72.64% ± 2.76%
+NCI1(4110) last50: 72.52% ± 2.56%
+总运行时间: 96.65 min
+NCI109(4127) all   : 69.99% ± 1.99%
+NCI109(4127) last  : 72.18% ± 2.76%
+NCI109(4127) last10: 72.24% ± 2.06%
+NCI109(4127) last50: 72.05% ± 2.10%
+总运行时间: 109.98 min
+COX2(467) all   : 79.88% ± 2.79%
+COX2(467) last  : 81.14% ± 4.42%
+COX2(467) last10: 81.21% ± 4.04%
+COX2(467) last50: 81.48% ± 3.83%
+总运行时间: 29.71 min
+IMDB-BINARY(1000) all   : 61.09% ± 2.72%
+IMDB-BINARY(1000) last  : 63.80% ± 4.14%
+IMDB-BINARY(1000) last10: 64.60% ± 3.44%
+IMDB-BINARY(1000) last50: 64.27% ± 3.47%
+总运行时间: 42.43 min
+IMDB-MULTI(1500) all   : 39.13% ± 1.44%
+IMDB-MULTI(1500) last  : 40.07% ± 2.79%
+IMDB-MULTI(1500) last10: 39.85% ± 2.68%
+IMDB-MULTI(1500) last50: 39.39% ± 2.39%
+总运行时间: 42.76 min
