@@ -124,8 +124,8 @@ class SpanTreeSplitGNN(nn.Module):
         self.main_gnn = GNNs(channels=self.hidden_channels, num_layers=self.num_layers, dropout=self.dropout)
         self.local_struct_gnns = self._build_gnns(1)
         self.embedding = self._build_embedding()
-        self.dense_merge = nn.Linear(self.hidden_channels * self.num_splits, self.hidden_channels)
-        self.alpha = nn.Parameter(torch.ones(self.hidden_channels))
+        self.dense_merge = nn.Linear(self.hidden_channels * (self.num_splits + 1), self.hidden_channels)
+        # self.alpha = nn.Parameter(torch.ones(self.hidden_channels))
         # self.attention = MultiheadAttention(embed_dim=self.hidden_channels, num_heads=1, dropout=dropout)
 
     def _build_gnns(self, num: int):
@@ -202,9 +202,10 @@ class SpanTreeSplitGNN(nn.Module):
         for l in range(self.num_layers):
             x_ls = [xs[s][l] for s in range(self.num_splits)]
             # x_l = torch.sum(torch.stack(x_ls), dim=0)
+            x_ls.append(main_x_history[l])
 
             x_l = torch.cat(x_ls, dim=1)
-            x_l = self.dense_merge(x_l) * self.alpha + main_x_history[l]
+            x_l = self.dense_merge(x_l)
             
             # x_l = torch.cat(x_ls, dim=0)
             # x_l = self.cross_attention(main_x_history[l], x_l, batch) + main_x_history[l]
