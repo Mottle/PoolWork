@@ -182,7 +182,7 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
     elif model_type == 'dualroad_rev_attn':
         model = DualRoadRevAttnGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
     elif model_type == 'st_split':
-        model = SpanTreeSplitGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, num_splits=6).to(run_device)
+        model = SpanTreeSplitGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, num_splits=4).to(run_device)
 
     classifier = Classifier(hidden_dim, hidden_dim, num_classes).to(run_device)
 
@@ -216,12 +216,15 @@ def run_k_fold4dataset(dataset, config: BenchmarkConfig):
     #合并k-fold实验结果
     # mean_result, max_result = merge_results(results)
     all, last, last_10, last_50 = process_results(results)
-    print(f'总运行时间: {(all_end - all_start) / 60:.2f} min\n')
-    print(f'{dataset}-{config.kfold}fold: \n', 
-          f'all   : {format_result(all[0], all[1])}\n',
-          f'last  : {format_result(last[0], last[1])}\n',
-          f'last10: {format_result(last_10[0], last_10[1])}\n',
-          f'last50: {format_result(last_50[0], last_50[1])}'
+    print(
+        '----------RESULTS----------\n',
+        f'spend time: {(all_end - all_start) / 60:.2f} min\n',
+        f'{dataset} for {config.kfold} fold:\n', 
+        f'all     : {format_result(all[0], all[1])}\n',
+        f'last-50 : {format_result(last_50[0], last_50[1])}\n'
+        f'last-10 : {format_result(last_10[0], last_10[1])}\n',
+        f'last    : {format_result(last[0], last[1])}\n',
+        '---------------------------\n'
     )
 
     return all, last, last_10, last_50
