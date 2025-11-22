@@ -124,7 +124,12 @@ class SpanTreeSplitGNN(nn.Module):
         self.main_gnn = GNNs(channels=self.hidden_channels, num_layers=self.num_layers, dropout=self.dropout)
         self.local_struct_gnns = self._build_gnns(1)
         self.embedding = self._build_embedding()
-        self.dense_merge = nn.Linear(self.hidden_channels * (self.num_splits + 1), self.hidden_channels)
+        self.dense_merge = nn.Sequential(
+            nn.Linear(self.hidden_channels * (self.num_splits + 1), self.hidden_channels * (self.num_splits + 1)),
+            nn.LeakyReLU(),
+            nn.Linear(self.hidden_channels * (self.num_splits + 1), self.hidden_channels),
+            nn.Dropout(p=self.dropout)
+        )
         # self.alpha = nn.Parameter(torch.ones(self.hidden_channels))
         # self.attention = MultiheadAttention(embed_dim=self.hidden_channels, num_heads=1, dropout=dropout)
 
@@ -188,7 +193,7 @@ class SpanTreeSplitGNN(nn.Module):
         
         with torch.no_grad():
             edge_index_splited = split_graph(x, edge_index, self.num_splits)
-            edge_index_splited.insert(0, edge_index)  # 添加原始图作为第一个子图
+            # edge_index_splited.insert(0, edge_index)  # 添加原始图作为第一个子图
             edge_index_splited = list(map(lambda e: e.to(x.device), edge_index_splited))
     
         xs = []
