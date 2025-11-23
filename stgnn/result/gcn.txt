@@ -75,4 +75,36 @@ REDDIT-BINARY(2000) last10: 91.59% ± 1.33%
 REDDIT-BINARY(2000) last50: 91.28% ± 2.06%
 总运行时间: 13.59 min
 
---re
+config setting:
+hid_dim: 128, layers: 3, model: gcn, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+mit_ct1(97) all   : 63.37% ± 8.94%
+mit_ct1(97) last  : 66.00% ± 11.05%
+mit_ct1(97) last10: 65.44% ± 11.68%
+mit_ct1(97) last50: 66.85% ± 11.31%
+总运行时间: 1.88 min
+mit_ct2(97) all   : 55.86% ± 12.19%
+mit_ct2(97) last  : 61.67% ± 14.07%
+mit_ct2(97) last10: 62.04% ± 13.17%
+mit_ct2(97) last50: 59.82% ± 14.96%
+总运行时间: 1.50 min
+highschool_ct1(180) all   : 92.28% ± 5.76%
+highschool_ct1(180) last  : 99.44% ± 1.67%
+highschool_ct1(180) last10: 99.44% ± 1.67%
+highschool_ct1(180) last50: 99.44% ± 1.67%
+总运行时间: 2.24 min
+highschool_ct2(180) all   : 72.57% ± 6.75%
+highschool_ct2(180) last  : 82.22% ± 11.60%
+highschool_ct2(180) last10: 82.22% ± 10.75%
+highschool_ct2(180) last50: 82.61% ± 10.27%
+总运行时间: 1.28 min
+infectious_ct1(200) all   : 90.52% ± 6.31%
+infectious_ct1(200) last  : 98.00% ± 2.45%
+infectious_ct1(200) last10: 97.70% ± 2.93%
+infectious_ct1(200) last50: 97.72% ± 2.34%
+总运行时间: 2.14 min
+infectious_ct2(200) all   : 64.16% ± 7.29%
+infectious_ct2(200) last  : 70.00% ± 8.06%
+infectious_ct2(200) last10: 70.60% ± 7.60%
+infectious_ct2(200) last50: 69.85% ± 7.78%
+总运行时间: 1.12 min

@@ -10,7 +10,8 @@ class BenchmarkConfig:
         self.graph_norm: bool = True
         self.batch_size: int = 128
         self.epochs: int = 100
-        self.use_simple_datasets: bool = False
+        # self.use_simple_datasets: bool = False
+        self.sets: str = 'common'
         self.catch_error: bool = True
         self.early_stop: bool = True
         self.early_stop_epochs: int = 50

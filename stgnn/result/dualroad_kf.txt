@@ -211,3 +211,36 @@ PROTEINS(1113) last  : 74.57% ± 4.05%
 PROTEINS(1113) last10: 74.38% ± 3.77%
 PROTEINS(1113) last50: 74.68% ± 3.74%
 总运行时间: 14.29 min
+config setting:
+hid_dim: 128, layers: 3, model: dualroad_kf, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+mit_ct1(97) all   : 58.38% ± 11.93%
+mit_ct1(97) last  : 64.33% ± 14.52%
+mit_ct1(97) last10: 65.23% ± 15.32%
+mit_ct1(97) last50: 63.89% ± 13.91%
+总运行时间: 1.92 min
+mit_ct2(97) all   : 53.34% ± 7.17%
+mit_ct2(97) last  : 58.44% ± 12.16%
+mit_ct2(97) last10: 59.84% ± 9.84%
+mit_ct2(97) last50: 57.76% ± 8.58%
+总运行时间: 1.88 min
+highschool_ct1(180) all   : 94.23% ± 4.42%
+highschool_ct1(180) last  : 98.89% ± 2.22%
+highschool_ct1(180) last10: 98.89% ± 2.22%
+highschool_ct1(180) last50: 98.89% ± 2.22%
+总运行时间: 7.44 min
+highschool_ct2(180) all   : 71.77% ± 8.56%
+highschool_ct2(180) last  : 82.78% ± 8.77%
+highschool_ct2(180) last10: 80.67% ± 9.48%
+highschool_ct2(180) last50: 78.97% ± 11.03%
+总运行时间: 3.63 min
+infectious_ct1(200) all   : 93.57% ± 4.30%
+infectious_ct1(200) last  : 97.50% ± 3.35%
+infectious_ct1(200) last10: 97.30% ± 3.26%
+infectious_ct1(200) last50: 97.43% ± 3.31%
+总运行时间: 7.17 min
+infectious_ct2(200) all   : 67.46% ± 6.94%
+infectious_ct2(200) last  : 75.50% ± 8.20%
+infectious_ct2(200) last10: 73.35% ± 6.69%
+infectious_ct2(200) last50: 72.45% ± 8.31%
+总运行时间: 3.20 min

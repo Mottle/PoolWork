@@ -5,6 +5,7 @@ from datetime import datetime
 from constant import DATASET_PATH
 from torch import nn
 from torch_geometric.datasets import TUDataset
+from utils.re_tudataset import ReTUDataset
 from torch_geometric.loader import DataLoader
 from rich.progress import track
 from perf_counter import get_time_sync, measure_time
@@ -297,17 +298,16 @@ def kfold_split(source_dataset, k, seed):
     kfold = KFold(n_splits=k, shuffle=True, random_state=seed)
     return kfold.split(source_dataset)
 
-def datasets(simple=False):
-    if simple:
+def datasets(sets='common'):
+    datasets = []
+    if sets == 'simple':
         datasets = [
             'NCI1',
             'COX2',
             'IMDB-BINARY',
             'MSRC_21'
         ]
-        for i in range(len(datasets)):
-            yield TUDataset(root=DATASET_PATH, name=datasets[i])
-    else:
+    elif sets == 'common':
         datasets = [
             'DD',
             'PROTEINS',
@@ -324,8 +324,18 @@ def datasets(simple=False):
             'MSRC_9',
             'MSRC_21',
         ]
-        for i in range(len(datasets)):
-            yield TUDataset(root=DATASET_PATH, name=datasets[i])
+    elif sets == 'dense':
+        datasets = [
+            'mit_ct1', #d≈146.92
+            'mit_ct2',
+            # 'COLLAB', #d≈66
+            'highschool_ct1', #d≈20.8
+            'highschool_ct2',
+            'infectious_ct1', #d≈18.39
+            'infectious_ct2',
+        ]
+    for i in range(len(datasets)):
+        yield ReTUDataset(root=DATASET_PATH, name=datasets[i])
 
 def set_random_seed(seed):
     import random
@@ -364,7 +374,7 @@ def run(config: BenchmarkConfig):
     results = []
     all_start = get_time_sync()
     id = -1
-    for dataset in track(datasets(config.use_simple_datasets), description="All Datasets"):
+    for dataset in track(datasets(config.sets), description="All Datasets"):
         id += 1
         dataset_start = get_time_sync()
         if config.catch_error:
@@ -381,10 +391,10 @@ def run(config: BenchmarkConfig):
             results.append((f'{dataset}', all, last, last10, last50))
         dataset_end = get_time_sync()
         
-        if config.use_simple_datasets:
-            save_result([(f'{dataset}', all, last, last10, last50)], f'./stgnn/result_simple/{config.model}.txt', dataset_end - dataset_start, config, id == 0)
-        else:
-            save_result([(f'{dataset}', all, last, last10, last50)], f'./stgnn/result/{config.model}.txt', dataset_end - dataset_start, config, id == 0)
+        # if config.use_simple_datasets:
+        #     save_result([(f'{dataset}', all, last, last10, last50)], f'./stgnn/result_simple/{config.model}.txt', dataset_end - dataset_start, config, id == 0)
+        # else:
+        save_result([(f'{dataset}', all, last, last10, last50)], f'./stgnn/result/{config.model}.txt', dataset_end - dataset_start, config, id == 0)
     all_end = get_time_sync()
 
     print(f'{config.format()}\n')
@@ -406,7 +416,8 @@ if __name__ == '__main__':
     config.graph_norm = True
     config.batch_size = 128
     config.epochs = 500
-    config.use_simple_datasets = False
+    # config.use_simple_datasets = False
+    config.sets = 'dense'
     config.catch_error = False
     config.early_stop = True
     config.early_stop_epochs = 50
