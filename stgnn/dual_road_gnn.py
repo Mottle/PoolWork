@@ -92,7 +92,7 @@ class DualRoadGNN(nn.Module):
 
 class KFNDualRoadGNN(DualRoadGNN):
     def _build_auxiliary_graph(self, x, batch):
-        return k_farthest_graph(x, self.k, batch, loop=True, cosine=True)
+        return k_farthest_graph(x, self.k, batch, loop=True, cosine=True, direction=True)
     
 class KRNDualRoadGNN(DualRoadGNN):
     def _build_auxiliary_graph(self, x, batch):
@@ -103,7 +103,8 @@ def k_farthest_graph(
     k: int,
     batch: Optional[Tensor] = None,
     loop: bool = False,
-    cosine: bool = False
+    cosine: bool = False,
+    direction: bool = True, #默认单向
 ) -> Tensor:
     """
     计算基于特征空间中 K-最远邻居的图的边索引 (edge_index)，支持批处理。
@@ -180,6 +181,11 @@ def k_farthest_graph(
         # 6. 转换回全局索引并存储
         # 局部索引 + start_idx = 全局索引
         edge_index_global = edge_index_local + start_idx
+
+        if not direction:
+            # 强制双向：拼接翻转后的边
+            edge_index_global = torch.cat([edge_index_global, edge_index_global.flip(0)], dim=1)
+
         all_edge_indices.append(edge_index_global)
 
     # 7. 合并所有子图的边索引

@@ -221,7 +221,7 @@ def run_k_fold4dataset(dataset, config: BenchmarkConfig):
         f'spend time: {(all_end - all_start) / 60:.2f} min\n',
         f'{dataset} for {config.kfold} fold:\n', 
         f'all     : {format_result(all[0], all[1])}\n',
-        f'last-50 : {format_result(last_50[0], last_50[1])}\n'
+        f'last-50 : {format_result(last_50[0], last_50[1])}\n',
         f'last-10 : {format_result(last_10[0], last_10[1])}\n',
         f'last    : {format_result(last[0], last[1])}\n',
         '---------------------------\n'
@@ -309,7 +309,7 @@ def datasets(simple=False):
             yield TUDataset(root=DATASET_PATH, name=datasets[i])
     else:
         datasets = [
-            # 'DD',
+            'DD',
             'PROTEINS',
             'NCI1',
             'NCI109',
@@ -317,8 +317,8 @@ def datasets(simple=False):
             'IMDB-BINARY',
             'IMDB-MULTI',
             'FRANKENSTEIN',
-            # 'COLLAB',
-            # 'REDDIT-BINARY',
+            'COLLAB',
+            'REDDIT-BINARY',
             # 'Synthie',
             # 'SYNTHETIC',
             'MSRC_9',
@@ -413,7 +413,7 @@ if __name__ == '__main__':
     config.seed = None
     config.kfold = 10
 
-    models = ['st_split']
+    models = ['dualroad_kf']
     # models = ['topk']
     seeds = [0, 114514, 1919810, 77777]
     for model in models:

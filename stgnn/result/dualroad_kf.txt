@@ -61,3 +61,120 @@ MSRC_21(563) last  : 92.89% ± 0.00%
 MSRC_21(563) last10: 92.66% ± 1.37%
 MSRC_21(563) last50: 92.61% ± 1.24%
 总运行时间: 9.10 min
+
+non-direction
+config setting:
+hid_dim: 128, layers: 3, model: dualroad_kf, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+PROTEINS(1113) all   : 75.36% ± 3.16%
+PROTEINS(1113) last  : 74.40% ± 2.81%
+PROTEINS(1113) last10: 75.34% ± 2.88%
+PROTEINS(1113) last50: 75.53% ± 3.38%
+总运行时间: 9.34 min
+NCI1(4110) all   : 77.34% ± 1.78%
+NCI1(4110) last  : 79.61% ± 1.83%
+NCI1(4110) last10: 79.52% ± 1.65%
+NCI1(4110) last50: 79.26% ± 1.93%
+总运行时间: 61.05 min
+NCI109(4127) all   : 75.73% ± 1.39%
+NCI109(4127) last  : 77.78% ± 1.83%
+NCI109(4127) last10: 77.56% ± 1.67%
+NCI109(4127) last50: 77.43% ± 1.69%
+总运行时间: 81.95 min
+COX2(467) all   : 79.74% ± 2.07%
+COX2(467) last  : 82.44% ± 3.83%
+COX2(467) last10: 81.36% ± 4.26%
+COX2(467) last50: 81.18% ± 3.62%
+总运行时间: 13.61 min
+IMDB-BINARY(1000) all   : 65.78% ± 3.67%
+IMDB-BINARY(1000) last  : 69.40% ± 3.32%
+IMDB-BINARY(1000) last10: 69.55% ± 4.20%
+IMDB-BINARY(1000) last50: 68.82% ± 4.35%
+总运行时间: 10.71 min
+IMDB-MULTI(1500) all   : 43.99% ± 2.13%
+IMDB-MULTI(1500) last  : 46.20% ± 3.89%
+IMDB-MULTI(1500) last10: 45.51% ± 3.32%
+IMDB-MULTI(1500) last50: 45.43% ± 3.05%
+总运行时间: 15.17 min
+FRANKENSTEIN(4337) all   : 68.53% ± 2.37%
+FRANKENSTEIN(4337) last  : 69.82% ± 1.72%
+FRANKENSTEIN(4337) last10: 70.31% ± 2.31%
+FRANKENSTEIN(4337) last50: 70.19% ± 2.33%
+总运行时间: 62.18 min
+MSRC_9(221) all   : 89.16% ± 4.64%
+MSRC_9(221) last  : 93.20% ± 4.67%
+MSRC_9(221) last10: 92.71% ± 4.15%
+MSRC_9(221) last50: 92.45% ± 4.14%
+总运行时间: 5.70 min
+MSRC_21(563) all   : 88.63% ± 2.80%
+MSRC_21(563) last  : 92.18% ± 2.42%
+MSRC_21(563) last10: 92.04% ± 2.25%
+MSRC_21(563) last50: 91.99% ± 2.26%
+总运行时间: 14.91 min
+
+-----------
+config setting:
+hid_dim: 128, layers: 3, model: dualroad_kf, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+DD(1178) all   : 73.45% ± 4.62%
+DD(1178) last  : 72.57% ± 5.65%
+DD(1178) last10: 74.06% ± 4.50%
+DD(1178) last50: 74.26% ± 4.57%
+总运行时间: 10.61 min
+PROTEINS(1113) all   : 74.93% ± 2.93%
+PROTEINS(1113) last  : 76.19% ± 2.79%
+PROTEINS(1113) last10: 75.85% ± 3.13%
+PROTEINS(1113) last50: 75.55% ± 2.86%
+总运行时间: 8.23 minNCI1(4110) all   : 76.75% ± 1.43%
+NCI1(4110) last  : 78.98% ± 2.01%
+NCI1(4110) last10: 79.17% ± 1.68%
+NCI1(4110) last50: 78.93% ± 1.64%
+总运行时间: 62.85 min
+NCI109(4127) all   : 76.05% ± 1.66%
+NCI109(4127) last  : 78.22% ± 1.82%
+NCI109(4127) last10: 78.33% ± 1.64%
+NCI109(4127) last50: 78.07% ± 1.57%
+总运行时间: 71.17 min
+COX2(467) all   : 80.80% ± 3.07%
+COX2(467) last  : 81.36% ± 3.99%
+COX2(467) last10: 81.47% ± 4.07%
+COX2(467) last50: 81.48% ± 3.87%
+总运行时间: 11.21 min
+IMDB-BINARY(1000) all   : 64.80% ± 3.67%
+IMDB-BINARY(1000) last  : 69.10% ± 5.15%
+IMDB-BINARY(1000) last10: 67.87% ± 5.01%
+IMDB-BINARY(1000) last50: 67.30% ± 4.92%
+总运行时间: 15.35 min
+IMDB-MULTI(1500) all   : 43.48% ± 1.47%
+IMDB-MULTI(1500) last  : 46.47% ± 3.07%
+IMDB-MULTI(1500) last10: 46.17% ± 2.59%
+IMDB-MULTI(1500) last50: 45.52% ± 2.13%
+总运行时间: 15.90 min
+FRANKENSTEIN(4337) all   : 68.57% ± 1.85%
+FRANKENSTEIN(4337) last  : 71.02% ± 2.88%
+FRANKENSTEIN(4337) last10: 70.60% ± 1.98%
+FRANKENSTEIN(4337) last50: 70.40% ± 1.86%
+总运行时间: 74.97 min
+COLLAB(5000) all   : 75.03% ± 1.23%
+COLLAB(5000) last  : 76.48% ± 1.16%
+COLLAB(5000) last10: 76.56% ± 1.35%
+COLLAB(5000) last50: 76.43% ± 1.43%
+总运行时间: 76.44 min
+REDDIT-BINARY(2000) all   : 86.54% ± 2.48%
+REDDIT-BINARY(2000) last  : 90.60% ± 1.46%
+REDDIT-BINARY(2000) last10: 89.74% ± 2.04%
+REDDIT-BINARY(2000) last50: 89.47% ± 2.28%
+总运行时间: 45.88 min
+MSRC_9(221) all   : 85.78% ± 3.95%
+MSRC_9(221) last  : 90.06% ± 5.26%
+MSRC_9(221) last10: 90.14% ± 5.45%
+MSRC_9(221) last50: 89.92% ± 4.97%
+总运行时间: 4.38 min
+MSRC_21(563) all   : 88.42% ± 3.05%
+MSRC_21(563) last  : 92.36% ± 2.65%
+MSRC_21(563) last10: 92.43% ± 2.28%
+MSRC_21(563) last50: 92.66% ± 2.34%
+总运行时间: 9.37 min
+-----------
+
+dense mlp
