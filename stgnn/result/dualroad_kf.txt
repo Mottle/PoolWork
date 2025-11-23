@@ -178,3 +178,21 @@ MSRC_21(563) last50: 92.66% ± 2.34%
 -----------
 
 dense mlp
+config setting:
+hid_dim: 128, layers: 3, model: dualroad_kf, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+DD(1178) all   : 71.21% ± 3.23%
+DD(1178) last  : 69.35% ± 7.34%
+DD(1178) last10: 69.47% ± 4.52%
+DD(1178) last50: 71.34% ± 4.42%
+总运行时间: 9.59 min
+PROTEINS(1113) all   : 74.75% ± 2.96%
+PROTEINS(1113) last  : 74.22% ± 2.47%
+PROTEINS(1113) last10: 74.69% ± 2.92%
+PROTEINS(1113) last50: 74.63% ± 3.31%
+总运行时间: 9.62 min
+NCI1(4110) all   : 76.47% ± 1.28%
+NCI1(4110) last  : 78.93% ± 1.37%
+NCI1(4110) last10: 78.68% ± 1.25%
+NCI1(4110) last50: 78.36% ± 1.11%
+总运行时间: 53.64 min

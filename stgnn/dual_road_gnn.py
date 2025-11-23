@@ -33,7 +33,13 @@ class DualRoadGNN(nn.Module):
         self.norms = self._build_graph_norms()
         self.feature_convs = self._build_convs()
         self.feature_norms = self._build_graph_norms()
-        self.fusion_gate_linear = nn.Linear(self.hidden_channels * 2, hidden_channels)
+        # self.fusion_gate_linear = nn.Linear(self.hidden_channels * 2, hidden_channels)
+        self.fusion_dense_mlp = nn.Sequential(
+            nn.Linear(self.hidden_channels * 2, self.hidden_channels * 2),
+            nn.LeakyReLU(),
+            nn.Linear(2 * self.hidden_channels, self.hidden_channels),
+            nn.Dropout(p=self.dropout)
+        )
     
     def _build_embedding(self):
         # self.embedding = nn.Embedding(num_embeddings=self.in_channels, embedding_dim=self.hidden_channels)
@@ -78,9 +84,11 @@ class DualRoadGNN(nn.Module):
             feature_x = F.dropout(feature_x, p=self.dropout, training=self.training)
 
             combined = torch.cat([x, feature_x], dim=-1)
-            gate = torch.sigmoid(self.fusion_gate_linear(combined))
+            # gate = torch.sigmoid(self.fusion_gate_linear(combined))
 
-            fusion_x = gate * x + (1 - gate) * feature_x + prev_x
+            # fusion_x = gate * x + (1 - gate) * feature_x + prev_x
+
+            fusion_x = self.fusion_dense_mlp(combined) + prev_x
             all_x.append(fusion_x)
             x = fusion_x
 
