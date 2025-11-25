@@ -117,7 +117,7 @@ def k_farthest_graph(
     k: int,
     batch: Optional[Tensor] = None,
     loop: bool = False,
-    cosine: bool = False,
+    cosine: bool = True,
     direction: bool = True, #默认单向
 ) -> Tensor:
     """
