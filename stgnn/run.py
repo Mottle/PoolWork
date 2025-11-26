@@ -412,7 +412,7 @@ if __name__ == '__main__':
 
     config = BenchmarkConfig()
     config.hidden_channels = 128
-    config.num_layers = 3
+    config.num_layers = 5
     config.graph_norm = True
     config.batch_size = 128
     config.epochs = 500
