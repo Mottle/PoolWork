@@ -172,7 +172,9 @@ def centered_tanh_attention_weights(
     return centered_scores
 
 def bidirectional_reverse_self_attention(
-    x: torch.Tensor,
+    Q: torch.Tensor,
+    K: torch.Tensor,
+    V: torch.Tensor,
     batch: torch.Tensor
 ) -> torch.Tensor:
     # 构造图内所有 (i, j) 边索引
@@ -190,15 +192,15 @@ def bidirectional_reverse_self_attention(
     # edge_index = torch.stack([row_idx, col_idx], dim=0)  # (2, E)
 
     # 计算 Reverse Score：负的点积
-    reverse_scores = -(x[row_idx] * x[col_idx]).sum(dim=-1)  # (E,)
+    reverse_scores = -(Q[row_idx] * K[col_idx]).sum(dim=-1)  # (E,)
 
     # 分组 Softmax：按 query 节点 row_idx 分组
     # attention_weights = softmax(reverse_scores, row_idx)
     attention_weights = centered_tanh_attention_weights(reverse_scores, row_idx)
 
     # 加权聚合：按 query 节点 row_idx 聚合 value 节点 col_idx 的特征
-    x_out = torch.zeros_like(x)
-    x_out.index_add_(0, row_idx, attention_weights.unsqueeze(-1) * x[col_idx])
+    x_out = torch.zeros_like(V)
+    x_out.index_add_(0, row_idx, attention_weights.unsqueeze(-1) * V[col_idx])
 
     return x_out, reverse_scores, attention_weights
 

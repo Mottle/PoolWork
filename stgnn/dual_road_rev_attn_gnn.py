@@ -31,6 +31,11 @@ class DualRoadRevAttnGNN(nn.Module):
         self.feature_convs = self._build_convs()
         self.feature_norms = self._build_graph_norms()
         self.fusion_gate_linear = nn.Linear(self.hidden_channels * 2, hidden_channels)
+
+        self.q_linear = nn.Linear(hidden_channels, hidden_channels)
+        self.k_linear = nn.Linear(hidden_channels, hidden_channels)
+        self.v_linear = nn.Linear(hidden_channels, hidden_channels)
+        self.o_linear = nn.Linear(hidden_channels, hidden_channels)
     
     def _build_embedding(self):
         # self.embedding = nn.Embedding(num_embeddings=self.in_channels, embedding_dim=self.hidden_channels)
@@ -74,7 +79,11 @@ class DualRoadRevAttnGNN(nn.Module):
             # feature_x = F.leaky_relu(feature_x)
             # feature_x = F.dropout(feature_x, p=self.dropout, training=self.training)
 
-            rev_attn_x, _, _ = bidirectional_reverse_self_attention(x, batch)
+            Q = self.q_linear(x)
+            K = self.k_linear(x)
+            V = self.v_linear(x)
+            rev_attn_x, _, _ = bidirectional_reverse_self_attention(Q, K, V, batch)
+            rev_attn_x = self.o_linear(rev_attn_x)
 
             combined = torch.cat([x, rev_attn_x], dim=-1)
             gate = torch.sigmoid(self.fusion_gate_linear(combined))
