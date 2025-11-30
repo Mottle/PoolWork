@@ -309,7 +309,7 @@ def datasets(sets='common'):
         ]
     elif sets == 'common':
         datasets = [
-            'DD',
+            # 'DD',
             'PROTEINS',
             'NCI1',
             'NCI109',
@@ -417,14 +417,14 @@ if __name__ == '__main__':
     config.batch_size = 128
     config.epochs = 500
     # config.use_simple_datasets = False
-    config.sets = 'dense'
+    config.sets = 'common'
     config.catch_error = False
     config.early_stop = True
     config.early_stop_epochs = 50
     config.seed = None
     config.kfold = 10
 
-    models = ['dualroad_kf']
+    models = ['dualroad_rev_attn']
     # models = ['topk']
     seeds = [0, 114514, 1919810, 77777]
     for model in models:
