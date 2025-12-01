@@ -2,14 +2,14 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class ChainNN(nn.Module):
+class LineNN(nn.Module):
     def __init__(self, channels: int, max_depth: int = 5, dropout: float = 0.5):
-        super(ChainNN, self).__init__()
+        super(LineNN, self).__init__()
         self.channels = channels
         self.max_depth = max_depth
         self.dropout = dropout
 
-        self.chain_mlp = nn.Sequential(
+        self.line_mlp = nn.Sequential(
             nn.Linear(in_features=channels * max_depth, out_features=channels * max_depth),
             nn.LeakyReLU(),
             nn.Linear(in_features=channels * max_depth, out_features=channels),
@@ -29,5 +29,5 @@ class ChainNN(nn.Module):
             xi = xi * alpha
             remapped.append(xi)
         concatenated = torch.cat(remapped, dim=1)
-        out = self.chain_mlp(concatenated)
+        out = self.line_mlp(concatenated)
         return out
