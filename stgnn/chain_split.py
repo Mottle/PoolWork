@@ -42,21 +42,22 @@ class LineAttention(nn.Module):
         self.dropout = dropout
 
         self.attention = MultiheadAttention(embed_dim=channels, num_heads=num_heads, dropout=dropout, batch_first=True)
+        self.q_linear = nn.Linear(in_features=channels, out_features=channels)
+        self.k_linear = nn.Linear(in_features=channels, out_features=channels)
+        self.v_linear = nn.Linear(in_features=channels, out_features=channels)
+        self.o_linear = nn.Linear(in_features=channels, out_features=channels)
 
         # self.depth_linear = nn.Linear(in_features=1, out_features=channels)
 
     def forward(self, *x: torch.Tensor) -> torch.Tensor:
-        # remapped = []
-        # for idx, xi in enumerate(x):
-        #     if idx == 0:
-        #         alpha = torch.ones(self.channels).to(xi.device)
-        #     else:
-        #         alpha = self.depth_linear(torch.tensor(idx).float().to(xi.device))
-        #         alpha = torch.sigmoid(alpha)
-        #     xi = xi * alpha
-        #     remapped.append(xi.unsqueeze(1))  # Add sequence dimension
         remapped = [xi.unsqueeze(1) for xi in x]  # Add sequence dimension
         concatenated = torch.cat(remapped, dim=1)  # Shape: (batch_size, max_depth, channels)
-        attn_output, _ = self.attention(concatenated, concatenated, concatenated)
-        out = attn_output.mean(dim=1)  # Aggregate over the sequence dimension
+
+        q = self.q_linear(concatenated)
+        k = self.k_linear(concatenated)
+        v = self.v_linear(concatenated)
+        o = self.attention(q, k, v)
+        o = self.o_linear(o)
+
+        out = o.mean(dim=1)  # Aggregate over the sequence dimension
         return out
