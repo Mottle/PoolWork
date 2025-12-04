@@ -93,6 +93,15 @@ class GNNs(nn.Module):
         if self.backbone == 'GCN':
             for _ in range(self.num_layers):
                 convs.append(GCNConv(self.channel, self.channel))
+        elif self.backbone == 'GIN':
+            for _ in range(self.num_layers):
+                nn1 = nn.Sequential(
+                    nn.Linear(self.channel, self.channel),
+                    nn.LeakyReLU(),
+                    nn.Linear(self.channel, self.channel),
+                    nn.Dropout(p=self.dropout)
+                )
+                convs.append(GINConv(nn1))
         return convs
     
     def _build_graph_norm(self):
