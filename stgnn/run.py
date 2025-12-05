@@ -418,7 +418,7 @@ if __name__ == '__main__':
     config.epochs = 500
     # config.use_simple_datasets = False
     config.sets = 'common'
-    config.catch_error = False
+    config.catch_error = True
     config.early_stop = True
     config.early_stop_epochs = 50
     config.seed = None
