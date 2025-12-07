@@ -334,10 +334,11 @@ if __name__ == '__main__':
     for model in models:
         config.pooler = model
         config.seed = seeds[0]
-        config.apply_random_seed()
+        # config.apply_random_seed()
 
         if config.catch_error:
             try:
+                config.apply_random_seed()
                 run(config)
             except Exception as e:
                 print(f'运行 {config["backbone"]}_{config["pooler"]} 时出错: {e}')
