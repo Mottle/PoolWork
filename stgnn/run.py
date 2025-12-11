@@ -21,6 +21,7 @@ from dual_road_gnn import DualRoadGNN, KFNDualRoadGNN, KRNDualRoadGNN
 from dual_road_rev_attn_gnn import DualRoadRevAttnGNN
 from baseline import BaseLine
 from st_split_gnn import SpanTreeSplitGNN
+from kan_based_gin import KANBasedGIN
 
 def compute_loss(loss1, loss2):
     return loss1 + loss2 / (loss1 + loss2 + 1e-6).detach()
@@ -184,6 +185,8 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
         model = DualRoadRevAttnGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
     elif model_type == 'st_split':
         model = SpanTreeSplitGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, num_splits=4).to(run_device)
+    elif model_type == 'kan_gin':
+        model = KANBasedGIN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
 
     classifier = Classifier(hidden_dim, hidden_dim, num_classes).to(run_device)
 
@@ -418,13 +421,13 @@ if __name__ == '__main__':
     config.epochs = 500
     # config.use_simple_datasets = False
     config.sets = 'common'
-    config.catch_error = True
+    config.catch_error = False
     config.early_stop = True
     config.early_stop_epochs = 50
     config.seed = None
     config.kfold = 10
 
-    models = ['dualroad_rev_attn']
+    models = ['kan_gin']
     # models = ['topk']
     seeds = [0, 114514, 1919810, 77777]
     for model in models:
