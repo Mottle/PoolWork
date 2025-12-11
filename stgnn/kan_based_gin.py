@@ -2,6 +2,7 @@ import context
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch_geometric
 from utils.kan.kan_based_gin import KANBasedGINConv
 
 class KANBasedGIN(nn.Module):
@@ -45,16 +46,17 @@ class KANBasedGIN(nn.Module):
         # 可选：如果用于图分类，则需要一个 Readout 层和最终的分类器
         # 这里假设是节点分类，直接使用最后一层输出。
 
-    def forward(self, data):
-        x, edge_index = data.x, data.edge_index
+    def forward(self, x: torch.Tensor, edge_index: torch.Tensor, batch: torch.Tensor) -> torch.Tensor:
 
         for i, conv in enumerate(self.convs):
             x = conv(x, edge_index)
-            # 只有中间层使用 ReLU 或其它非线性，但 KAN 内部已含激活，
+            # 只有中间层使用 LeakyReLU 或其它非线性，但 KAN 内部已含激活，
             # 这里为避免过度复杂化，直接依赖 KAN 内部的非线性。
             # 最后一个 KANGINConv 的输出作为最终结果。
             if i < self.num_layers - 1:
-                 x = F.relu(x) # 仍然加入一个传统的ReLU或跳跃连接，以增加非线性组合
+                 x = F.leaky_relu(x) # 仍然加入一个传统的ReLU或跳跃连接，以增加非线性组合
                  x = F.dropout(x, p=0.5, training=self.training)
+        
+        global_feature = torch_geometric.nn.global_mean_pool(x, batch)  # 图级任务时使用
 
-        return x, 0
+        return global_feature, 0

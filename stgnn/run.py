@@ -186,7 +186,7 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
     elif model_type == 'st_split':
         model = SpanTreeSplitGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, num_splits=4).to(run_device)
     elif model_type == 'kan_gin':
-        model = KANBasedGIN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
+        model = KANBasedGIN(input_dim, hidden_dim, num_layers=num_layers).to(run_device)
 
     classifier = Classifier(hidden_dim, hidden_dim, num_classes).to(run_device)
 

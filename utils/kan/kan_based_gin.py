@@ -4,8 +4,6 @@ import torch.nn.functional as F
 from torch_geometric.nn import MessagePassing
 from torch_geometric.utils import add_self_loops
 from .kan import KAN
-import math
-
 
 class KANBasedGINConv(MessagePassing):
     """
