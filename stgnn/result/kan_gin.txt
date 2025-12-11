@@ -1,0 +1,23 @@
+config setting:
+hid_dim: 128, layers: 5, model: kan_gin, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+PROTEINS(1113) all   : 70.91% ± 4.34%
+PROTEINS(1113) last  : 71.08% ± 4.32%
+PROTEINS(1113) last10: 72.12% ± 3.74%
+PROTEINS(1113) last50: 71.65% ± 4.10%
+总运行时间: 9.29 min
+NCI1(4110) all   : 72.88% ± 3.09%
+NCI1(4110) last  : 78.08% ± 2.61%
+NCI1(4110) last10: 77.64% ± 2.23%
+NCI1(4110) last50: 77.36% ± 2.39%
+总运行时间: 50.60 min
+NCI109(4127) all   : 71.82% ± 3.48%
+NCI109(4127) last  : 76.96% ± 4.09%
+NCI109(4127) last10: 76.88% ± 4.09%
+NCI109(4127) last50: 76.47% ± 4.25%
+总运行时间: 47.95 min
+COX2(467) all   : 79.68% ± 2.07%
+COX2(467) last  : 80.93% ± 4.57%
+COX2(467) last10: 81.42% ± 3.37%
+COX2(467) last50: 81.09% ± 3.07%
+总运行时间: 7.79 min
