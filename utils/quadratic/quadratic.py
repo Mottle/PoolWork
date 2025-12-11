@@ -65,8 +65,8 @@ class QuadraticLayer(nn.Module):
             raise ValueError(f"输入 X 必须是二维张量 (Batch_size, in_features)，但接收到维度为 {X.dim()}")
 
         # X: (B, D_in)
-        B, D_in = X.shape
-        D_out = self.out_features
+        # B, D_in = X.shape
+        # D_out = self.out_features
 
         # --- 1. 计算线性项：WX + b ---
         # 线性运算 torch.nn.functional.linear(X, W, b)
@@ -79,10 +79,10 @@ class QuadraticLayer(nn.Module):
         # Y_j = X^T A_j X, 其中 A_j 是 A 的第 j 个切片 (D_in, D_in)
         
         # X_T: (B, 1, D_in)
-        X_T = X.unsqueeze(1)
+        # X_T = X.unsqueeze(1)
         
         # X: (B, D_in, 1)
-        X_ = X.unsqueeze(2)
+        # X_ = X.unsqueeze(2)
         
         # A: (D_out, D_in, D_in) -> 无法直接应用于 B 批次
         

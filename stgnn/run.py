@@ -187,6 +187,8 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
         model = SpanTreeSplitGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, num_splits=4).to(run_device)
     elif model_type == 'kan_gin':
         model = KANBasedGIN(input_dim, hidden_dim, num_layers=num_layers).to(run_device)
+    elif model_type == 'quad_gin':
+        model = BaseLine(input_dim, hidden_dim, hidden_dim, backbone='quad', num_layers=num_layers, dropout=dropout).to(run_device)
 
     classifier = Classifier(hidden_dim, hidden_dim, num_classes).to(run_device)
 
@@ -427,7 +429,7 @@ if __name__ == '__main__':
     config.seed = None
     config.kfold = 10
 
-    models = ['kan_gin']
+    models = ['quad_gin']
     # models = ['topk']
     seeds = [0, 114514, 1919810, 77777]
     for model in models:

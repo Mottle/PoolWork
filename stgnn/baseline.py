@@ -44,6 +44,10 @@ class BaseLine(nn.Module):
                 nn.Dropout(p=self.dropout)
             )
             return GINConv(fnn)
+        elif self.backbone == 'quad':
+            from utils.quadratic.quadratic import QuadraticLayer
+            fnn = QuadraticLayer(in_channels, out_channels)
+            return GINConv(fnn)
         else:
             raise ValueError("backbone must be 'gcn'")
         
