@@ -417,13 +417,13 @@ if __name__ == '__main__':
 
     config = BenchmarkConfig()
     config.hidden_channels = 128
-    config.num_layers = 5
+    config.num_layers = 3
     config.graph_norm = True
     config.batch_size = 128
     config.epochs = 500
     # config.use_simple_datasets = False
     config.sets = 'common'
-    config.catch_error = False
+    config.catch_error = True
     config.early_stop = True
     config.early_stop_epochs = 50
     config.seed = None
