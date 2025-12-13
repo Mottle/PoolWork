@@ -51,13 +51,13 @@ class BaseLine(nn.Module):
             return GINConv(fnn)
         elif self.backbone == 'quad':
             from utils.quadratic.quadratic import QuadraticLayer
-            fnn = QuadraticLayer(in_channels, out_channels)
-            # fnn = nn.Sequential(
-            #     QuadraticLayer(in_channels, out_channels),
-            #     nn.LeakyReLU(),
-            #     QuadraticLayer(out_channels, out_channels),
-            #     nn.Dropout(p=self.dropout)
-            # )
+            # fnn = QuadraticLayer(in_channels, out_channels)
+            fnn = nn.Sequential(
+                QuadraticLayer(in_channels, out_channels),
+                nn.LeakyReLU(),
+                QuadraticLayer(out_channels, out_channels),
+                # nn.Dropout(p=self.dropout)
+            )
             # fnn = nn.Sequential(
             #     QuadraticLayer(in_channels, out_channels),
             #     nn.LeakyReLU(),
