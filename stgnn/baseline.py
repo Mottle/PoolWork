@@ -34,13 +34,14 @@ class BaseLine(nn.Module):
         if self.backbone == 'gcn':
             return GCNConv(in_channels, out_channels)
         elif self.backbone == 'gin':
-            fnn = nn.Sequential(
-                nn.Linear(in_channels, out_channels),
-                nn.LeakyReLU(),
-                nn.Linear(out_channels, out_channels),
-                nn.LeakyReLU(),
-                nn.Dropout(p=self.dropout)
-            )
+            # fnn = nn.Sequential(
+            #     nn.Linear(in_channels, out_channels),
+            #     nn.LeakyReLU(),
+            #     nn.Linear(out_channels, out_channels),
+            #     nn.LeakyReLU(),
+            #     nn.Dropout(p=self.dropout)
+            # )
+            fnn = nn.Linear(in_channels, out_channels)
             return GINConv(fnn)
         elif self.backbone == 'quad':
             from utils.quadratic.quadratic import QuadraticLayer
