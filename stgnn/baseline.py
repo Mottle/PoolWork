@@ -45,7 +45,8 @@ class BaseLine(nn.Module):
             fnn = nn.Sequential(
                 nn.Linear(in_channels, out_channels),
                 nn.LeakyReLU(),
-                nn.Linear(out_channels, out_channels)
+                nn.Linear(out_channels, out_channels),
+                nn.Dropout(p=self.dropout)
             )
             return GINConv(fnn)
         elif self.backbone == 'quad':

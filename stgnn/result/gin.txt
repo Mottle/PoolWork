@@ -167,3 +167,13 @@ MSRC_21(563) last  : 92.53% ± 2.97%
 MSRC_21(563) last10: 92.83% ± 2.98%
 MSRC_21(563) last50: 92.62% ± 2.68%
 总运行时间: 4.61 min
+
+2layers dropout
+config setting:
+hid_dim: 128, layers: 3, model: gin, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+PROTEINS(1113) all   : 44.84% ± 4.56%
+PROTEINS(1113) last  : 41.13% ± 5.16%
+PROTEINS(1113) last10: 41.39% ± 5.34%
+PROTEINS(1113) last50: 42.07% ± 5.38%
+总运行时间: 1.36 min
