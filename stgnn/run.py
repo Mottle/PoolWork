@@ -421,6 +421,7 @@ if __name__ == '__main__':
     config.graph_norm = True
     config.batch_size = 128
     config.epochs = 500
+    config.dropout = 0.2
     # config.use_simple_datasets = False
     config.sets = 'common'
     config.catch_error = True

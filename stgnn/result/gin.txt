@@ -177,3 +177,11 @@ PROTEINS(1113) last  : 41.13% ± 5.16%
 PROTEINS(1113) last10: 41.39% ± 5.34%
 PROTEINS(1113) last50: 42.07% ± 5.38%
 总运行时间: 1.36 min
+config setting:
+hid_dim: 128, layers: 3, model: gin, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.2, kfold: 10, seed: 0, early_stop: True
+PROTEINS(1113) all   : 45.15% ± 3.69%
+PROTEINS(1113) last  : 41.76% ± 4.64%
+PROTEINS(1113) last10: 41.51% ± 5.27%
+PROTEINS(1113) last50: 41.99% ± 5.18%
+总运行时间: 0.99 min
