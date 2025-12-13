@@ -52,18 +52,18 @@ class BaseLine(nn.Module):
         elif self.backbone == 'quad':
             from utils.quadratic.quadratic import QuadraticLayer
             # fnn = QuadraticLayer(in_channels, out_channels)
-            fnn = nn.Sequential(
-                QuadraticLayer(in_channels, out_channels),
-                nn.LeakyReLU(),
-                QuadraticLayer(out_channels, out_channels),
-                # nn.Dropout(p=self.dropout)
-            )
             # fnn = nn.Sequential(
             #     QuadraticLayer(in_channels, out_channels),
             #     nn.LeakyReLU(),
-            #     nn.Linear(out_channels, out_channels),
-            #     nn.Dropout(p=self.dropout)
+            #     QuadraticLayer(out_channels, out_channels),
+            #     # nn.Dropout(p=self.dropout)
             # )
+            fnn = nn.Sequential(
+                QuadraticLayer(in_channels, out_channels),
+                nn.LeakyReLU(),
+                nn.Linear(out_channels, out_channels),
+                # nn.Dropout(p=self.dropout)
+            )
             return GINConv(fnn)
         else:
             raise ValueError("backbone must be 'gcn'")
