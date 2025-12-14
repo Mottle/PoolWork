@@ -266,3 +266,44 @@ FRANKENSTEIN(4337) last  : 70.05% ± 1.79%
 FRANKENSTEIN(4337) last10: 69.27% ± 1.42%
 FRANKENSTEIN(4337) last50: 69.40% ± 1.16%
 总运行时间: 23.95 min
+
+
+quad + linear 确保A对称
+config setting:
+hid_dim: 128, layers: 3, model: quad_gin, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+PROTEINS(1113) all   : 71.84% ± 2.82%
+PROTEINS(1113) last  : 70.26% ± 4.71%
+PROTEINS(1113) last10: 71.26% ± 2.84%
+PROTEINS(1113) last50: 72.23% ± 2.87%
+总运行时间: 3.28 min
+NCI1(4110) all   : 78.92% ± 1.65%
+NCI1(4110) last  : 80.12% ± 2.15%
+NCI1(4110) last10: 80.53% ± 1.91%
+NCI1(4110) last50: 80.39% ± 1.72%
+总运行时间: 12.21 min
+NCI109(4127) all   : 77.69% ± 1.96%
+NCI109(4127) last  : 79.36% ± 1.70%
+NCI109(4127) last10: 79.21% ± 1.94%
+NCI109(4127) last50: 79.07% ± 1.85%
+总运行时间: 13.37 min
+COX2(467) all   : 79.46% ± 3.51%
+COX2(467) last  : 81.13% ± 6.75%
+COX2(467) last10: 80.33% ± 6.59%
+COX2(467) last50: 80.14% ± 5.74%
+总运行时间: 2.26 min
+IMDB-BINARY(1000) all   : 63.48% ± 4.27%
+IMDB-BINARY(1000) last  : 62.40% ± 5.02%
+IMDB-BINARY(1000) last10: 64.36% ± 3.97%
+IMDB-BINARY(1000) last50: 64.29% ± 4.60%
+总运行时间: 2.56 min
+IMDB-MULTI(1500) all   : 39.76% ± 1.48%
+IMDB-MULTI(1500) last  : 41.00% ± 2.50%
+IMDB-MULTI(1500) last10: 41.11% ± 2.06%
+IMDB-MULTI(1500) last50: 40.38% ± 1.70%
+总运行时间: 3.22 min
+FRANKENSTEIN(4337) all   : 68.94% ± 1.30%
+FRANKENSTEIN(4337) last  : 69.59% ± 2.11%
+FRANKENSTEIN(4337) last10: 69.64% ± 1.47%
+FRANKENSTEIN(4337) last50: 69.79% ± 1.45%
+总运行时间: 13.10 min
