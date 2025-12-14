@@ -189,6 +189,8 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
         model = KANBasedGIN(input_dim, hidden_dim, num_layers=num_layers).to(run_device)
     elif model_type == 'quad_gin':
         model = BaseLine(input_dim, hidden_dim, hidden_dim, backbone='quad', num_layers=num_layers, dropout=dropout).to(run_device)
+    elif model_type == 'gt':
+        model = BaseLine(input_dim, hidden_dim, hidden_dim, backbone='gt', num_layers=num_layers, dropout=dropout).to(run_device)
 
     classifier = Classifier(hidden_dim, hidden_dim, num_classes).to(run_device)
 
@@ -424,13 +426,13 @@ if __name__ == '__main__':
     config.dropout = 0.5
     # config.use_simple_datasets = False
     config.sets = 'common'
-    config.catch_error = True
+    config.catch_error = False
     config.early_stop = True
     config.early_stop_epochs = 50
     config.seed = None
     config.kfold = 10
 
-    models = ['quad_gin']
+    models = ['gt']
     # models = ['topk']
     seeds = [0, 114514, 1919810, 77777]
     for model in models:

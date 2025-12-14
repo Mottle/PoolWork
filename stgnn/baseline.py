@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from torch_geometric.nn import GCNConv, GINConv, global_mean_pool
+from torch_geometric.nn import GCNConv, GINConv, global_mean_pool, TransformerConv
 from torch_geometric.nn.norm import GraphNorm
 import torch.nn.functional as F
 
@@ -70,6 +70,9 @@ class BaseLine(nn.Module):
                 QuadraticLayer(out_channels, out_channels),
             )
             return GINConv(fnn)
+        elif self.backbone == 'gt':
+            heads = 4
+            return TransformerConv(in_channels, out_channels, heads=4, dropout=self.dropout, beta=True, concat=False)
         else:
             raise ValueError(f"backbone invalid: {self.backbone}")
         
