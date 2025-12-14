@@ -71,7 +71,7 @@ class BaseLine(nn.Module):
             )
             return GINConv(fnn)
         else:
-            raise ValueError("backbone must be 'gcn'")
+            raise ValueError(f"backbone invalid: {self.backbone}")
         
     def build_norms(self):
         self.norms = nn.ModuleList()
