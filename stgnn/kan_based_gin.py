@@ -55,7 +55,7 @@ class KANBasedGIN(nn.Module):
             # 最后一个 KANGINConv 的输出作为最终结果。
             if i < self.num_layers - 1:
                  x = F.leaky_relu(x) # 仍然加入一个传统的ReLU或跳跃连接，以增加非线性组合
-                 x = F.dropout(x, p=0.5, training=self.training)
+                #  x = F.dropout(x, p=0.5, training=self.training)
         
         global_feature = torch_geometric.nn.global_mean_pool(x, batch)  # 图级任务时使用
 

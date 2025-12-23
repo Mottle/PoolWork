@@ -438,7 +438,6 @@ if __name__ == '__main__':
     for model in models:
         config.model = model
         config.seed = seeds[0]
-        # config.apply_random_seed()
 
         if config.catch_error:
             try:
