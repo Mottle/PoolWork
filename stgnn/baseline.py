@@ -64,9 +64,14 @@ class BaseLine(nn.Module):
             #     nn.Linear(out_channels, out_channels),
             #     # nn.Dropout(p=self.dropout)
             # )
+            # fnn = nn.Sequential(
+            #     nn.Linear(in_channels, out_channels),
+            #     nn.LeakyReLU(),
+            #     QuadraticLayer(out_channels, out_channels),
+            # )
             fnn = nn.Sequential(
                 nn.Linear(in_channels, out_channels),
-                nn.LeakyReLU(),
+                nn.GELU(),
                 QuadraticLayer(out_channels, out_channels),
             )
             return GINConv(fnn)
