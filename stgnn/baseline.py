@@ -41,13 +41,13 @@ class BaseLine(nn.Module):
             #     nn.LeakyReLU(),
             #     nn.Dropout(p=self.dropout)
             # )
-            # fnn = nn.Linear(in_channels, out_channels)
-            fnn = nn.Sequential(
-                nn.Linear(in_channels, out_channels),
-                nn.LeakyReLU(),
-                nn.Linear(out_channels, out_channels),
-                nn.Dropout(p=self.dropout)
-            )
+            fnn = nn.Linear(in_channels, out_channels)
+            # fnn = nn.Sequential(
+            #     nn.Linear(in_channels, out_channels),
+            #     nn.LeakyReLU(),
+            #     nn.Linear(out_channels, out_channels),
+            #     nn.Dropout(p=self.dropout)
+            # )
             return GINConv(fnn)
         elif self.backbone == 'quad':
             from utils.quadratic.quadratic import QuadraticLayer

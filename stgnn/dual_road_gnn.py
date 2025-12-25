@@ -56,6 +56,9 @@ class DualRoadGNN(nn.Module):
         for i in range(self.num_layers):
             if self.backbone == 'gcn':
                 convs.append(GCNConv(self.hidden_channels, self.hidden_channels))
+            elif self.backbone == 'gin':
+                fnn = nn.Linear(self.hidden_channels, self.hidden_channels)
+                convs.append(GINConv(fnn))
         return convs
 
     def _build_graph_norms(self):
