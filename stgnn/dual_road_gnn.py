@@ -59,6 +59,8 @@ class DualRoadGNN(nn.Module):
             elif self.backbone == 'gin':
                 fnn = nn.Linear(self.hidden_channels, self.hidden_channels)
                 convs.append(GINConv(fnn))
+            elif self.backbone == 'gat':
+                convs.append(GATConv(self.hidden_channels, self.hidden_channels // 4, heads=4))
         return convs
 
     def _build_graph_norms(self):
