@@ -244,3 +244,67 @@ infectious_ct2(200) last  : 75.50% ± 8.20%
 infectious_ct2(200) last10: 73.35% ± 6.69%
 infectious_ct2(200) last50: 72.45% ± 8.31%
 总运行时间: 3.20 min
+
+config setting:
+hid_dim: 128, layers: 3, model: dualroad_kf, graph_norm: True, batch_size: 128 | gin 1 layer
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+DD(1178) all   : 73.91% ± 4.01%
+DD(1178) last  : 73.85% ± 6.54%
+DD(1178) last10: 73.80% ± 4.13%
+DD(1178) last50: 74.16% ± 4.23%
+总运行时间: 9.19 min
+PROTEINS(1113) all   : 75.16% ± 3.48%
+PROTEINS(1113) last  : 74.76% ± 4.40%
+PROTEINS(1113) last10: 74.56% ± 3.54%
+PROTEINS(1113) last50: 75.24% ± 3.93%
+总运行时间: 8.93 min
+NCI1(4110) all   : 77.46% ± 1.32%
+NCI1(4110) last  : 79.64% ± 1.48%
+NCI1(4110) last10: 79.54% ± 1.25%
+NCI1(4110) last50: 79.30% ± 1.33%
+总运行时间: 58.83 min
+NCI109(4127) all   : 76.41% ± 1.70%
+NCI109(4127) last  : 77.37% ± 2.37%
+NCI109(4127) last10: 77.87% ± 1.97%
+NCI109(4127) last50: 77.92% ± 1.76%
+总运行时间: 74.51 min
+COX2(467) all   : 79.83% ± 2.24%
+COX2(467) last  : 80.93% ± 4.26%
+COX2(467) last10: 80.92% ± 3.89%
+COX2(467) last50: 80.75% ± 3.74%
+总运行时间: 6.90 min
+IMDB-BINARY(1000) all   : 64.61% ± 4.21%
+IMDB-BINARY(1000) last  : 67.80% ± 5.83%
+IMDB-BINARY(1000) last10: 69.12% ± 4.62%
+IMDB-BINARY(1000) last50: 68.60% ± 4.59%
+总运行时间: 11.86 min
+IMDB-MULTI(1500) all   : 43.67% ± 2.47%
+IMDB-MULTI(1500) last  : 47.07% ± 3.41%
+IMDB-MULTI(1500) last10: 45.78% ± 3.28%
+IMDB-MULTI(1500) last50: 45.14% ± 2.98%
+总运行时间: 13.76 min
+FRANKENSTEIN(4337) all   : 69.02% ± 1.69%
+FRANKENSTEIN(4337) last  : 70.49% ± 1.74%
+FRANKENSTEIN(4337) last10: 70.53% ± 1.67%
+FRANKENSTEIN(4337) last50: 70.44% ± 1.67%
+总运行时间: 53.44 min
+COLLAB(5000) all   : 74.62% ± 1.32%
+COLLAB(5000) last  : 75.90% ± 2.32%
+COLLAB(5000) last10: 75.81% ± 2.16%
+COLLAB(5000) last50: 75.80% ± 1.89%
+总运行时间: 83.97 min
+REDDIT-BINARY(2000) all   : 87.74% ± 1.87%
+REDDIT-BINARY(2000) last  : 90.60% ± 2.45%
+REDDIT-BINARY(2000) last10: 90.71% ± 2.01%
+REDDIT-BINARY(2000) last50: 90.22% ± 2.10%
+总运行时间: 39.14 min
+MSRC_9(221) all   : 88.51% ± 4.07%
+MSRC_9(221) last  : 91.86% ± 4.89%
+MSRC_9(221) last10: 90.59% ± 6.07%
+MSRC_9(221) last50: 90.57% ± 5.58%
+总运行时间: 5.65 min
+MSRC_21(563) all   : 87.89% ± 3.38%
+MSRC_21(563) last  : 92.71% ± 2.19%
+MSRC_21(563) last10: 92.77% ± 2.38%
+MSRC_21(563) last50: 92.74% ± 2.39%
+总运行时间: 12.10 min
