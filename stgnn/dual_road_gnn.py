@@ -13,7 +13,7 @@ from torch_geometric.utils import scatter
 
 
 class DualRoadGNN(nn.Module):
-    def __init__(self, in_channels, hidden_channels, num_layers=3, dropout=0.5, k = 3, backbone = 'gin'):
+    def __init__(self, in_channels, hidden_channels, num_layers=3, dropout=0.5, k = 3, backbone = 'gat'):
         super(DualRoadGNN, self).__init__()
         self.in_channels = max(in_channels, 1)
         self.hidden_channels = hidden_channels
