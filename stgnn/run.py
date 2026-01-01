@@ -4,7 +4,7 @@ import numpy as np
 from datetime import datetime
 from constant import DATASET_PATH
 from torch import nn
-from torch_geometric.datasets import TUDataset
+# from torch_geometric.datasets import TUDataset
 from utils.re_tudataset import ReTUDataset
 from torch_geometric.loader import DataLoader
 from rich.progress import track
