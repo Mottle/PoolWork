@@ -20,7 +20,7 @@ class StrictBatchSheafConv(MessagePassing):
         # 我们使用 linear + matrix_exp 确保映射在正交群 O(d) 中
         self.map_generator = nn.Sequential(
             nn.Linear(2 * channels, 64),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.Linear(64, 2 * self.d * self.d) 
         )
         
