@@ -17,7 +17,7 @@ from torch.optim import Adam
 from classifier import Classifier
 from span_tree_gnn import SpanTreeGNN
 from span_tree_gnn_with_loss import SpanTreeGNNWithOrt
-from dual_road_gnn import DualRoadGNN, KFNDualRoadGNN, KRNDualRoadGNN
+from dual_road_gnn import DualRoadGNN, KFNDualRoadGNN, KRNDualRoadGNN, KFNDualRoadSTSplitGNN
 from dual_road_rev_attn_gnn import DualRoadRevAttnGNN
 from baseline import BaseLine
 from st_split_gnn import SpanTreeSplitGNN
@@ -183,6 +183,8 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
         model = KRNDualRoadGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, k = 3).to(run_device)
     elif model_type == 'dualroad_rev_attn':
         model = DualRoadRevAttnGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
+    elif model_type == 'dualroad_kf_sts':
+        model = KFNDualRoadSTSplitGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, k = 3).to(run_device)
     elif model_type == 'st_split':
         model = SpanTreeSplitGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, num_splits=4).to(run_device)
     elif model_type == 'kan_gin':
@@ -316,7 +318,7 @@ def datasets(sets='common'):
         ]
     elif sets == 'common':
         datasets = [
-            'DD',
+            # 'DD',
             'PROTEINS',
             'NCI1',
             'NCI109',
@@ -432,7 +434,7 @@ if __name__ == '__main__':
     config.seed = None
     config.kfold = 10
 
-    models = ['dualroad_kf']
+    models = ['dualroad_kf_sts']
     # models = ['topk']
     seeds = [0, 114514, 1919810, 77777]
     for model in models:

@@ -62,6 +62,9 @@ class DualRoadGNN(nn.Module):
             elif self.backbone == 'gat':
                 convs.append(GATConv(self.hidden_channels, self.hidden_channels // 4, heads=4))
         return convs
+    
+    def _build_feature_convs(self):
+        return self._build_convs()
 
     def _build_graph_norms(self):
         graph_norms = nn.ModuleList()
@@ -113,6 +116,19 @@ class KFNDualRoadGNN(DualRoadGNN):
     def _build_auxiliary_graph(self, x, batch):
         return k_farthest_graph(x, self.k, batch, loop=True, cosine=True, direction=True)
     
+
+class KFNDualRoadSTSplitGNN(DualRoadGNN):
+    def _build_auxiliary_graph(self, x, batch):
+        return k_farthest_graph(x, self.k, batch, loop=True, cosine=True, direction=True)
+    
+    def _build_feature_convs(self):
+        from st_split_gnn import SpanTreeSplitGNN
+        convs = nn.ModuleList()
+        for i in range(self.num_layers):
+            convs.append(SpanTreeSplitGNN(in_channels=self.hidden_channels, hidden_channels=self.hidden_channels, num_layers=1, num_splits=2, dropout=self.dropout))
+        return convs
+
+
 class KRNDualRoadGNN(DualRoadGNN):
     def _build_auxiliary_graph(self, x, batch):
         return k_random_graph(x, self.k, batch, loop=True)
