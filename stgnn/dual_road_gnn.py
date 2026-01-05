@@ -122,10 +122,11 @@ class KFNDualRoadSTSplitGNN(DualRoadGNN):
         return k_farthest_graph(x, self.k, batch, loop=True, cosine=True, direction=True)
     
     def _build_feature_convs(self):
-        from st_split_gnn import SpanTreeSplitGNN
+        from st_split_gnn import SpanTreeSplitGNN, SpanTreeSplitConv
         convs = nn.ModuleList()
         for i in range(self.num_layers):
-            convs.append(SpanTreeSplitGNN(in_channels=self.hidden_channels, hidden_channels=self.hidden_channels, num_layers=1, num_splits=2, dropout=self.dropout))
+            # convs.append(SpanTreeSplitGNN(in_channels=self.hidden_channels, hidden_channels=self.hidden_channels, num_layers=1, num_splits=2, dropout=self.dropout))
+            convs.append(SpanTreeSplitConv(in_channels=self.hidden_channels, out_channels=self.hidden_channels, num_splits=4, dropout=self.dropout))
         return convs
 
 
