@@ -89,6 +89,10 @@ class SpanTreeSplitConv(nn.Module):
         self.st_road = self._build_conv()
 
         self.pre_kruskal_x_trans = nn.Linear(in_features=self.in_channels, out_features=self.in_channels)
+        self.dense_gate = nn.Sequential(
+            nn.Linear(self.in_channels * num_splits, self.out_channels * num_splits),
+            nn.Sigmoid()
+        )
 
     def _build_conv(self):
         if self.backbone == 'gcn':
@@ -98,23 +102,34 @@ class SpanTreeSplitConv(nn.Module):
         else:
             raise ValueError(f"Unsupported backbone: {self.backbone}")
     
-    def forward(self, x: Tensor, edge_index: Tensor, batch: Tensor):
-        main_road_x = self.main_road(x, edge_index, batch)
+    def forward(self, x: Tensor, edge_index: Tensor):
+        main_road_x = self.main_road(x, edge_index)
         main_road_x = F.leaky_relu(main_road_x)
 
         pre_trans_x = self.pre_kruskal_x_trans(x) + x
         st_edge_indexs = split_graph(pre_trans_x, edge_index=edge_index, num_splits=self.num_splits)
         st_road_xs = []
 
+        final_x = 0 + main_road_x
+
         for i in range(self.num_splits):
             st_edge_index = st_edge_indexs[i].to(x.device)
-            st_road_x = self.st_road(x, st_edge_index, batch)
+            st_road_x = self.st_road(x, st_edge_index)
             st_road_x = F.leaky_relu(st_road_x)
             st_road_xs.append(st_road_x)
-            main_road_x += st_road_x
+            final_x += st_road_x
 
-        main_road_x = F.dropout(main_road_x, p=self.dropout, training=self.training)
-        return main_road_x
+        # final_x = torch.cat(st_road_xs, dim=1)  # 拼接所有支路特征
+        # gates = self.dense_gate(final_x)
+        # final_x = final_x * gates
+
+        # #按照out_channels维度分割并求和
+        # final_x = torch.split(final_x, self.out_channels, dim=1)
+        # final_x = torch.stack(final_x, dim=0).sum(dim=0)
+        # final_x = final_x + main_road_x
+
+        # main_road_x = F.dropout(main_road_x, p=self.dropout, training=self.training)
+        return final_x
 
 class GNNs(nn.Module):
     def __init__(self, channels: int = 128, num_layers: int = 3, backbone: str = 'GCN', use_graph_norm: bool = True, dropout = 0.5):

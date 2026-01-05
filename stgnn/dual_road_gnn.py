@@ -13,7 +13,7 @@ from torch_geometric.utils import scatter
 
 
 class DualRoadGNN(nn.Module):
-    def __init__(self, in_channels, hidden_channels, num_layers=3, dropout=0.5, k = 3, backbone = 'gat'):
+    def __init__(self, in_channels, hidden_channels, num_layers=3, dropout=0.5, k = 3, backbone = 'gcn'):
         super(DualRoadGNN, self).__init__()
         self.in_channels = max(in_channels, 1)
         self.hidden_channels = hidden_channels
@@ -64,7 +64,16 @@ class DualRoadGNN(nn.Module):
         return convs
     
     def _build_feature_convs(self):
-        return self._build_convs()
+        convs = nn.ModuleList()
+        for i in range(self.num_layers):
+            if self.backbone == 'gcn':
+                convs.append(GCNConv(self.hidden_channels, self.hidden_channels))
+            elif self.backbone == 'gin':
+                fnn = nn.Linear(self.hidden_channels, self.hidden_channels)
+                convs.append(GINConv(fnn))
+            elif self.backbone == 'gat':
+                convs.append(GATConv(self.hidden_channels, self.hidden_channels // 4, heads=4))
+        return convs
 
     def _build_graph_norms(self):
         graph_norms = nn.ModuleList()
@@ -121,12 +130,12 @@ class KFNDualRoadSTSplitGNN(DualRoadGNN):
     def _build_auxiliary_graph(self, x, batch):
         return k_farthest_graph(x, self.k, batch, loop=True, cosine=True, direction=True)
     
-    def _build_feature_convs(self):
+    def _build_convs(self):
         from st_split_gnn import SpanTreeSplitGNN, SpanTreeSplitConv
         convs = nn.ModuleList()
         for i in range(self.num_layers):
             # convs.append(SpanTreeSplitGNN(in_channels=self.hidden_channels, hidden_channels=self.hidden_channels, num_layers=1, num_splits=2, dropout=self.dropout))
-            convs.append(SpanTreeSplitConv(in_channels=self.hidden_channels, out_channels=self.hidden_channels, num_splits=4, dropout=self.dropout))
+            convs.append(SpanTreeSplitConv(in_channels=self.hidden_channels, out_channels=self.hidden_channels, num_splits=4, dropout=self.dropout, backbone=self.backbone))
         return convs
 
 
