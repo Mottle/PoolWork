@@ -115,7 +115,7 @@ class SpanTreeSplitConv(nn.Module):
 
         st_road_xs = []
 
-        final_x = 0 + main_road_x
+        # final_x = 0 + main_road_x
 
         for i in range(self.num_splits):
             st_edge_index = st_edge_indexs[i].to(x.device)
@@ -136,6 +136,37 @@ class SpanTreeSplitConv(nn.Module):
 
         # main_road_x = F.dropout(main_road_x, p=self.dropout, training=self.training)
         return final_x
+
+    # def forward(self, x: Tensor, edge_index: Tensor):
+    #     # 主干路径特征
+    #     main_road_x = self.main_road(x, edge_index)
+
+    #     # 预处理用于划分子图
+    #     pre_trans_x = self.pre_kruskal_x_trans(x) + x
+
+    #     # 子图划分（只在 no_grad 下执行一次）
+    #     with torch.no_grad():
+    #         st_edge_indexs = split_graph(pre_trans_x, edge_index=edge_index, num_splits=self.num_splits)
+    #         st_edge_indexs = [ei.to(x.device) for ei in st_edge_indexs]  # 提前搬到目标设备
+
+    #     # 支路特征提取
+    #     st_road_xs = [self.st_road(x, ei) for ei in st_edge_indexs]
+
+    #     # 拼接所有支路特征
+    #     concat_x = torch.cat(st_road_xs, dim=1)
+
+    #     # 门控机制
+    #     gated_x = concat_x * self.dense_gate(concat_x)
+
+    #     # 分割并聚合
+    #     split_x = torch.split(gated_x, self.out_channels, dim=1)
+    #     summed_x = torch.stack(split_x, dim=0).sum(dim=0)
+
+    #     # 融合主干路径
+    #     final_x = summed_x * self.alpha + main_road_x
+
+    #     return final_x
+
 
 class GNNs(nn.Module):
     def __init__(self, channels: int = 128, num_layers: int = 3, backbone: str = 'GCN', use_graph_norm: bool = True, dropout = 0.5):
