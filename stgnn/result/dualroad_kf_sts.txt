@@ -1,0 +1,13 @@
+config setting:
+hid_dim: 128, layers: 3, model: dualroad_kf_sts, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+PROTEINS(1113) all   : 75.44% ± 3.30%
+PROTEINS(1113) last  : 76.83% ± 4.19%
+PROTEINS(1113) last10: 76.62% ± 3.65%
+PROTEINS(1113) last50: 76.41% ± 3.43%
+总运行时间: 38.64 min
+NCI1(4110) all   : 75.33% ± 1.85%
+NCI1(4110) last  : 77.91% ± 1.78%
+NCI1(4110) last10: 77.74% ± 1.84%
+NCI1(4110) last50: 77.50% ± 1.90%
+总运行时间: 170.30 min

@@ -135,7 +135,7 @@ class KFNDualRoadSTSplitGNN(DualRoadGNN):
         convs = nn.ModuleList()
         for i in range(self.num_layers):
             # convs.append(SpanTreeSplitGNN(in_channels=self.hidden_channels, hidden_channels=self.hidden_channels, num_layers=1, num_splits=2, dropout=self.dropout))
-            convs.append(SpanTreeSplitConv(in_channels=self.hidden_channels, out_channels=self.hidden_channels, num_splits=4, dropout=self.dropout, backbone=self.backbone))
+            convs.append(SpanTreeSplitConv(in_channels=self.hidden_channels, out_channels=self.hidden_channels, num_splits=1, dropout=self.dropout, backbone=self.backbone))
         return convs
 
 
