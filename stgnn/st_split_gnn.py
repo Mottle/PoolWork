@@ -106,7 +106,7 @@ class SpanTreeSplitConv(nn.Module):
     
     def forward(self, x: Tensor, edge_index: Tensor):
         main_road_x = self.main_road(x, edge_index)
-        # main_road_x = F.leaky_relu(main_road_x)
+        main_road_x = F.leaky_relu(main_road_x)
 
         pre_trans_x = self.pre_kruskal_x_trans(x) + x
         
@@ -120,7 +120,7 @@ class SpanTreeSplitConv(nn.Module):
         for i in range(self.num_splits):
             st_edge_index = st_edge_indexs[i].to(x.device)
             st_road_x = self.st_road(x, st_edge_index)
-            # st_road_x = F.leaky_relu(st_road_x)
+            st_road_x = F.leaky_relu(st_road_x)
             st_road_xs.append(st_road_x)
             # final_x += st_road_x
 
