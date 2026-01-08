@@ -201,7 +201,7 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
     elif model_type == 'phop_linkgcn':
         model = BaseLine(input_dim, hidden_dim, hidden_dim, backbone='phop_linkgcn', num_layers=num_layers, dropout=dropout, embed=True).to(run_device)
     elif model_type == 'hybird':
-        model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3).to(run_device)
+        model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 2, k = 3).to(run_device)
 
     classifier = Classifier(hidden_dim, hidden_dim, num_classes).to(run_device)
 
@@ -323,7 +323,7 @@ def datasets(sets='common'):
             'NCI1',
             'COX2',
             'IMDB-BINARY',
-            'MSRC_21'
+            # 'MSRC_21'
         ]
     elif sets == 'common':
         datasets = [
@@ -333,14 +333,14 @@ def datasets(sets='common'):
             'NCI109',
             'COX2',
             'IMDB-BINARY',
-            'IMDB-MULTI',
+            # 'IMDB-MULTI',
             'FRANKENSTEIN',
             'COLLAB',
             'REDDIT-BINARY',
             # 'Synthie',
             # 'SYNTHETIC',
-            'MSRC_9',
-            'MSRC_21',
+            # 'MSRC_9',
+            # 'MSRC_21',
         ]
     elif sets == 'dense':
         datasets = [

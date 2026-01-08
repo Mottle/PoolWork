@@ -10,8 +10,9 @@ version = "0.1.0"
 [dependencies]
 python = ">=3.12,<3.13"
 rich = ">=14.0"
-scikit-learn = ">=1.7"
+scikit-learn = "==1.7.2"
 black = ">=23.3.0"
+numpy = "==2.3.4"
 
 [pypi-dependencies]
 torch = { version = ">=2.6", index = "https://download.pytorch.org/whl/cu124" }
@@ -23,4 +24,4 @@ torch_scatter = { url = "https://data.pyg.org/whl/torch-2.6.0%2Bcu124/torch_scat
 torch_sparse = { url = "https://data.pyg.org/whl/torch-2.6.0%2Bcu124/torch_sparse-0.6.18%2Bpt26cu124-cp312-cp312-win_amd64.whl" }
 torch_spline_conv = { url = "https://data.pyg.org/whl/torch-2.6.0%2Bcu124/torch_spline_conv-1.2.2%2Bpt26cu124-cp312-cp312-win_amd64.whl" }
 cyaron = {}
-# triton-windows = { }
+triton-windows = { version = "==3.2.0.post17"}

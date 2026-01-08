@@ -100,11 +100,8 @@ class PHopLinkGCNConv(MessagePassing):
         super(PHopLinkGCNConv, self).__init__(aggr=aggr)
         self.P = P
         self.self_loops = self_loops
-        # 每个 hop 一个向量权重，维度 = out_channels
         self.d = nn.Parameter(torch.ones(P, out_channels))
-        # 每个 hop 一个偏置向量
         self.hop_bias = nn.Parameter(torch.zeros(P, out_channels))
-        # 共享线性变换，符合 GCN 范式
         self.linear = nn.Linear(in_channels, out_channels)
 
     def forward(self, x, edge_index, A_phop = None):
@@ -112,25 +109,24 @@ class PHopLinkGCNConv(MessagePassing):
 
         if A_phop is None:
             A = to_dense_adj(edge_index, max_num_nodes=N)[0]  # 稠密邻接矩阵 [N, N]
-
             if self.self_loops:
                 A = A + torch.eye(N, device=A.device)  # 自环
 
         outputs = torch.zeros(N, self.linear.out_features, device=x.device)
         d_weight = torch.softmax(self.d, dim=0)
+
         for p in range(1, self.P + 1):
             if A_phop is None:
-                Ap = torch.matrix_power(A, p)  # p-hop 邻接矩阵（含路径数量）
-                # 转换为稀疏格式
+                Ap = torch.matrix_power(A, p)
                 edge_index_p, edge_weight_p = dense_to_sparse(Ap)
             else:
                 edge_index_p, edge_weight_p = A_phop[p - 1]
 
-            # 消息传递
+            x = self.linear(x)  # [N, out_channels]
             msg = self.propagate(
                 edge_index_p, x=x, edge_weight=edge_weight_p, size=(N, N)
             )
-            msg = self.linear(msg)  # [N, out_channels]
+            # msg = self.linear(msg)  # [N, out_channels] fix
 
             # 每个 hop 的向量权重和偏置
             # outputs += msg * self.d[p-1] + self.hop_bias[p-1]

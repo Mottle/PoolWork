@@ -147,6 +147,7 @@ class HybirdPhopGNN(nn.Module):
         
         return A_phop
 
+    @torch.compile
     def forward(self, x, edge_index, batch):
         originl_x = x
         x = self.embedding(x)
