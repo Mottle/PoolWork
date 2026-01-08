@@ -193,6 +193,12 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
         model = BaseLine(input_dim, hidden_dim, hidden_dim, backbone='quad', num_layers=num_layers, dropout=dropout).to(run_device)
     elif model_type == 'gt':
         model = BaseLine(input_dim, hidden_dim, hidden_dim, backbone='gt', num_layers=num_layers, dropout=dropout).to(run_device)
+    elif model_type == 'phop_gcn':
+        model = BaseLine(input_dim, hidden_dim, hidden_dim, backbone='phop_gcn', num_layers=num_layers, dropout=dropout, embed=True).to(run_device)
+    elif model_type == 'phop_gin':
+        model = BaseLine(input_dim, hidden_dim, hidden_dim, backbone='phop_gin', num_layers=num_layers, dropout=dropout, embed=True).to(run_device)
+    elif model_type == 'phop_linkgcn':
+        model = BaseLine(input_dim, hidden_dim, hidden_dim, backbone='phop_linkgcn', num_layers=num_layers, dropout=dropout, embed=True).to(run_device)
 
     classifier = Classifier(hidden_dim, hidden_dim, num_classes).to(run_device)
 
@@ -434,7 +440,7 @@ if __name__ == '__main__':
     config.seed = None
     config.kfold = 10
 
-    models = ['dualroad_kf_sts']
+    models = ['phop_linkgcn']
     # models = ['topk']
     seeds = [0, 114514, 1919810, 77777]
     for model in models:

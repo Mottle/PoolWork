@@ -1,0 +1,27 @@
+config setting:
+hid_dim: 128, layers: 3, model: phop_gcn, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+PROTEINS(1113) all   : 72.98% ± 2.90%
+PROTEINS(1113) last  : 71.88% ± 4.47%
+PROTEINS(1113) last10: 72.18% ± 3.31%
+PROTEINS(1113) last50: 73.02% ± 3.14%
+总运行时间: 2.28 min
+NCI1(4110) all   : 75.47% ± 0.98%
+NCI1(4110) last  : 76.20% ± 2.32%
+NCI1(4110) last10: 77.01% ± 1.31%
+NCI1(4110) last50: 77.06% ± 0.97%
+总运行时间: 11.61 min
+
+config setting:
+hid_dim: 128, layers: 3, model: phop_gcn, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+PROTEINS(1113) all   : 73.11% ± 2.95%
+PROTEINS(1113) last  : 73.05% ± 4.14%
+PROTEINS(1113) last10: 73.04% ± 3.57%
+PROTEINS(1113) last50: 73.43% ± 3.23%
+总运行时间: 2.28 min
+NCI1(4110) all   : 75.38% ± 1.35%
+NCI1(4110) last  : 76.86% ± 2.22%
+NCI1(4110) last10: 77.45% ± 1.84%
+NCI1(4110) last50: 77.19% ± 1.57%
+总运行时间: 9.58 min

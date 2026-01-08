@@ -11,6 +11,7 @@ version = "0.1.0"
 python = ">=3.12,<3.13"
 rich = ">=14.0"
 scikit-learn = ">=1.7"
+black = ">=23.3.0"
 
 [pypi-dependencies]
 torch = { version = ">=2.6", index = "https://download.pytorch.org/whl/cu124" }
