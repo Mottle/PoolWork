@@ -107,20 +107,24 @@ class PHopLinkGCNConv(MessagePassing):
         # 共享线性变换，符合 GCN 范式
         self.linear = nn.Linear(in_channels, out_channels)
 
-    def forward(self, x, edge_index):
+    def forward(self, x, edge_index, A_phop = None):
         N = x.size(0)
-        A = to_dense_adj(edge_index, max_num_nodes=N)[0]  # 稠密邻接矩阵 [N, N]
 
-        if self.self_loops:
-            A = A + torch.eye(N, device=A.device)  # 加自环
+        if A_phop is None:
+            A = to_dense_adj(edge_index, max_num_nodes=N)[0]  # 稠密邻接矩阵 [N, N]
+
+            if self.self_loops:
+                A = A + torch.eye(N, device=A.device)  # 自环
 
         outputs = torch.zeros(N, self.linear.out_features, device=x.device)
         d_weight = torch.softmax(self.d, dim=0)
         for p in range(1, self.P + 1):
-            Ap = torch.matrix_power(A, p)  # p-hop 邻接矩阵（含路径数量）
-
-            # 转换为稀疏格式
-            edge_index_p, edge_weight_p = dense_to_sparse(Ap)
+            if A_phop is None:
+                Ap = torch.matrix_power(A, p)  # p-hop 邻接矩阵（含路径数量）
+                # 转换为稀疏格式
+                edge_index_p, edge_weight_p = dense_to_sparse(Ap)
+            else:
+                edge_index_p, edge_weight_p = A_phop[p - 1]
 
             # 消息传递
             msg = self.propagate(

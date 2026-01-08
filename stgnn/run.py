@@ -20,6 +20,7 @@ from span_tree_gnn_with_loss import SpanTreeGNNWithOrt
 from dual_road_gnn import DualRoadGNN, KFNDualRoadGNN, KRNDualRoadGNN, KFNDualRoadSTSplitGNN
 from dual_road_rev_attn_gnn import DualRoadRevAttnGNN
 from baseline import BaseLine
+from phop_baseline import HybirdPhopGNN
 from st_split_gnn import SpanTreeSplitGNN
 from kan_based_gin import KANBasedGIN
 
@@ -199,6 +200,8 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
         model = BaseLine(input_dim, hidden_dim, hidden_dim, backbone='phop_gin', num_layers=num_layers, dropout=dropout, embed=True).to(run_device)
     elif model_type == 'phop_linkgcn':
         model = BaseLine(input_dim, hidden_dim, hidden_dim, backbone='phop_linkgcn', num_layers=num_layers, dropout=dropout, embed=True).to(run_device)
+    elif model_type == 'hybird':
+        model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3).to(run_device)
 
     classifier = Classifier(hidden_dim, hidden_dim, num_classes).to(run_device)
 
@@ -440,7 +443,7 @@ if __name__ == '__main__':
     config.seed = None
     config.kfold = 10
 
-    models = ['phop_linkgcn']
+    models = ['hybird']
     # models = ['topk']
     seeds = [0, 114514, 1919810, 77777]
     for model in models:
