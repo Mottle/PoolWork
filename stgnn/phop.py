@@ -104,6 +104,20 @@ class PHopLinkGCNConv(MessagePassing):
         self.hop_bias = nn.Parameter(torch.zeros(P, out_channels))
         self.linear = nn.Linear(in_channels, out_channels)
 
+    def normalize(self, edge_index, num_nodes, edge_weight=None):
+        # 如果没有权重，默认全 1
+        if edge_weight is None:
+            edge_weight = torch.ones(edge_index.size(1), device=edge_index.device)
+
+        row, col = edge_index
+        deg = degree(col, num_nodes, dtype=edge_weight.dtype)
+        deg_inv_sqrt = deg.pow(-0.5)
+        deg_inv_sqrt[deg_inv_sqrt == float('inf')] = 0
+
+        norm = deg_inv_sqrt[row] * deg_inv_sqrt[col] * edge_weight
+        return edge_index, norm
+
+
     def forward(self, x, edge_index, A_phop = None):
         N = x.size(0)
 
@@ -122,6 +136,8 @@ class PHopLinkGCNConv(MessagePassing):
             else:
                 edge_index_p, edge_weight_p = A_phop[p - 1]
 
+            # 对称归一化
+            edge_index_p, edge_weight_p = self.normalize(edge_index_p, N, edge_weight_p)
             x = self.linear(x)  # [N, out_channels]
             msg = self.propagate(
                 edge_index_p, x=x, edge_weight=edge_weight_p, size=(N, N)
