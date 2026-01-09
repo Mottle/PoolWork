@@ -31,7 +31,7 @@ class DualRoadGNN(nn.Module):
         self._build_embedding()
         self.convs = self._build_convs()
         self.norms = self._build_graph_norms()
-        self.feature_convs = self._build_convs()
+        self.feature_convs = self._build_feature_convs()
         self.feature_norms = self._build_graph_norms()
         self.fusion_gate_linear = nn.Linear(self.hidden_channels * 2, hidden_channels)
         # self.fusion_dense_mlp = nn.Sequential(

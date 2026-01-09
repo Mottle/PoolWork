@@ -92,7 +92,7 @@ class HybirdPhopGNN(nn.Module):
         self._build_embedding()
         self.convs = self._build_convs()
         self.norms = self._build_graph_norms()
-        self.feature_convs = self._build_convs()
+        self.feature_convs = self._build_feature_convs()
         self.feature_norms = self._build_graph_norms()
         self.fusion_gate_linear = nn.Linear(self.hidden_channels * 2, hidden_channels)
     
@@ -133,21 +133,43 @@ class HybirdPhopGNN(nn.Module):
     def _build_auxiliary_graph(self, x, batch):
         return k_farthest_graph(x, self.k, batch, loop=True, cosine=True, direction=True)
     
+    def compute_A_phop(self, edge_index, num_nodes, P):
+        A_sparse = torch.sparse_coo_tensor(
+            edge_index, torch.ones(edge_index.size(1), device=edge_index.device),
+            (num_nodes, num_nodes)
+        ).coalesce()
+
+        Ap = A_sparse
+        results = []
+        for _ in range(1, P+1):
+            dic = {}
+            Ap = Ap.coalesce()
+            edge_index_p = Ap.indices()
+            edge_weight_p = Ap.values()
+            # results.append((edge_index_p, edge_weight_p))
+            dic['idx'] = edge_index_p
+            dic['wei'] = edge_weight_p
+            results.append(dic)
+            Ap = torch.sparse.mm(Ap, A_sparse)
+        return results
+    
     def process_phop(self, x, edge_index):
         N = x.size(0)
-        A = to_dense_adj(edge_index, max_num_nodes=N)[0]  # 稠密邻接矩阵 [N, N]
+        # A = to_dense_adj(edge_index, max_num_nodes=N)[0]  # 稠密邻接矩阵 [N, N]
 
         if self.self_loop:
-            A = A + torch.eye(N, device=A.device)  # 自环
+            # A = A + torch.eye(N, device=A.device)  # 自环
+            edge_index, _ = add_self_loops(edge_index)
         
-        A_phop = []
-        for p in range(1, self.p + 1):
-            Ap = torch.matrix_power(A, p)
-            A_phop.append(dense_to_sparse(Ap))
+        # A_phop = []
+        # for p in range(1, self.p + 1):
+        #     Ap = torch.matrix_power(A, p)
+        #     A_phop.append(dense_to_sparse(Ap))
         
-        return A_phop
+        # return A_phop
+        return self.compute_A_phop(edge_index, N, self.p)
 
-    @torch.compile
+    # @torch.compile
     def forward(self, x, edge_index, batch):
         originl_x = x
         x = self.embedding(x)

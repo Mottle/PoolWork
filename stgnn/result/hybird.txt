@@ -112,4 +112,32 @@ COLLAB(5000) last10: 75.49% ± 1.73%
 COLLAB(5000) last50: 75.31% ± 1.69%
 总运行时间: 444.07 min
 
-path norm:
+single road gcnn norn
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+PROTEINS(1113) all   : 73.98% ± 3.43%
+PROTEINS(1113) last  : 72.59% ± 4.16%
+PROTEINS(1113) last10: 73.78% ± 4.05%
+PROTEINS(1113) last50: 73.78% ± 4.03%
+总运行时间: 10.68 min
+NCI1(4110) all   : 77.52% ± 0.74%
+NCI1(4110) last  : 79.46% ± 1.54%
+NCI1(4110) last10: 79.91% ± 1.18%
+NCI1(4110) last50: 79.74% ± 0.96%
+总运行时间: 66.87 min
+NCI109(4127) all   : 76.43% ± 1.40%
+NCI109(4127) last  : 78.41% ± 1.26%
+NCI109(4127) last10: 78.92% ± 1.30%
+NCI109(4127) last50: 78.44% ± 1.30%
+总运行时间: 58.02 min
+COX2(467) all   : 80.33% ± 2.24%
+COX2(467) last  : 81.79% ± 4.36%
+COX2(467) last10: 82.07% ± 3.83%
+COX2(467) last50: 81.81% ± 3.11%
+总运行时间: 9.24 min
+IMDB-BINARY(1000) all   : 62.86% ± 5.01%
+IMDB-BINARY(1000) last  : 67.80% ± 6.23%
+IMDB-BINARY(1000) last10: 67.94% ± 5.04%
+IMDB-BINARY(1000) last50: 66.82% ± 6.34%
+总运行时间: 16.85 min

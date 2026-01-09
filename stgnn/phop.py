@@ -117,7 +117,6 @@ class PHopLinkGCNConv(MessagePassing):
         norm = deg_inv_sqrt[row] * deg_inv_sqrt[col] * edge_weight
         return edge_index, norm
 
-
     def forward(self, x, edge_index, A_phop = None):
         N = x.size(0)
 
@@ -134,13 +133,15 @@ class PHopLinkGCNConv(MessagePassing):
                 Ap = torch.matrix_power(A, p)
                 edge_index_p, edge_weight_p = dense_to_sparse(Ap)
             else:
-                edge_index_p, edge_weight_p = A_phop[p - 1]
+                # edge_index_p, edge_weight_p = A_phop[p - 1]
+                edge_index_p = A_phop[p - 1]['idx']
+                edge_weight_p = A_phop[p - 1]['wei']
 
             # 对称归一化
             edge_index_p, edge_weight_p = self.normalize(edge_index_p, N, edge_weight_p)
-            x = self.linear(x)  # [N, out_channels]
+            xp = self.linear(x)  # [N, out_channels]
             msg = self.propagate(
-                edge_index_p, x=x, edge_weight=edge_weight_p, size=(N, N)
+                edge_index_p, x=xp, edge_weight=edge_weight_p, size=(N, N)
             )
             # msg = self.linear(msg)  # [N, out_channels] fix
 
