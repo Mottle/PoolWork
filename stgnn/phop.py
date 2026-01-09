@@ -104,20 +104,7 @@ class PHopLinkGCNConv(MessagePassing):
         self.hop_bias = nn.Parameter(torch.zeros(P, out_channels))
         self.linear = nn.Linear(in_channels, out_channels)
 
-    def normalize(self, edge_index, num_nodes, edge_weight=None):
-        # 如果没有权重，默认全 1
-        if edge_weight is None:
-            edge_weight = torch.ones(edge_index.size(1), device=edge_index.device)
-
-        row, col = edge_index
-        deg = degree(col, num_nodes, dtype=edge_weight.dtype)
-        deg_inv_sqrt = deg.pow(-0.5)
-        deg_inv_sqrt[deg_inv_sqrt == float('inf')] = 0
-
-        norm = deg_inv_sqrt[row] * deg_inv_sqrt[col] * edge_weight
-        return edge_index, norm
-
-    def forward(self, x, edge_index, A_phop = None):
+    def forward(self, x, edge_index, A_phop=None):
         N = x.size(0)
 
         if A_phop is None:
@@ -128,18 +115,23 @@ class PHopLinkGCNConv(MessagePassing):
         outputs = torch.zeros(N, self.linear.out_features, device=x.device)
         d_weight = torch.softmax(self.d, dim=0)
 
+        xp = self.linear(x)
+
         for p in range(1, self.P + 1):
             if A_phop is None:
                 Ap = torch.matrix_power(A, p)
                 edge_index_p, edge_weight_p = dense_to_sparse(Ap)
             else:
                 # edge_index_p, edge_weight_p = A_phop[p - 1]
-                edge_index_p = A_phop[p - 1]['idx']
-                edge_weight_p = A_phop[p - 1]['wei']
+                edge_index_p = A_phop[p - 1]["idx"]
+                edge_weight_p = A_phop[p - 1]["wei"]
 
             # 对称归一化
-            edge_index_p, edge_weight_p = self.normalize(edge_index_p, N, edge_weight_p)
-            xp = self.linear(x)  # [N, out_channels]
+            edge_index_p, edge_weight_p = symmetric_normalize(
+                edge_index_p, N, edge_weight_p
+            )
+
+            # xp = self.linear(x)  # [N, out_channels]
             msg = self.propagate(
                 edge_index_p, x=xp, edge_weight=edge_weight_p, size=(N, N)
             )
@@ -212,32 +204,30 @@ class PHopGINConv(MessagePassing):
         return x_j
 
 
-def compute_all_U(edge_index, num_nodes, K):
-    """
-    输入:
-        edge_index: PyG 格式的边索引 [2, E]
-        num_nodes: 节点数
-        K: 最大距离
+def random_walk_normalize(edge_index, num_nodes, edge_weight=None):
+    if edge_weight is None:
+        edge_weight = torch.ones(edge_index.size(1), device=edge_index.device)
 
-    输出:
-        U_list: 一个长度为 K 的列表, 每个元素是 [N, N] 的矩阵,
-                表示最短距离恰好为 h 的邻接掩码
-    """
-    # 1. 转换为稠密邻接矩阵 A
-    A = to_dense_adj(edge_index, max_num_nodes=num_nodes)[0]  # [N, N]
+    row, col = edge_index
+    deg = degree(row, num_nodes, dtype=edge_weight.dtype)  # 出度（源节点的度）
 
-    # 2. 初始化 R 列表
-    R = []
-    for h in range(K + 1):
-        Ah = torch.matrix_power(A, h)
-        Rh = (Ah > 0).int()
-        R.append(Rh)
+    # 避免除零错误
+    deg_inv = deg.pow(-1)
+    deg_inv[deg_inv == float("inf")] = 0
 
-    # 3. 计算所有 U_h
-    U_list = []
-    for h in range(1, K + 1):
-        sum_prev = sum(R[:h])  # R_0 + R_1 + ... + R_{h-1}
-        Uh = (R[h] - sum_prev).clamp(min=0, max=1)
-        U_list.append(Uh)
+    # 随机游走概率归一化
+    norm = deg_inv[row] * edge_weight
 
-    return U_list
+    return edge_index, norm
+
+def symmetric_normalize(edge_index, num_nodes, edge_weight=None):
+    if edge_weight is None:
+        edge_weight = torch.ones(edge_index.size(1), device=edge_index.device)
+
+    row, col = edge_index
+    deg = degree(col, num_nodes, dtype=edge_weight.dtype)
+    deg_inv_sqrt = deg.pow(-0.5)
+    deg_inv_sqrt[deg_inv_sqrt == float("inf")] = 0
+    
+    norm = deg_inv_sqrt[row] * deg_inv_sqrt[col] * edge_weight
+    return edge_index, norm

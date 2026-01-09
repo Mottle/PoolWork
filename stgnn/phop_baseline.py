@@ -116,12 +116,9 @@ class HybirdPhopGNN(nn.Module):
         convs = nn.ModuleList()
         for _ in range(self.num_layers):
             if self.backbone == 'gcn':
-                convs.append(GCNConv(self.hidden_channels, self.hidden_channels))
-            elif self.backbone == 'gin':
-                fnn = nn.Linear(self.hidden_channels, self.hidden_channels)
-                convs.append(GINConv(fnn))
-            elif self.backbone == 'gat':
-                convs.append(GATConv(self.hidden_channels, self.hidden_channels // 4, heads=4))
+                convs.append(PHopLinkGCNConv(self.hidden_channels, self.hidden_channels, P = self.p))
+            else:
+                raise NotImplementedError
         return convs
 
     def _build_graph_norms(self):
@@ -132,26 +129,6 @@ class HybirdPhopGNN(nn.Module):
     
     def _build_auxiliary_graph(self, x, batch):
         return k_farthest_graph(x, self.k, batch, loop=True, cosine=True, direction=True)
-    
-    def compute_A_phop(self, edge_index, num_nodes, P):
-        A_sparse = torch.sparse_coo_tensor(
-            edge_index, torch.ones(edge_index.size(1), device=edge_index.device),
-            (num_nodes, num_nodes)
-        ).coalesce()
-
-        Ap = A_sparse
-        results = []
-        for _ in range(1, P+1):
-            dic = {}
-            Ap = Ap.coalesce()
-            edge_index_p = Ap.indices()
-            edge_weight_p = Ap.values()
-            # results.append((edge_index_p, edge_weight_p))
-            dic['idx'] = edge_index_p
-            dic['wei'] = edge_weight_p
-            results.append(dic)
-            Ap = torch.sparse.mm(Ap, A_sparse)
-        return results
     
     def process_phop(self, x, edge_index):
         N = x.size(0)
@@ -167,7 +144,7 @@ class HybirdPhopGNN(nn.Module):
         #     A_phop.append(dense_to_sparse(Ap))
         
         # return A_phop
-        return self.compute_A_phop(edge_index, N, self.p)
+        return compute_A_phop(edge_index, N, self.p)
 
     # @torch.compile
     def forward(self, x, edge_index, batch):
@@ -205,3 +182,56 @@ class HybirdPhopGNN(nn.Module):
         for i in range(self.num_layers):
             graph_feature += global_mean_pool(all_x[i - 1], batch)
         return graph_feature, 0
+    
+def compute_A_phop(edge_index, num_nodes, P):
+    A_sparse = torch.sparse_coo_tensor(
+        edge_index, torch.ones(edge_index.size(1), device=edge_index.device),
+        (num_nodes, num_nodes)
+    ).coalesce()
+    Ap = A_sparse
+    results = []
+    for _ in range(1, P+1):
+        dic = {}
+        Ap = Ap.coalesce()
+        edge_index_p = Ap.indices()
+        edge_weight_p = Ap.values()
+        # results.append((edge_index_p, edge_weight_p))
+        dic['idx'] = edge_index_p
+        dic['wei'] = edge_weight_p
+        results.append(dic)
+        Ap = torch.sparse.mm(Ap, A_sparse)
+    return results
+
+import torch
+
+def compute_U_phop(edge_index, num_nodes, P):
+    A_sparse = torch.sparse_coo_tensor(
+        edge_index, torch.ones(edge_index.size(1), device=edge_index.device),
+        (num_nodes, num_nodes)
+    ).coalesce()
+    
+    # A^0 = I
+    A_prev = torch.sparse_coo_tensor(
+        torch.arange(num_nodes, device=edge_index.device).repeat(2,1),
+        torch.ones(num_nodes, device=edge_index.device),
+        (num_nodes, num_nodes)
+    ).coalesce()
+    
+    Ap = A_sparse
+    results = []
+    
+    for _ in range(1, P+1):
+        # 差分 U_p = A^p - A^(p-1)
+        U_p = Ap - A_prev
+        U_p = U_p.coalesce()
+        
+        dic = {}
+        dic['idx'] = U_p.indices()
+        dic['wei'] = U_p.values()
+        results.append(dic)
+        
+        # 更新 A^(p-1) 和 A^p
+        A_prev = Ap
+        Ap = torch.sparse.mm(Ap, A_sparse).coalesce()
+    
+    return results
