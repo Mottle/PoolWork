@@ -1,9 +1,11 @@
+from ast import mod
+from sympy import comp
 import torch
 from torch import nn
 from torch_geometric.nn import global_mean_pool
 from torch_geometric.nn.norm import GraphNorm
 import torch.nn.functional as F
-from phop import PHopGCNConv, PHopGINConv, PHopLinkGCNConv
+from phop import PHopGCNConv, PHopGINConv, PHopLinkRWConv, PHopLinkGCNConv
 from torch_geometric.nn import GINConv, GCNConv, GATConv
 from dual_road_gnn import k_farthest_graph
 from torch_geometric.utils import add_self_loops, degree, dense_to_sparse, to_dense_adj
@@ -105,11 +107,10 @@ class HybirdPhopGNN(nn.Module):
         for _ in range(self.num_layers):
             if self.backbone == 'gcn':
                 convs.append(PHopLinkGCNConv(self.hidden_channels, self.hidden_channels, P = self.p))
-            # elif self.backbone == 'gin':
-            #     fnn = nn.Linear(self.hidden_channels, self.hidden_channels)
-            #     convs.append(GINConv(fnn))
-            # elif self.backbone == 'gat':
-            #     convs.append(GATConv(self.hidden_channels, self.hidden_channels // 4, heads=4))
+            elif self.backbone == 'rw':
+                convs.append(PHopLinkRWConv(self.hidden_channels, self.hidden_channels, P = self.p))    
+            else:
+                raise NotImplementedError
         return convs
     
     def _build_feature_convs(self):
@@ -117,6 +118,8 @@ class HybirdPhopGNN(nn.Module):
         for _ in range(self.num_layers):
             if self.backbone == 'gcn':
                 convs.append(PHopLinkGCNConv(self.hidden_channels, self.hidden_channels, P = self.p))
+            elif self.backbone == 'rw':
+                convs.append(PHopLinkRWConv(self.hidden_channels, self.hidden_channels, P = self.p))  
             else:
                 raise NotImplementedError
         return convs
@@ -130,7 +133,7 @@ class HybirdPhopGNN(nn.Module):
     def _build_auxiliary_graph(self, x, batch):
         return k_farthest_graph(x, self.k, batch, loop=True, cosine=True, direction=True)
     
-    def process_phop(self, x, edge_index):
+    def process_phop(self, x, edge_index, mode = 'A'):
         N = x.size(0)
         # A = to_dense_adj(edge_index, max_num_nodes=N)[0]  # 稠密邻接矩阵 [N, N]
 
@@ -144,7 +147,10 @@ class HybirdPhopGNN(nn.Module):
         #     A_phop.append(dense_to_sparse(Ap))
         
         # return A_phop
-        return compute_A_phop(edge_index, N, self.p)
+        if mode == 'A':
+            return compute_A_phop(edge_index, N, self.p)
+        elif mode == 'U':
+            return compute_U_phop(edge_index, N, self.p)
 
     # @torch.compile
     def forward(self, x, edge_index, batch):
@@ -152,7 +158,7 @@ class HybirdPhopGNN(nn.Module):
         x = self.embedding(x)
         
         feature_graph_edge_index = self._build_auxiliary_graph(x, batch)
-        A_phop = self.process_phop(x, edge_index)
+        A_phop = self.process_phop(x, edge_index, mode='U')
 
         all_x = []
 
@@ -201,8 +207,6 @@ def compute_A_phop(edge_index, num_nodes, P):
         results.append(dic)
         Ap = torch.sparse.mm(Ap, A_sparse)
     return results
-
-import torch
 
 def compute_U_phop(edge_index, num_nodes, P):
     A_sparse = torch.sparse_coo_tensor(

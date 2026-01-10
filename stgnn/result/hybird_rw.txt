@@ -1,0 +1,13 @@
+config setting:
+hid_dim: 128, layers: 3, model: hybird_rw, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+PROTEINS(1113) all   : 74.82% ± 3.43%
+PROTEINS(1113) last  : 73.50% ± 4.22%
+PROTEINS(1113) last10: 74.89% ± 3.63%
+PROTEINS(1113) last50: 75.15% ± 3.40%
+总运行时间: 14.21 min
+NCI1(4110) all   : 77.46% ± 1.72%
+NCI1(4110) last  : 80.12% ± 1.66%
+NCI1(4110) last10: 80.21% ± 1.73%
+NCI1(4110) last50: 80.06% ± 1.81%
+总运行时间: 129.53 min

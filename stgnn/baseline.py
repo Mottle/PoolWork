@@ -3,7 +3,7 @@ from torch import nn
 from torch_geometric.nn import GCNConv, GINConv, global_mean_pool, TransformerConv
 from torch_geometric.nn.norm import GraphNorm
 import torch.nn.functional as F
-from phop import PHopGCNConv, PHopGINConv, PHopLinkGCNConv
+from phop import PHopGCNConv, PHopGINConv, PHopLinkRWConv, PHopLinkGCNConv
 
 class BaseLine(nn.Module):
     def __init__(self, in_channels: int, hidden_channels: int, out_channels: int, num_layers: int = 3, backbone = 'gcn', dropout = 0.5, embed: bool = False):
