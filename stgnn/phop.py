@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.nn import MessagePassing
 from torch_geometric.utils import add_self_loops, degree, dense_to_sparse, to_dense_adj
-from torch_scatter import scatter_max, scatter_add
+from torch_scatter import scatter_max, scatter_add, scatter_softmax
 
 # from torch_geometric.nn.conv.gcn_conv import gcn_norm
 import torch_scatter
@@ -170,13 +170,15 @@ class PHopLinkRWConv(MessagePassing):
         self.hop_bias = nn.Parameter(torch.zeros(P, out_channels))
         self.linear = nn.Linear(in_channels, out_channels)
 
-    def forward(self, x, edge_index, A_phop=None):
+    def forward(self, x, edge_index, A_phop):
         N = x.size(0)
 
         if A_phop is None:
-            A = to_dense_adj(edge_index, max_num_nodes=N)[0]  # 稠密邻接矩阵 [N, N]
-            if self.self_loops:
-                A = A + torch.eye(N, device=A.device)  # 自环
+            raise ValueError("A_phop is None")
+        # if A_phop is None:
+        #     A = to_dense_adj(edge_index, max_num_nodes=N)[0]  # 稠密邻接矩阵 [N, N]
+        #     if self.self_loops:
+        #         A = A + torch.eye(N, device=A.device)  # 自环
 
         outputs = torch.zeros(N, self.linear.out_features, device=x.device)
         d_weight = torch.softmax(self.d, dim=0)
@@ -184,13 +186,9 @@ class PHopLinkRWConv(MessagePassing):
         xp = self.linear(x)
 
         for p in range(1, self.P + 1):
-            if A_phop is None:
-                Ap = torch.matrix_power(A, p)
-                edge_index_p, edge_weight_p = dense_to_sparse(Ap)
-            else:
-                # edge_index_p, edge_weight_p = A_phop[p - 1]
-                edge_index_p = A_phop[p - 1]["idx"]
-                edge_weight_p = A_phop[p - 1]["wei"]
+            # edge_index_p, edge_weight_p = A_phop[p - 1]
+            edge_index_p = A_phop[p - 1]["idx"]
+            edge_weight_p = A_phop[p - 1]["wei"]
 
             # 对称归一化
             # edge_index_p, edge_weight_p = symmetric_normalize(
@@ -199,10 +197,11 @@ class PHopLinkRWConv(MessagePassing):
 
             # 随机游走归一化
             edge_index_p, edge_weight_p = random_walk_normalize(
-                edge_index_p, N, edge_weight_p
+                edge_index_p, N, edge_weight_p, smoothing=True
             )
 
             # xp = self.linear(x)  # [N, out_channels]
+            # propagate = torch.compile(self.propagate)
             msg = self.propagate(
                 edge_index_p, x=xp, edge_weight=edge_weight_p, size=(N, N)
             )
@@ -273,53 +272,87 @@ class PHopGINConv(MessagePassing):
     def message(self, x_j):
         return x_j
 
+########WRONG########
+# def random_walk_normalize(edge_index, num_nodes, edge_weight=None, smoothing=False):
+#     if edge_weight is None:
+#         edge_weight = torch.ones(edge_index.size(1), device=edge_index.device)
 
-def random_walk_normalize(edge_index, num_nodes, edge_weight=None, domain_smoothing=False):
-    if edge_weight is None:
-        edge_weight = torch.ones(edge_index.size(1), device=edge_index.device)
+#     row, col = edge_index
+#     deg = degree(row, num_nodes, dtype=edge_weight.dtype)  # 出度（源节点的度）
+
+#     # 避免除零错误
+#     deg_inv = deg.pow(-1)
+#     deg_inv[deg_inv == float("inf")] = 0
+
+#     # 随机游走概率归一化
+#     norm = deg_inv[row] * edge_weight
+
+#     if smoothing:
+#         norm = grouped_softmax(edge_index, norm, num_nodes)
+#         # norm_out = torch.zeros_like(norm)
+#         # for i in range(num_nodes):
+#         #     mask = (row == 1)
+#         #     if mask.sum() > 0:
+#         #         norm_out[i] = torch.softmax(norm[mask], dim=0)
+#         # norm = norm_out
+
+#     return edge_index, norm
+
+# def random_walk_normalize(edge_index, num_nodes, edge_weight=None, smoothing=False):
+#     if edge_weight is None:
+#         edge_weight = torch.ones(edge_index.size(1), device=edge_index.device)
+
+#     row, col = edge_index
+
+#     # 计算出度
+#     deg = scatter_add(edge_weight, row, dim=0, dim_size=num_nodes)
+
+#     # RW 归一化
+#     norm = edge_weight / (deg[row] + 1e-16)
+
+#     # 可选 smoothing（grouped softmax）
+#     if smoothing:
+#         norm = scatter_softmax(norm, row, dim=0)
+
+#     return edge_index, norm
+########WRONG######## END
+
+# @torch.compile
+def random_walk_normalize(edge_index, num_nodes, edge_weight=None, smoothing=False):
+    # if edge_weight is None:
+    #     edge_weight = torch.ones(edge_index.size(1), device=edge_index.device)
 
     row, col = edge_index
-    deg = degree(row, num_nodes, dtype=edge_weight.dtype)  # 出度（源节点的度）
 
-    # 避免除零错误
-    deg_inv = deg.pow(-1)
-    deg_inv[deg_inv == float("inf")] = 0
-
-    # 随机游走概率归一化
-    norm = deg_inv[row] * edge_weight
-
-    if domain_smoothing:
-        norm = grouped_softmax(edge_index, norm, num_nodes)
-        # norm_out = torch.zeros_like(norm)
-        # for i in range(num_nodes):
-        #     mask = (row == 1)
-        #     if mask.sum() > 0:
-        #         norm_out[i] = torch.softmax(norm[mask], dim=0)
-        # norm = norm_out
+    if smoothing:
+        # 直接对 U^{(p)}_{ij} 做邻域 softmax
+        norm = scatter_softmax(edge_weight, row, dim=0)
+    else:
+        # 传统 RW 归一化
+        deg = scatter_add(edge_weight, row, dim=0, dim_size=num_nodes)
+        norm = edge_weight / (deg[row] + 1e-16)
 
     return edge_index, norm
 
-def grouped_softmax(edge_index, edge_weight, num_nodes):
-    row, col = edge_index
-    # 计算每个节点的最大值（用于 softmax 的稳定性）
-    max_per_row, _ = scatter_max(edge_weight, row, dim=0, dim_size=num_nodes)
-    max_per_row = max_per_row[row]
 
-    # 减去最大值，避免溢出
-    exp_weight = torch.exp(edge_weight - max_per_row)
+# def grouped_softmax(edge_index, edge_weight, num_nodes):
+#     row, col = edge_index
+#     # 计算每个节点的最大值（用于 softmax 的稳定性）
+#     max_per_row, _ = scatter_max(edge_weight, row, dim=0, dim_size=num_nodes)
+#     max_per_row = max_per_row[row]
 
-    # 计算分母（每个节点的 exp 和）
-    sum_per_row = scatter_add(exp_weight, row, dim=0, dim_size=num_nodes)
-    sum_per_row = sum_per_row[row]
+#     # 减去最大值，避免溢出
+#     exp_weight = torch.exp(edge_weight - max_per_row)
 
-    # softmax 结果
-    norm_out = exp_weight / (sum_per_row + 1e-16)
-    return norm_out
+#     # 计算分母（每个节点的 exp 和）
+#     sum_per_row = scatter_add(exp_weight, row, dim=0, dim_size=num_nodes)
+#     sum_per_row = sum_per_row[row]
+
+#     # softmax 结果
+#     norm_out = exp_weight / (sum_per_row + 1e-16)
+#     return norm_out
 
 def symmetric_normalize(edge_index, num_nodes, edge_weight=None):
-    if edge_weight is None:
-        edge_weight = torch.ones(edge_index.size(1), device=edge_index.device)
-
     row, col = edge_index
     deg = degree(col, num_nodes, dtype=edge_weight.dtype)
     deg_inv_sqrt = deg.pow(-0.5)

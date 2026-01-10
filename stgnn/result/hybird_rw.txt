@@ -11,3 +11,60 @@ NCI1(4110) last  : 80.12% ± 1.66%
 NCI1(4110) last10: 80.21% ± 1.73%
 NCI1(4110) last50: 80.06% ± 1.81%
 总运行时间: 129.53 min
+NCI109(4127) all   : 75.68% ± 1.53%
+NCI109(4127) last  : 78.22% ± 1.82%
+NCI109(4127) last10: 78.19% ± 1.11%
+NCI109(4127) last50: 78.05% ± 1.36%
+总运行时间: 123.72 min
+COX2(467) all   : 79.77% ± 2.06%
+COX2(467) last  : 82.22% ± 5.02%
+COX2(467) last10: 81.32% ± 4.00%
+COX2(467) last50: 80.99% ± 3.72%
+总运行时间: 12.87 min
+IMDB-BINARY(1000) all   : 63.50% ± 3.31%
+IMDB-BINARY(1000) last  : 69.20% ± 4.28%
+IMDB-BINARY(1000) last10: 68.83% ± 5.45%
+IMDB-BINARY(1000) last50: 68.20% ± 5.24%
+总运行时间: 17.84 min
+FRANKENSTEIN(4337) all   : 68.53% ± 1.71%
+FRANKENSTEIN(4337) last  : 70.74% ± 1.84%
+FRANKENSTEIN(4337) last10: 70.50% ± 1.61%
+FRANKENSTEIN(4337) last50: 70.29% ± 1.53%
+总运行时间: 80.06 min
+
+########WRONG########
+softmax norm:
+config setting:
+hid_dim: 128, layers: 3, model: hybird_rw, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+PROTEINS(1113) all   : 74.96% ± 3.56%
+PROTEINS(1113) last  : 75.38% ± 3.64%
+PROTEINS(1113) last10: 75.13% ± 3.67%
+PROTEINS(1113) last50: 75.31% ± 3.49%
+总运行时间: 12.85 min
+NCI1(4110) all   : 78.13% ± 1.80%
+NCI1(4110) last  : 81.19% ± 1.46%
+NCI1(4110) last10: 80.92% ± 1.51%
+NCI1(4110) last50: 80.58% ± 1.61%
+总运行时间: 129.86 min
+NCI109(4127) all   : 76.60% ± 1.47%
+NCI109(4127) last  : 77.90% ± 1.61%
+NCI109(4127) last10: 78.36% ± 1.46%
+NCI109(4127) last50: 78.21% ± 1.55%
+总运行时间: 108.81 min
+COX2(467) all   : 79.65% ± 2.39%
+COX2(467) last  : 80.29% ± 3.89%
+COX2(467) last10: 80.50% ± 2.64%
+COX2(467) last50: 80.21% ± 3.09%
+总运行时间: 17.10 min
+########WRONG########END
+
+smooth random walk norm:
+config setting:
+hid_dim: 128, layers: 3, model: hybird_rw, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+PROTEINS(1113) all   : 74.05% ± 3.58%
+PROTEINS(1113) last  : 75.11% ± 2.96%
+PROTEINS(1113) last10: 75.10% ± 3.14%
+PROTEINS(1113) last50: 74.84% ± 3.41%
+总运行时间: 14.21 min
