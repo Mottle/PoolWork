@@ -53,7 +53,7 @@ def train_model(pooler, classifier, train_loader, optimizer, criterion, device):
             pe = data.pe.to(device)
             pooler.push_pe(pe)
 
-        pooled, additional_loss = pooler(data.x, data.edge_index, data.batch)
+        pooled, additional_loss = pooler(data.x, data.edge_index, data.batch, data)
         out = classifier(pooled)
         loss = compute_loss(criterion(out, data.y), additional_loss)
         loss.backward()
@@ -83,11 +83,11 @@ def test_model(pooler, classifier, test_loader, criterion, device):
                 data.x = torch.ones((data.num_nodes, 1))
             data = data.to(device)
 
-        if pooler.push_pe is not None:
-            pe = data.pe.to(device)
-            pooler.push_pe(pe)
+            if pooler.push_pe is not None:
+                pe = data.pe.to(device)
+                pooler.push_pe(pe)
 
-            pooled, additional_loss = pooler(data.x, data.edge_index, data.batch)
+            pooled, additional_loss = pooler(data.x, data.edge_index, data.batch, data)
             out = classifier(pooled)
             loss = compute_loss(criterion(out, data.y), additional_loss)
             
@@ -468,7 +468,7 @@ if __name__ == '__main__':
     config.seed = None
     config.kfold = 10
 
-    models = ['graph_gps']
+    models = ['hybird_rw']
     # models = ['topk']
     seeds = [0, 114514, 1919810, 77777]
     for model in models:

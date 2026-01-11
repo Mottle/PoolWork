@@ -109,23 +109,16 @@ class PHopLinkGCNConv(MessagePassing):
         N = x.size(0)
 
         if A_phop is None:
-            A = to_dense_adj(edge_index, max_num_nodes=N)[0]  # 稠密邻接矩阵 [N, N]
-            if self.self_loops:
-                A = A + torch.eye(N, device=A.device)  # 自环
+            raise ValueError("A_phop is None")
 
         outputs = torch.zeros(N, self.linear.out_features, device=x.device)
         d_weight = torch.softmax(self.d, dim=0)
 
         xp = self.linear(x)
+        edge_index_l, edge_wight_l = A_phop
 
         for p in range(1, self.P + 1):
-            if A_phop is None:
-                Ap = torch.matrix_power(A, p)
-                edge_index_p, edge_weight_p = dense_to_sparse(Ap)
-            else:
-                # edge_index_p, edge_weight_p = A_phop[p - 1]
-                edge_index_p = A_phop[p - 1]["idx"]
-                edge_weight_p = A_phop[p - 1]["wei"]
+            edge_index_p, edge_weight_p = edge_index_l[p - 1], edge_wight_l[p - 1]
 
             # 对称归一化
             edge_index_p, edge_weight_p = symmetric_normalize(
@@ -170,25 +163,21 @@ class PHopLinkRWConv(MessagePassing):
         self.hop_bias = nn.Parameter(torch.zeros(P, out_channels))
         self.linear = nn.Linear(in_channels, out_channels)
 
-    def forward(self, x, edge_index, A_phop):
+    def forward(self, x, edge_index, A_phop = None):
         N = x.size(0)
 
         if A_phop is None:
             raise ValueError("A_phop is None")
-        # if A_phop is None:
-        #     A = to_dense_adj(edge_index, max_num_nodes=N)[0]  # 稠密邻接矩阵 [N, N]
-        #     if self.self_loops:
-        #         A = A + torch.eye(N, device=A.device)  # 自环
 
         outputs = torch.zeros(N, self.linear.out_features, device=x.device)
         d_weight = torch.softmax(self.d, dim=0)
 
         xp = self.linear(x)
+        edge_index_l, edge_wight_l = A_phop
 
         for p in range(1, self.P + 1):
             # edge_index_p, edge_weight_p = A_phop[p - 1]
-            edge_index_p = A_phop[p - 1]["idx"]
-            edge_weight_p = A_phop[p - 1]["wei"]
+            edge_index_p, edge_weight_p = edge_index_l[p - 1], edge_wight_l[p - 1]
 
             # 对称归一化
             # edge_index_p, edge_weight_p = symmetric_normalize(
