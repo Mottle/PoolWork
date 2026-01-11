@@ -148,7 +148,6 @@ FRANKENSTEIN(4337) last50: 70.80% ± 1.98%
 总运行时间: 74.76 min
 
 dual road gcnn norn:
-
 config setting:
 hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
 epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True

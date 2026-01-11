@@ -1,0 +1,62 @@
+config setting: l
+hid_dim: 128, layers: 3, model: mix_hop, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+PROTEINS(1113) all   : 73.73% ± 4.15%
+PROTEINS(1113) last  : 74.58% ± 4.31%
+PROTEINS(1113) last10: 74.80% ± 3.89%
+PROTEINS(1113) last50: 74.54% ± 3.76%
+总运行时间: 2.24 min
+NCI1(4110) all   : 71.41% ± 1.13%
+NCI1(4110) last  : 74.38% ± 2.54%
+NCI1(4110) last10: 74.27% ± 1.54%
+NCI1(4110) last50: 73.82% ± 1.28%
+总运行时间: 20.13 min
+NCI109(4127) all   : 70.86% ± 1.41%
+NCI109(4127) last  : 72.16% ± 3.01%
+NCI109(4127) last10: 72.66% ± 1.35%
+NCI109(4127) last50: 72.72% ± 1.23%
+总运行时间: 18.91 min
+COX2(467) all   : 80.18% ± 2.34%
+COX2(467) last  : 80.09% ± 4.25%
+COX2(467) last10: 81.52% ± 3.50%
+COX2(467) last50: 81.36% ± 3.47%
+总运行时间: 4.34 min
+IMDB-BINARY(1000) all   : 62.84% ± 3.06%
+IMDB-BINARY(1000) last  : 66.60% ± 4.50%
+IMDB-BINARY(1000) last10: 65.28% ± 4.03%
+IMDB-BINARY(1000) last50: 64.68% ± 3.55%
+总运行时间: 3.64 min
+
+config setting: av
+hid_dim: 128, layers: 3, model: mix_hop, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+PROTEINS(1113) all   : 74.02% ± 3.52%
+PROTEINS(1113) last  : 75.02% ± 3.06%
+PROTEINS(1113) last10: 75.19% ± 3.57%
+PROTEINS(1113) last50: 74.89% ± 3.46%
+总运行时间: 2.74 min
+NCI1(4110) all   : 74.84% ± 1.39%
+NCI1(4110) last  : 77.71% ± 2.10%
+NCI1(4110) last10: 77.73% ± 1.20%
+NCI1(4110) last50: 77.42% ± 1.27%
+总运行时间: 22.02 min
+NCI109(4127) all   : 73.90% ± 2.23%
+NCI109(4127) last  : 77.03% ± 2.54%
+NCI109(4127) last10: 77.04% ± 2.21%
+NCI109(4127) last50: 76.61% ± 2.35%
+总运行时间: 19.52 min
+COX2(467) all   : 79.85% ± 2.21%
+COX2(467) last  : 82.63% ± 5.32%
+COX2(467) last10: 81.82% ± 3.97%
+COX2(467) last50: 81.45% ± 3.85%
+总运行时间: 3.46 min
+IMDB-BINARY(1000) all   : 63.66% ± 4.27%
+IMDB-BINARY(1000) last  : 65.00% ± 5.04%
+IMDB-BINARY(1000) last10: 65.55% ± 5.08%
+IMDB-BINARY(1000) last50: 65.48% ± 4.90%
+总运行时间: 3.20 min
+FRANKENSTEIN(4337) all   : 66.52% ± 1.51%
+FRANKENSTEIN(4337) last  : 68.36% ± 1.78%
+FRANKENSTEIN(4337) last10: 68.16% ± 1.51%
+FRANKENSTEIN(4337) last50: 67.88% ± 1.58%
+总运行时间: 13.16 min
