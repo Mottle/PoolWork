@@ -8,51 +8,108 @@ import torch
 from torch_geometric.utils import coalesce, cumsum, one_hot, remove_self_loops
 from torch_geometric.utils import get_laplacian, to_scipy_sparse_matrix
 import scipy.sparse.linalg as sla
+from torch_geometric.data import Data
+
 
 class ReTUDataset(TUDataset):
-    def __init__(self, root: str, name: str, pe_dim: int = 20, **kwargs) -> None:
+    def __init__(self, root: str, name: str, pe_dim: int = 20, P: int = 6, **kwargs) -> None:
         self.pe_dim = pe_dim
+        self.P = P
         super().__init__(root, name, **kwargs)
 
     def process(self):
-        # 1. 原始 TU 数据加载
         self.data, self.slices, sizes = read_tu_data(self.raw_dir, self.name)
 
-        # 2. 应用 pre_filter / pre_transform（如果有）
         if self.pre_filter is not None or self.pre_transform is not None:
-            data_list = [self.get(idx) for idx in range(len(self))]
-
+            data_list = [self.get(i) for i in range(len(self))]
             if self.pre_filter is not None:
                 data_list = [d for d in data_list if self.pre_filter(d)]
-
             if self.pre_transform is not None:
                 data_list = [self.pre_transform(d) for d in data_list]
-
             self.data, self.slices = self.collate(data_list)
-            self._data_list = None  # Reset cache.
+            self._data_list = None
 
-        # 3. 现在重新取出所有图，准备计算 LapPE
-        data_list = [self.get(idx) for idx in range(len(self))]
+        data_list = [self.get(i) for i in range(len(self))]
 
-        # ⭐ 为每个图计算 Laplacian PE ⭐
         for data in data_list:
-            pe = compute_lap_pe(
+            data.pe = compute_lap_pe(
                 data.edge_index,
                 data.num_nodes,
                 k=self.pe_dim,
                 normalization="sym"
             )
-            data.pe = pe  # 写入 Data 对象
 
-        # 4. 重新 collate
+            A_p_list, U_p_list = compute_Ap_Up(
+                data.edge_index,
+                data.num_nodes,
+                P=self.P
+            )
+
+            for p in range(self.P):
+                A_p = A_p_list[p]
+                U_p = U_p_list[p]
+
+                # ⭐⭐ 正确方式：使用多个 edge_index 字段 ⭐⭐
+                data[f"u_{p}_edge_index"] = U_p['idx']
+                data[f"u_{p}_edge_weight"] = U_p['wei']
+
+                data[f"a_{p}_edge_index"] = A_p['idx']
+                data[f"a_{p}_edge_weight"] = A_p['wei']
+
         self.data, self.slices = self.collate(data_list)
 
-        # 5. 保存
-        assert isinstance(self._data, Data)
         fs.torch_save(
             (self._data.to_dict(), self.slices, sizes, self._data.__class__),
             self.processed_paths[0],
         )
+
+
+
+
+
+# class ReTUDataset(TUDataset):
+#     def __init__(self, root: str, name: str, pe_dim: int = 20, **kwargs) -> None:
+#         self.pe_dim = pe_dim
+#         super().__init__(root, name, **kwargs)
+
+#     def process(self):
+#         # 1. 原始 TU 数据加载
+#         self.data, self.slices, sizes = read_tu_data(self.raw_dir, self.name)
+
+#         # 2. 应用 pre_filter / pre_transform（如果有）
+#         if self.pre_filter is not None or self.pre_transform is not None:
+#             data_list = [self.get(idx) for idx in range(len(self))]
+
+#             if self.pre_filter is not None:
+#                 data_list = [d for d in data_list if self.pre_filter(d)]
+
+#             if self.pre_transform is not None:
+#                 data_list = [self.pre_transform(d) for d in data_list]
+
+#             self.data, self.slices = self.collate(data_list)
+#             self._data_list = None  # Reset cache.
+
+#         # 3. 现在重新取出所有图，准备计算 LapPE
+#         data_list = [self.get(idx) for idx in range(len(self))]
+
+#         for data in data_list:
+#             pe = compute_lap_pe(
+#                 data.edge_index,
+#                 data.num_nodes,
+#                 k=self.pe_dim,
+#                 normalization="sym"
+#             )
+#             data.pe = pe  # 写入 Data 对象
+
+#         # 4. 重新 collate
+#         self.data, self.slices = self.collate(data_list)
+
+#         # 5. 保存
+#         assert isinstance(self._data, Data)
+#         fs.torch_save(
+#             (self._data.to_dict(), self.slices, sizes, self._data.__class__),
+#             self.processed_paths[0],
+#         )
 
 
 # class ReTUDataset(TUDataset):
@@ -264,47 +321,6 @@ def parse_txt_array(
     # 4. 创建最终的 PyTorch Tensor
     return torch.tensor(tensor_data, dtype=dtype, device=device).squeeze()
 
-# def compute_lap_pe(edge_index, num_nodes, k=20, normalization="sym"):
-#     edge_index_lap, edge_weight_lap = get_laplacian(
-#         edge_index, normalization=normalization, num_nodes=num_nodes
-#     )
-
-#     L = to_scipy_sparse_matrix(edge_index_lap, edge_weight_lap, num_nodes=num_nodes)
-
-#     k = min(k, num_nodes - 2)
-#     if k <= 0:
-#         return torch.zeros((num_nodes, k))
-
-#     eigvals, eigvecs = sla.eigsh(L, k=k, which="SM")
-#     pe = torch.from_numpy(eigvecs).float()
-
-#     if pe.size(1) < k:
-#         pad = torch.zeros(num_nodes, k - pe.size(1))
-#         pe = torch.cat([pe, pad], dim=1)
-
-#     return pe
-
-# def compute_lap_pe(edge_index, num_nodes, k=20, normalization="sym"):
-#     edge_index_lap, edge_weight_lap = get_laplacian(
-#         edge_index, normalization=normalization, num_nodes=num_nodes
-#     )
-
-#     L = to_scipy_sparse_matrix(edge_index_lap, edge_weight_lap, num_nodes=num_nodes)
-
-#     # eigsh 要求 k < N
-#     k_eff = min(k, num_nodes - 1)
-#     if k_eff <= 0:
-#         return torch.zeros((num_nodes, k))
-
-#     eigvals, eigvecs = sla.eigsh(L, k=k_eff, which="SM")
-#     pe = torch.from_numpy(eigvecs).float()  # [num_nodes, k_eff]
-
-#     # ⭐⭐ 必须补齐到 k 维 ⭐⭐
-#     if k_eff < k:
-#         pad = torch.zeros(num_nodes, k - k_eff)
-#         pe = torch.cat([pe, pad], dim=1)
-
-#     return pe  # [num_nodes, k]
 
 def compute_lap_pe(edge_index, num_nodes, k=20, normalization="sym"):
     edge_index_lap, edge_weight_lap = get_laplacian(
@@ -337,3 +353,53 @@ def compute_lap_pe(edge_index, num_nodes, k=20, normalization="sym"):
 
     return pe
 
+def compute_Ap_Up(edge_index, num_nodes, P):
+    """
+    计算 A^p 和 U_p = A^p - A^(p-1)
+    返回:
+        A_p_list: 长度 P 每个元素是 {'idx': Tensor[2, nnz], 'wei': Tensor[nnz]}
+        U_p_list: 同上
+    """
+    device = edge_index.device
+
+    # A (sparse adjacency)
+    A_sparse = torch.sparse_coo_tensor(
+        edge_index,
+        torch.ones(edge_index.size(1), device=device),
+        (num_nodes, num_nodes)
+    ).coalesce()
+
+    # A^0 = I
+    idx = torch.arange(num_nodes, device=device)
+    A_prev = torch.sparse_coo_tensor(
+        torch.stack([idx, idx], dim=0),
+        torch.ones(num_nodes, device=device),
+        (num_nodes, num_nodes)
+    ).coalesce()
+
+    Ap = A_sparse
+
+    A_p_list = []
+    U_p_list = []
+
+    for _ in range(1, P + 1):
+        # ---- 保存 A^p ----
+        Ap_cpu = {
+            'idx': Ap.indices().cpu(),
+            'wei': Ap.values().cpu()
+        }
+        A_p_list.append(Ap_cpu)
+
+        # ---- 计算 U_p = A^p - A^(p-1) ----
+        U_p = (Ap - A_prev).coalesce()
+        U_p_cpu = {
+            'idx': U_p.indices().cpu(),
+            'wei': U_p.values().cpu()
+        }
+        U_p_list.append(U_p_cpu)
+
+        # ---- 更新 A^(p-1) 和 A^p ----
+        A_prev = Ap
+        Ap = torch.sparse.mm(Ap, A_sparse).coalesce()
+
+    return A_p_list, U_p_list
