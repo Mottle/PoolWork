@@ -4,6 +4,7 @@ import torch_geometric
 from torch_geometric.nn import MixHopConv, APPNP, SignedGCN, SignedConv, global_mean_pool, TransformerConv
 import torch_geometric.nn
 from torch_geometric.nn.norm import GraphNorm
+from graph_gps import LaplacianPE, build_gps_layer
 import torch.nn.functional as F
 
 
@@ -27,6 +28,8 @@ class BaseLineRc(nn.Module):
         self.backbone = backbone
         self.dropout = dropout
         self.embed = embed
+        self.pos_emb = pos_emb
+        self.pe_value = None
 
         if self.in_channels < 1:
             self.in_channels = 1
@@ -37,6 +40,9 @@ class BaseLineRc(nn.Module):
 
         self.build_convs()
         self.build_norms()
+
+        if pos_emb:
+            self.build_pe()
 
     def build_convs(self):
         if self.num_layers < 2:
@@ -64,6 +70,8 @@ class BaseLineRc(nn.Module):
             return APPNP(K=1, alpha=0.1, dropout=self.dropout)
         elif self.backbone == "sign":
             return SignedGCN(in_channels, out_channels, num_layers=1)
+        elif self.backbone == 'graph_gps':
+            return build_gps_layer(out_channels, self.dropout)
         else:
             raise ValueError(f"backbone invalid: {self.backbone}")
 
@@ -72,16 +80,39 @@ class BaseLineRc(nn.Module):
         for i in range(self.num_layers):
             self.norms.append(GraphNorm(self.hidden_channels))
 
+    def build_pe(self, pe_raw_dim: int = 20):
+        # self._lap_pe = LaplacianPE(pe_raw_dim)
+        self._pe_linear = nn.Linear(pe_raw_dim, self.hidden_channels)
+        self._pe_norm = torch.nn.LayerNorm(self.hidden_channels)
+        self.pe_conv = nn.Sequential(
+            # (self._lap_pe, 'x, edge_index, batch -> x'),
+            self._pe_linear,
+            self._pe_norm
+        )
+
+    def use_pe(self, pe = None):
+        if pe is not None:
+            self.pe_value = pe
+        else:
+            return self.pe_value
+
     def forward(self, x, edge_index, batch):
         originl_x = x
         if self.embed:
             x = self.embedding(x)
+        
+        if self.pos_emb:
+            pe = self.pe_conv(self.pe_value)
+            x = x + pe
 
         feature_all = []
         for i in range(self.num_layers):
             prev_x = x
 
-            x = self.convs[i](x, edge_index)
+            if self.backbone == 'graph_gps':
+                x = self.convs[i](x, edge_index, batch)
+            else:
+                x = self.convs[i](x, edge_index)
             x = self.norms[i](x, batch)
             x = F.leaky_relu(x)
             x = F.dropout(x, p=self.dropout, training=self.training)

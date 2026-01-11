@@ -24,6 +24,7 @@ from baseline_recent import BaseLineRc
 from phop_baseline import HybirdPhopGNN
 from st_split_gnn import SpanTreeSplitGNN
 from kan_based_gin import KANBasedGIN
+from graph_gps import GraphGPS
 
 def compute_loss(loss1, loss2):
     return loss1 + loss2 / (loss1 + loss2 + 1e-6).detach()
@@ -46,6 +47,12 @@ def train_model(pooler, classifier, train_loader, optimizer, criterion, device):
         if data.x == None or data.x.size(1) <= 0:
             data.x = torch.ones((data.num_nodes, 1))
         data = data.to(device)
+
+        #pe
+        if pooler.push_pe is not None:
+            pe = data.pe.to(device)
+            pooler.push_pe(pe)
+
         pooled, additional_loss = pooler(data.x, data.edge_index, data.batch)
         out = classifier(pooled)
         loss = compute_loss(criterion(out, data.y), additional_loss)
@@ -75,6 +82,11 @@ def test_model(pooler, classifier, test_loader, criterion, device):
             if data.x == None or data.x.size(1) <= 0:
                 data.x = torch.ones((data.num_nodes, 1))
             data = data.to(device)
+
+        if pooler.push_pe is not None:
+            pe = data.pe.to(device)
+            pooler.push_pe(pe)
+
             pooled, additional_loss = pooler(data.x, data.edge_index, data.batch)
             out = classifier(pooled)
             loss = compute_loss(criterion(out, data.y), additional_loss)
@@ -211,6 +223,10 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
         model = BaseLineRc(input_dim, hidden_dim, hidden_dim, backbone='appnp', num_layers=num_layers, dropout=dropout, embed=True).to(run_device)
     elif model_type == 'sign':
         model = BaseLineRc(input_dim, hidden_dim, hidden_dim, backbone='sign', num_layers=num_layers, dropout=dropout, embed=True).to(run_device)
+    # elif model_type == 'graph_gps':
+    #     model = BaseLineRc(input_dim, hidden_dim, hidden_dim, backbone='graph_gps', num_layers=num_layers, dropout=dropout, embed=True, pos_emb=True).to(run_device)
+    elif model_type == 'graph_gps':
+        model = GraphGPS(input_dim, hidden_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
 
     classifier = Classifier(hidden_dim, hidden_dim, num_classes).to(run_device)
 
@@ -443,7 +459,7 @@ if __name__ == '__main__':
     config.graph_norm = True
     config.batch_size = 128
     config.epochs = 500
-    config.dropout = 0.5
+    config.dropout = 0.1
     # config.use_simple_datasets = False
     config.sets = 'common'
     config.catch_error = False
@@ -452,7 +468,7 @@ if __name__ == '__main__':
     config.seed = None
     config.kfold = 10
 
-    models = ['sign']
+    models = ['graph_gps']
     # models = ['topk']
     seeds = [0, 114514, 1919810, 77777]
     for model in models:

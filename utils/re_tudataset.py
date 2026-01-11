@@ -6,16 +6,19 @@ from typing import Dict, List, Optional, Tuple
 import os.path as osp
 import torch
 from torch_geometric.utils import coalesce, cumsum, one_hot, remove_self_loops
-
+from torch_geometric.utils import get_laplacian, to_scipy_sparse_matrix
+import scipy.sparse.linalg as sla
 
 class ReTUDataset(TUDataset):
-    def __init__(self, root: str, name: str, **kwargs) -> None:
+    def __init__(self, root: str, name: str, pe_dim: int = 20, **kwargs) -> None:
+        self.pe_dim = pe_dim
         super().__init__(root, name, **kwargs)
 
-    #overwrite process
     def process(self):
+        # 1. 原始 TU 数据加载
         self.data, self.slices, sizes = read_tu_data(self.raw_dir, self.name)
 
+        # 2. 应用 pre_filter / pre_transform（如果有）
         if self.pre_filter is not None or self.pre_transform is not None:
             data_list = [self.get(idx) for idx in range(len(self))]
 
@@ -28,11 +31,55 @@ class ReTUDataset(TUDataset):
             self.data, self.slices = self.collate(data_list)
             self._data_list = None  # Reset cache.
 
+        # 3. 现在重新取出所有图，准备计算 LapPE
+        data_list = [self.get(idx) for idx in range(len(self))]
+
+        # ⭐ 为每个图计算 Laplacian PE ⭐
+        for data in data_list:
+            pe = compute_lap_pe(
+                data.edge_index,
+                data.num_nodes,
+                k=self.pe_dim,
+                normalization="sym"
+            )
+            data.pe = pe  # 写入 Data 对象
+
+        # 4. 重新 collate
+        self.data, self.slices = self.collate(data_list)
+
+        # 5. 保存
         assert isinstance(self._data, Data)
         fs.torch_save(
             (self._data.to_dict(), self.slices, sizes, self._data.__class__),
             self.processed_paths[0],
         )
+
+
+# class ReTUDataset(TUDataset):
+#     def __init__(self, root: str, name: str, **kwargs) -> None:
+#         super().__init__(root, name, **kwargs)
+
+#     #overwrite process
+#     def process(self):
+#         self.data, self.slices, sizes = read_tu_data(self.raw_dir, self.name)
+
+#         if self.pre_filter is not None or self.pre_transform is not None:
+#             data_list = [self.get(idx) for idx in range(len(self))]
+
+#             if self.pre_filter is not None:
+#                 data_list = [d for d in data_list if self.pre_filter(d)]
+
+#             if self.pre_transform is not None:
+#                 data_list = [self.pre_transform(d) for d in data_list]
+
+#             self.data, self.slices = self.collate(data_list)
+#             self._data_list = None  # Reset cache.
+
+#         assert isinstance(self._data, Data)
+#         fs.torch_save(
+#             (self._data.to_dict(), self.slices, sizes, self._data.__class__),
+#             self.processed_paths[0],
+#         )
 
 def read_tu_data(
     folder: str,
@@ -216,3 +263,77 @@ def parse_txt_array(
 
     # 4. 创建最终的 PyTorch Tensor
     return torch.tensor(tensor_data, dtype=dtype, device=device).squeeze()
+
+# def compute_lap_pe(edge_index, num_nodes, k=20, normalization="sym"):
+#     edge_index_lap, edge_weight_lap = get_laplacian(
+#         edge_index, normalization=normalization, num_nodes=num_nodes
+#     )
+
+#     L = to_scipy_sparse_matrix(edge_index_lap, edge_weight_lap, num_nodes=num_nodes)
+
+#     k = min(k, num_nodes - 2)
+#     if k <= 0:
+#         return torch.zeros((num_nodes, k))
+
+#     eigvals, eigvecs = sla.eigsh(L, k=k, which="SM")
+#     pe = torch.from_numpy(eigvecs).float()
+
+#     if pe.size(1) < k:
+#         pad = torch.zeros(num_nodes, k - pe.size(1))
+#         pe = torch.cat([pe, pad], dim=1)
+
+#     return pe
+
+# def compute_lap_pe(edge_index, num_nodes, k=20, normalization="sym"):
+#     edge_index_lap, edge_weight_lap = get_laplacian(
+#         edge_index, normalization=normalization, num_nodes=num_nodes
+#     )
+
+#     L = to_scipy_sparse_matrix(edge_index_lap, edge_weight_lap, num_nodes=num_nodes)
+
+#     # eigsh 要求 k < N
+#     k_eff = min(k, num_nodes - 1)
+#     if k_eff <= 0:
+#         return torch.zeros((num_nodes, k))
+
+#     eigvals, eigvecs = sla.eigsh(L, k=k_eff, which="SM")
+#     pe = torch.from_numpy(eigvecs).float()  # [num_nodes, k_eff]
+
+#     # ⭐⭐ 必须补齐到 k 维 ⭐⭐
+#     if k_eff < k:
+#         pad = torch.zeros(num_nodes, k - k_eff)
+#         pe = torch.cat([pe, pad], dim=1)
+
+#     return pe  # [num_nodes, k]
+
+def compute_lap_pe(edge_index, num_nodes, k=20, normalization="sym"):
+    edge_index_lap, edge_weight_lap = get_laplacian(
+        edge_index, normalization=normalization, num_nodes=num_nodes
+    )
+
+    L = to_scipy_sparse_matrix(edge_index_lap, edge_weight_lap, num_nodes=num_nodes)
+
+    # 有效的 k
+    k_eff = min(k, num_nodes - 1)
+    if k_eff <= 0:
+        return torch.zeros((num_nodes, k))
+
+    try:
+        # 尝试用 ARPACK
+        eigvals, eigvecs = sla.eigsh(L, k=k_eff, which="SM")
+        pe = torch.from_numpy(eigvecs).float()
+
+    except Exception:
+        # ⭐ fallback：用 dense eig（小图非常快，不会报错）
+        L_dense = torch.from_numpy(L.toarray()).float()
+        eigvals, eigvecs = torch.linalg.eigh(L_dense)  # 全部特征向量
+        eigvecs = eigvecs[:, :k_eff]  # 取前 k_eff 个
+        pe = eigvecs.float()
+
+    # 补齐到 k 维
+    if k_eff < k:
+        pad = torch.zeros(num_nodes, k - k_eff)
+        pe = torch.cat([pe, pad], dim=1)
+
+    return pe
+
