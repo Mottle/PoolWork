@@ -31,7 +31,49 @@ from h2gcn import H2GCN
 def compute_loss(loss1, loss2):
     return loss1 + loss2 / (loss1 + loss2 + 1e-6).detach()
 
-def train_model(pooler, classifier, train_loader, optimizer, criterion, device):
+# def train_model(pooler, classifier, train_loader, optimizer, criterion, device, use_amp = False):
+#     pooler.train()
+#     classifier.train()
+
+#     total_loss = 0
+#     correct = 0
+#     total = 0
+    
+#     # all = len(train_loader)
+#     if use_amp:
+#         scaler = torch.amp.GradScaler()
+    
+#     cnt = 0
+#     for data in track(train_loader, description=f"Run train", disable=True):
+#         # if not data.is_undirected():
+#         #     print('WARNING: dataset is NOT undirected!!!')
+#         cnt += 1
+#         optimizer.zero_grad()
+#         if data.x == None or data.x.size(1) <= 0:
+#             data.x = torch.ones((data.num_nodes, 1))
+#         data = data.to(device)
+
+#         #pe
+#         if pooler.push_pe is not None:
+#             pe = data.pe.to(device)
+#             pooler.push_pe(pe)
+
+#         pooled, additional_loss = pooler(data.x, data.edge_index, data.batch, data)
+#         out = classifier(pooled)
+#         loss = compute_loss(criterion(out, data.y), additional_loss)
+#         loss.backward()
+#         optimizer.step()
+
+#         # alrs.step(loss)
+        
+#         total_loss += loss.item()
+#         pred = out.argmax(dim=1)
+#         correct += (pred == data.y).sum().item()
+#         total += data.y.size(0)
+    
+#     return total_loss / len(train_loader), correct / total
+
+def train_model(pooler, classifier, train_loader, optimizer, criterion, device, use_amp=False):
     pooler.train()
     classifier.train()
 
@@ -39,30 +81,42 @@ def train_model(pooler, classifier, train_loader, optimizer, criterion, device):
     correct = 0
     total = 0
     
-    # all = len(train_loader)
-    cnt = 0
+    # 1. 初始化 Scaler (仅在开启 AMP 且是 CUDA 设备时生效)
+    scaler = torch.amp.GradScaler(enabled=use_amp)
+    
+    # 获取设备类型字符串 (用于 autocast)
+    device_type = 'cuda' if 'cuda' in str(device) else 'cpu'
+    
     for data in track(train_loader, description=f"Run train", disable=True):
-        # if not data.is_undirected():
-        #     print('WARNING: dataset is NOT undirected!!!')
-        cnt += 1
         optimizer.zero_grad()
-        if data.x == None or data.x.size(1) <= 0:
+        if data.x is None or data.x.size(1) <= 0:
             data.x = torch.ones((data.num_nodes, 1))
         data = data.to(device)
 
-        #pe
+        # PE 处理逻辑保持不变
         if pooler.push_pe is not None:
             pe = data.pe.to(device)
             pooler.push_pe(pe)
 
-        pooled, additional_loss = pooler(data.x, data.edge_index, data.batch, data)
-        out = classifier(pooled)
-        loss = compute_loss(criterion(out, data.y), additional_loss)
-        loss.backward()
-        optimizer.step()
+        # 2. 前向传播使用 autocast 上下文
+        with torch.amp.autocast(device_type=device_type, enabled=use_amp):
+            pooled, additional_loss = pooler(data.x, data.edge_index, data.batch, data)
+            out = classifier(pooled)
+            loss = compute_loss(criterion(out, data.y), additional_loss)
 
-        # alrs.step(loss)
+        # 3. 反向传播与优化器更新
+        if use_amp:
+            # 缩放损失并反向传播
+            scaler.scale(loss).backward()
+            # scaler.step() 会先取消缩放梯度，如果梯度无 inf/NaN，则调用 optimizer.step()
+            scaler.step(optimizer)
+            # 更新缩放因子
+            scaler.update()
+        else:
+            loss.backward()
+            optimizer.step()
         
+        # 统计逻辑保持不变
         total_loss += loss.item()
         pred = out.argmax(dim=1)
         correct += (pred == data.y).sum().item()
@@ -70,7 +124,37 @@ def train_model(pooler, classifier, train_loader, optimizer, criterion, device):
     
     return total_loss / len(train_loader), correct / total
 
-def test_model(pooler, classifier, test_loader, criterion, device):
+# def test_model(pooler, classifier, test_loader, criterion, device):
+#     pooler.eval()
+#     classifier.eval()
+
+#     total_loss = 0
+#     correct = 0
+#     total = 0
+    
+#     all = len(test_loader)
+#     with torch.no_grad():
+#         for data in track(test_loader,  description=f"Run test batch: {all}", disable=True):
+#             if data.x == None or data.x.size(1) <= 0:
+#                 data.x = torch.ones((data.num_nodes, 1))
+#             data = data.to(device)
+
+#             if pooler.push_pe is not None:
+#                 pe = data.pe.to(device)
+#                 pooler.push_pe(pe)
+
+#             pooled, additional_loss = pooler(data.x, data.edge_index, data.batch, data)
+#             out = classifier(pooled)
+#             loss = compute_loss(criterion(out, data.y), additional_loss)
+            
+#             total_loss += loss.item()
+#             pred = out.argmax(dim=1)
+#             correct += (pred == data.y).sum().item()
+#             total += data.y.size(0)
+    
+#     return total_loss / len(test_loader), correct / total
+
+def test_model(pooler, classifier, test_loader, criterion, device, use_amp=False):
     pooler.eval()
     classifier.eval()
 
@@ -78,10 +162,13 @@ def test_model(pooler, classifier, test_loader, criterion, device):
     correct = 0
     total = 0
     
-    all = len(test_loader)
+    # 获取设备类型字符串
+    device_type = 'cuda' if 'cuda' in str(device) else 'cpu'
+    
+    all_batches = len(test_loader)
     with torch.no_grad():
-        for data in track(test_loader,  description=f"Run test batch: {all}", disable=True):
-            if data.x == None or data.x.size(1) <= 0:
+        for data in track(test_loader, description=f"Run test batch: {all_batches}", disable=True):
+            if data.x is None or data.x.size(1) <= 0:
                 data.x = torch.ones((data.num_nodes, 1))
             data = data.to(device)
 
@@ -89,9 +176,11 @@ def test_model(pooler, classifier, test_loader, criterion, device):
                 pe = data.pe.to(device)
                 pooler.push_pe(pe)
 
-            pooled, additional_loss = pooler(data.x, data.edge_index, data.batch, data)
-            out = classifier(pooled)
-            loss = compute_loss(criterion(out, data.y), additional_loss)
+            # 在推理阶段也开启 autocast 以保持精度/性能策略与训练一致
+            with torch.amp.autocast(device_type=device_type, enabled=use_amp):
+                pooled, additional_loss = pooler(data.x, data.edge_index, data.batch, data)
+                out = classifier(pooled)
+                loss = compute_loss(criterion(out, data.y), additional_loss)
             
             total_loss += loss.item()
             pred = out.argmax(dim=1)
@@ -99,6 +188,7 @@ def test_model(pooler, classifier, test_loader, criterion, device):
             total += data.y.size(0)
     
     return total_loss / len(test_loader), correct / total
+
 
 def run_fold(dataset, loader, current_fold: int, config: BenchmarkConfig):
     log_prefix = f'fold: {current_fold+1}'
@@ -133,14 +223,15 @@ def run_fold(dataset, loader, current_fold: int, config: BenchmarkConfig):
     no_increased_times = 0
     no_record_epoch_num = 0
     early_stop_epoch_num = config.early_stop_epochs
+    use_amp = config.amp
 
     # global alrs
     # alrs = ALRS(optimizer)
 
     for epoch in track(range(epochs), description=f'{log_prefix} 训练 {dataset}'):
-        train_loss, train_acc = train_model(model, classifier, train_loader, optimizer, criterion, run_device)
-        val_loss, val_acc     = test_model(model, classifier, val_loader, criterion, run_device)
-        test_loss, test_acc   = test_model(model, classifier, test_loader, criterion, run_device)
+        train_loss, train_acc = train_model(model, classifier, train_loader, optimizer, criterion, run_device, use_amp=use_amp)
+        val_loss, val_acc     = test_model(model, classifier, val_loader, criterion, run_device, use_amp=use_amp)
+        test_loss, test_acc   = test_model(model, classifier, test_loader, criterion, run_device, use_amp=use_amp)
 
         if epoch > no_record_epoch_num:
             train_loss_list.append(train_loss)
@@ -360,14 +451,14 @@ def datasets(sets='common'):
         ]
     elif sets == 'common':
         datasets = [
-            # 'DD',
-            'PROTEINS',
-            'NCI1',
-            'NCI109',
-            'COX2',
-            'IMDB-BINARY',
+            'DD',
+            # 'PROTEINS',
+            # 'NCI1',
+            # 'NCI109',
+            # 'COX2',
+            # 'IMDB-BINARY',
             'IMDB-MULTI',
-            'FRANKENSTEIN',
+            # 'FRANKENSTEIN',
             'COLLAB',
             # 'REDDIT-BINARY',
             # 'Synthie',
@@ -476,7 +567,7 @@ if __name__ == '__main__':
     config.seed = None
     config.kfold = 10
 
-    models = ['gcn2']
+    models = ['hybird_rw']
     # models = ['topk']
     seeds = [0, 114514, 1919810, 77777]
     for model in models:

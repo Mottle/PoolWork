@@ -1,4 +1,4 @@
-config setting:
+config setting: rw / d
 hid_dim: 128, layers: 3, model: hybird_rw, graph_norm: True, batch_size: 128
 epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
 PROTEINS(1113) all   : 74.82% ± 3.43%

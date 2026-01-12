@@ -186,7 +186,7 @@ class PHopLinkRWConv(MessagePassing):
 
             # 随机游走归一化
             edge_index_p, edge_weight_p = random_walk_normalize(
-                edge_index_p, N, edge_weight_p, smoothing=True
+                edge_index_p, N, edge_weight_p, smoothing=False
             )
 
             # xp = self.linear(x)  # [N, out_channels]

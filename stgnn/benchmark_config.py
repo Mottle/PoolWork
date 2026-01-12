@@ -19,6 +19,7 @@ class BenchmarkConfig:
         self.kfold: int = 10
         self.lr = 0.001
         self.dropout = 0.5
+        self.amp = True
 
     def apply_random_seed(self):
         if self.seed:
@@ -45,5 +46,6 @@ class BenchmarkConfig:
                f'dropout: {self.dropout}, ' +
                f'kfold: {self.kfold}, ' +
                f'seed: {self.seed}, ' +
-               f'early_stop: {self.early_stop}\n'
+               f'early_stop: {self.early_stop}\n',
+               f'use_amp: {self.amp}'
                )
