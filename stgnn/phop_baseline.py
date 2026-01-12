@@ -80,8 +80,8 @@ class HybirdPhopGNN(nn.Module):
         self.hidden_channels = hidden_channels
         self.num_layers = num_layers
         self.dropout = dropout
-        self.k = k
-        self.p = p
+        self.k = k #k farthest
+        self.p = p #p hop
         self.backbone = backbone
         self.self_loop = self_loops
         self.push_pe = None

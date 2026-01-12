@@ -25,6 +25,8 @@ from phop_baseline import HybirdPhopGNN
 from st_split_gnn import SpanTreeSplitGNN
 from kan_based_gin import KANBasedGIN
 from graph_gps import GraphGPS
+from sign import StackedSIGN
+from h2gcn import H2GCN
 
 def compute_loss(loss1, loss2):
     return loss1 + loss2 / (loss1 + loss2 + 1e-6).detach()
@@ -221,12 +223,18 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
         model = BaseLineRc(input_dim, hidden_dim, hidden_dim, backbone='mix_hop', num_layers=num_layers, dropout=dropout, embed=True).to(run_device)
     elif model_type == 'appnp':
         model = BaseLineRc(input_dim, hidden_dim, hidden_dim, backbone='appnp', num_layers=num_layers, dropout=dropout, embed=True).to(run_device)
-    elif model_type == 'sign':
-        model = BaseLineRc(input_dim, hidden_dim, hidden_dim, backbone='sign', num_layers=num_layers, dropout=dropout, embed=True).to(run_device)
+    # elif model_type == 'sign':
+    #     model = BaseLineRc(input_dim, hidden_dim, hidden_dim, backbone='sign', num_layers=num_layers, dropout=dropout, embed=True).to(run_device)
     # elif model_type == 'graph_gps':
     #     model = BaseLineRc(input_dim, hidden_dim, hidden_dim, backbone='graph_gps', num_layers=num_layers, dropout=dropout, embed=True, pos_emb=True).to(run_device)
     elif model_type == 'graph_gps':
         model = GraphGPS(input_dim, hidden_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
+    elif model_type == 'sign':
+        model = StackedSIGN(input_dim, hidden_dim, hidden_dim, num_layers=num_layers, num_hops=3, dropout=dropout).to(run_device)
+    elif model_type == 'h2gcn':
+        model = H2GCN(input_dim, hidden_dim, k = 2, dropout=dropout).to(run_device)
+    elif model_type == 'gcn2':
+        model = BaseLineRc(input_dim, hidden_dim, hidden_dim, backbone='gcn2', num_layers=num_layers, dropout=dropout, embed=True).to(run_device)
 
     classifier = Classifier(hidden_dim, hidden_dim, num_classes).to(run_device)
 
@@ -358,9 +366,9 @@ def datasets(sets='common'):
             'NCI109',
             'COX2',
             'IMDB-BINARY',
-            # 'IMDB-MULTI',
+            'IMDB-MULTI',
             'FRANKENSTEIN',
-            # 'COLLAB',
+            'COLLAB',
             # 'REDDIT-BINARY',
             # 'Synthie',
             # 'SYNTHETIC',
@@ -468,7 +476,7 @@ if __name__ == '__main__':
     config.seed = None
     config.kfold = 10
 
-    models = ['hybird_rw']
+    models = ['gcn2']
     # models = ['topk']
     seeds = [0, 114514, 1919810, 77777]
     for model in models:

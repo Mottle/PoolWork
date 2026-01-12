@@ -1,10 +1,9 @@
 import torch
 from torch import nn
 import torch_geometric
-from torch_geometric.nn import MixHopConv, APPNP, SignedGCN, SignedConv, global_mean_pool, TransformerConv
+from torch_geometric.nn import MixHopConv, APPNP, GCN2Conv, global_mean_pool, TransformerConv
 import torch_geometric.nn
 from torch_geometric.nn.norm import GraphNorm
-from graph_gps import LaplacianPE, build_gps_layer
 import torch.nn.functional as F
 
 
@@ -68,10 +67,8 @@ class BaseLineRc(nn.Module):
             ])
         elif self.backbone == "appnp":
             return APPNP(K=1, alpha=0.1, dropout=self.dropout)
-        elif self.backbone == "sign":
-            return SignedGCN(in_channels, out_channels, num_layers=1)
-        elif self.backbone == 'graph_gps':
-            return build_gps_layer(out_channels, self.dropout)
+        elif self.backbone == 'gcn2':
+            return GCN2Conv(out_channels, alpha=0.5)
         else:
             raise ValueError(f"backbone invalid: {self.backbone}")
 
@@ -90,16 +87,17 @@ class BaseLineRc(nn.Module):
             self._pe_norm
         )
 
-    def use_pe(self, pe = None):
+    def push_pe(self, pe = None):
         if pe is not None:
             self.pe_value = pe
         else:
             return self.pe_value
 
-    def forward(self, x, edge_index, batch):
+    def forward(self, x, edge_index, batch, *args):
         originl_x = x
         if self.embed:
             x = self.embedding(x)
+            ori_emb_x = x
         
         if self.pos_emb:
             pe = self.pe_conv(self.pe_value)
@@ -111,6 +109,8 @@ class BaseLineRc(nn.Module):
 
             if self.backbone == 'graph_gps':
                 x = self.convs[i](x, edge_index, batch)
+            elif self.backbone == 'gcn2':
+                x = self.convs[i](x, ori_emb_x, edge_index)
             else:
                 x = self.convs[i](x, edge_index)
             x = self.norms[i](x, batch)
