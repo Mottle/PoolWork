@@ -147,6 +147,7 @@ class PHopLinkGCNConv(MessagePassing):
             inputs, index, dim=0, reduce=self.aggr, dim_size=dim_size
         )
 
+
 class PHopLinkRWConv(MessagePassing):
     def __init__(
         self,
@@ -163,7 +164,7 @@ class PHopLinkRWConv(MessagePassing):
         self.hop_bias = nn.Parameter(torch.zeros(P, out_channels))
         self.linear = nn.Linear(in_channels, out_channels)
 
-    def forward(self, x, edge_index, A_phop = None):
+    def forward(self, x, edge_index, A_phop=None):
         N = x.size(0)
 
         if A_phop is None:
@@ -211,6 +212,78 @@ class PHopLinkRWConv(MessagePassing):
         return torch_scatter.scatter(
             inputs, index, dim=0, reduce=self.aggr, dim_size=dim_size
         )
+
+
+class PHopLinkGINConv(MessagePassing):
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        P: int = 3,
+        aggr: str = "add",
+        self_loops: bool = True,
+    ):
+        super(PHopLinkGINConv, self).__init__(aggr=aggr)
+        self.P = P
+        self.self_loops = self_loops
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+
+        # --- 修改 1：GIN 需要 learnable epsilon ---
+        self.eps = nn.Parameter(torch.zeros(1))
+
+        # --- 修改 2：GIN 的 MLP（这里用 Linear 代替）---
+        self.mlp = nn.ModuleList(
+            [
+                nn.Sequential(
+                    nn.Linear(in_channels, out_channels),
+                    nn.LeakyReLU(),
+                    nn.Linear(out_channels, out_channels),
+                ) for _ in range(P)
+            ]
+        )
+
+        # 多跳权重
+        self.d = nn.Parameter(torch.ones(P, out_channels))
+        self.hop_bias = nn.Parameter(torch.zeros(out_channels))
+        # self.hop_linear = nn.ModuleList([nn.Linear(in_channels, out_channels) for _ in range(P)])
+
+    def forward(self, x, edge_index, A_phop=None):
+        N = x.size(0)
+
+        if A_phop is None:
+            raise ValueError("A_phop is None")
+
+        outputs = torch.zeros(N, self.out_channels, device=x.device)
+        d_weight = torch.softmax(self.d, dim=0)
+
+        edge_index_l, edge_wight_l = A_phop
+
+        for p in range(1, self.P + 1):
+            edge_index_p, edge_weight_p = edge_index_l[p - 1], edge_wight_l[p - 1]
+
+            msg = self.propagate(
+                edge_index_p, x=x, edge_weight=edge_weight_p, size=(N, N)
+            )
+
+            msg = msg + (1 + self.eps) * x
+
+            # outputs += msg * d_weight[p - 1] + self.hop_bias[p - 1]
+            # outputs += self.hop_linear[p - 1](msg)
+            outputs += self.mlp[p - 1](msg) * d_weight[p - 1]
+
+        # outputs = self.mlp(outputs)
+
+        return outputs + self.hop_bias
+
+    def message(self, x_j, edge_weight):
+        return edge_weight.view(-1, 1) * x_j
+
+    def aggregate(self, inputs, index, dim_size=None):
+        return torch_scatter.scatter(
+            inputs, index, dim=0, reduce=self.aggr, dim_size=dim_size
+        )
+
 
 class PHopGINConv(MessagePassing):
     def __init__(
@@ -261,6 +334,7 @@ class PHopGINConv(MessagePassing):
     def message(self, x_j):
         return x_j
 
+
 ########WRONG########
 # def random_walk_normalize(edge_index, num_nodes, edge_weight=None, smoothing=False):
 #     if edge_weight is None:
@@ -306,6 +380,7 @@ class PHopGINConv(MessagePassing):
 #     return edge_index, norm
 ########WRONG######## END
 
+
 # @torch.compile
 def random_walk_normalize(edge_index, num_nodes, edge_weight=None, smoothing=False):
     # if edge_weight is None:
@@ -341,11 +416,12 @@ def random_walk_normalize(edge_index, num_nodes, edge_weight=None, smoothing=Fal
 #     norm_out = exp_weight / (sum_per_row + 1e-16)
 #     return norm_out
 
+
 def symmetric_normalize(edge_index, num_nodes, edge_weight=None):
     row, col = edge_index
     deg = degree(col, num_nodes, dtype=edge_weight.dtype)
     deg_inv_sqrt = deg.pow(-0.5)
     deg_inv_sqrt[deg_inv_sqrt == float("inf")] = 0
-    
+
     norm = deg_inv_sqrt[row] * deg_inv_sqrt[col] * edge_weight
     return edge_index, norm

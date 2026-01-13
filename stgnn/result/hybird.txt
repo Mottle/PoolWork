@@ -229,3 +229,8 @@ IMDB-MULTI(1500) last  : 46.73% ± 4.46%
 IMDB-MULTI(1500) last10: 46.50% ± 2.70%
 IMDB-MULTI(1500) last50: 45.91% ± 2.83%
 总运行时间: 24.27 min
+COLLAB(5000) all   : 74.66% ± 1.09%
+COLLAB(5000) last  : 76.34% ± 1.90%
+COLLAB(5000) last10: 76.26% ± 1.69%
+COLLAB(5000) last50: 76.24% ± 1.60%
+总运行时间: 303.41 min

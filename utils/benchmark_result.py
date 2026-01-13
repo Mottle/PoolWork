@@ -12,21 +12,24 @@ class BenchmarkResult:
         if last is None:
             return max(self._result)
         else:
-            last_list = self._result[-last:]
+            true_last = min(last, len(self._result))
+            last_list = self._result[-true_last:]
             return max(last_list)
 
     def get_mean(self, last = None) -> float:
         if last is None:
             return np.mean(self._result)
         else:
-            last_list = self._result[-last:]
+            true_last = min(last, len(self._result))
+            last_list = self._result[-true_last:]
             return np.mean(last_list)
 
     def get_std(self, last = None) -> float:
         if last is None:
             return np.std(self._result)
         else:
-            last_list = self._result[-last:]
+            true_last = min(last, len(self._result))
+            last_list = self._result[-true_last:]
             return np.std(last_list)
         
     

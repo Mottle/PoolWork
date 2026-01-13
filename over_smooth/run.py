@@ -188,7 +188,7 @@ def run_fold(dataset, loader, current_fold: int, config: BenchmarkConfig):
             test_acc_res.append(test_acc)
         
         if config.early_stop and epoch > no_record_epoch_num:
-            if val_acc < val_acc_res.get_max():
+            if val_acc < val_acc_res.get_max(early_stop_epoch_num):
                 no_increased_times += 1
             else:
                 no_increased_times = 0

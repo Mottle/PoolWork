@@ -5,7 +5,7 @@ from torch import nn
 from torch_geometric.nn import global_mean_pool
 from torch_geometric.nn.norm import GraphNorm
 import torch.nn.functional as F
-from phop import PHopGCNConv, PHopGINConv, PHopLinkRWConv, PHopLinkGCNConv
+from phop import PHopGCNConv, PHopGINConv, PHopLinkRWConv, PHopLinkGCNConv, PHopLinkGINConv
 from torch_geometric.nn import GINConv, GCNConv, GATConv
 from dual_road_gnn import k_farthest_graph
 from torch_geometric.utils import add_self_loops, degree, dense_to_sparse, to_dense_adj
@@ -109,7 +109,9 @@ class HybirdPhopGNN(nn.Module):
             if self.backbone == 'gcn':
                 convs.append(PHopLinkGCNConv(self.hidden_channels, self.hidden_channels, P = self.p))
             elif self.backbone == 'rw':
-                convs.append(PHopLinkRWConv(self.hidden_channels, self.hidden_channels, P = self.p))    
+                convs.append(PHopLinkRWConv(self.hidden_channels, self.hidden_channels, P = self.p))   
+            elif self.backbone == 'gin':
+                convs.append(PHopLinkGINConv(self.hidden_channels, self.hidden_channels, P = self.p))
             else:
                 raise NotImplementedError
         return convs
@@ -120,7 +122,9 @@ class HybirdPhopGNN(nn.Module):
             if self.backbone == 'gcn':
                 convs.append(PHopLinkGCNConv(self.hidden_channels, self.hidden_channels, P = self.p))
             elif self.backbone == 'rw':
-                convs.append(PHopLinkRWConv(self.hidden_channels, self.hidden_channels, P = self.p))  
+                convs.append(PHopLinkRWConv(self.hidden_channels, self.hidden_channels, P = self.p))
+            elif self.backbone == 'gin':
+                convs.append(PHopLinkGINConv(self.hidden_channels, self.hidden_channels, P = self.p))
             else:
                 raise NotImplementedError
         return convs
