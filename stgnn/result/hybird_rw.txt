@@ -88,3 +88,24 @@ IMDB-BINARY(1000) last  : 63.20% ± 5.31%
 IMDB-BINARY(1000) last10: 63.60% ± 4.76%
 IMDB-BINARY(1000) last50: 62.67% ± 4.43%
 总运行时间: 18.74 min
+
+rw / d
+spend time: 53.88 min                                                                                                                                                                                                                                                                  
+DD(1178) for 10 fold:                                                                                                                                                                                                                                                                  
+all     : 73.65% ± 3.26%                                                                                                                                                                                                                                                               
+last-50 : 73.72% ± 3.50%
+last-10 : 73.34% ± 3.13%                                                                                                                                                                                                                                                               
+last    : 72.66% ± 3.68%
+config setting:
+hid_dim: 128, layers: 3, model: hybird_rw, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: TrueIMDB-MULTI(1500) all   : 45.41% ± 2.66%
+IMDB-MULTI(1500) last  : 46.27% ± 3.77%
+IMDB-MULTI(1500) last10: 46.79% ± 3.57%
+IMDB-MULTI(1500) last50: 46.76% ± 3.45%
+总运行时间: 27.15 min
+COLLAB(5000) all   : 70.91% ± 1.37%
+COLLAB(5000) last  : 71.84% ± 2.03%
+COLLAB(5000) last10: 71.93% ± 1.96%
+COLLAB(5000) last50: 71.92% ± 1.80%
+总运行时间: 262.23 min

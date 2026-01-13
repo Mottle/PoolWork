@@ -567,7 +567,7 @@ if __name__ == '__main__':
     config.seed = None
     config.kfold = 10
 
-    models = ['hybird_rw']
+    models = ['hybird']
     # models = ['topk']
     seeds = [0, 114514, 1919810, 77777]
     for model in models:

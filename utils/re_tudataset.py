@@ -49,7 +49,6 @@ class ReTUDataset(TUDataset):
                 A_p = A_p_list[p]
                 U_p = U_p_list[p]
 
-                # ⭐⭐ 正确方式：使用多个 edge_index 字段 ⭐⭐
                 data[f"u_{p}_edge_index"] = U_p['idx']
                 data[f"u_{p}_edge_weight"] = U_p['wei']
 
@@ -62,8 +61,6 @@ class ReTUDataset(TUDataset):
             (self._data.to_dict(), self.slices, sizes, self._data.__class__),
             self.processed_paths[0],
         )
-
-
 
 
 

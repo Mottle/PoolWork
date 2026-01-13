@@ -46,6 +46,6 @@ class BenchmarkConfig:
                f'dropout: {self.dropout}, ' +
                f'kfold: {self.kfold}, ' +
                f'seed: {self.seed}, ' +
-               f'early_stop: {self.early_stop}\n',
+               f'early_stop: {self.early_stop}\n' + 
                f'use_amp: {self.amp}'
                )
