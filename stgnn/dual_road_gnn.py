@@ -2,7 +2,14 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-from torch_geometric.nn import GCNConv, GINConv, GATConv, global_mean_pool, GraphNorm, knn_graph
+from torch_geometric.nn import (
+    GCNConv,
+    GINConv,
+    GATConv,
+    global_mean_pool,
+    GraphNorm,
+    knn_graph,
+)
 from torch_geometric.utils import add_self_loops, degree, to_undirected
 from torch_geometric.data import Data
 import networkx as nx
@@ -13,7 +20,15 @@ from torch_geometric.utils import scatter
 
 
 class DualRoadGNN(nn.Module):
-    def __init__(self, in_channels, hidden_channels, num_layers=3, dropout=0.5, k = 3, backbone = 'gcn'):
+    def __init__(
+        self,
+        in_channels,
+        hidden_channels,
+        num_layers=3,
+        dropout=0.5,
+        k=3,
+        backbone="gcn",
+    ):
         super(DualRoadGNN, self).__init__()
         self.in_channels = max(in_channels, 1)
         self.hidden_channels = hidden_channels
@@ -21,13 +36,14 @@ class DualRoadGNN(nn.Module):
         self.dropout = dropout
         self.k = k
         self.backbone = backbone
+        self.push_pe = None
 
         if num_layers < 2:
             raise ValueError("Number of layers should be greater than 1.")
-        
+
         if k <= 1:
             raise ValueError("k should be greater than 1.")
-        
+
         self._build_embedding()
         self.convs = self._build_convs()
         self.norms = self._build_graph_norms()
@@ -46,33 +62,44 @@ class DualRoadGNN(nn.Module):
         #     nn.Linear(2 * self.hidden_channels, self.hidden_channels),
         #     nn.Dropout(p=self.dropout)
         # )
-    
+
     def _build_embedding(self):
         # self.embedding = nn.Embedding(num_embeddings=self.in_channels, embedding_dim=self.hidden_channels)
-        self.embedding = nn.Linear(in_features=self.in_channels, out_features=self.hidden_channels)
+        self.embedding = nn.Linear(
+            in_features=self.in_channels, out_features=self.hidden_channels
+        )
 
     def _build_convs(self):
         convs = nn.ModuleList()
         for i in range(self.num_layers):
-            if self.backbone == 'gcn':
+            if self.backbone == "gcn":
                 convs.append(GCNConv(self.hidden_channels, self.hidden_channels))
-            elif self.backbone == 'gin':
+            elif self.backbone == "gin":
                 fnn = nn.Linear(self.hidden_channels, self.hidden_channels)
                 convs.append(GINConv(fnn))
-            elif self.backbone == 'gat':
-                convs.append(GATConv(self.hidden_channels, self.hidden_channels // 4, heads=4))
+            elif self.backbone == "gat":
+                convs.append(
+                    GATConv(self.hidden_channels, self.hidden_channels // 4, heads=4)
+                )
         return convs
-    
+
     def _build_feature_convs(self):
         convs = nn.ModuleList()
         for i in range(self.num_layers):
-            if self.backbone == 'gcn':
+            if self.backbone == "gcn":
                 convs.append(GCNConv(self.hidden_channels, self.hidden_channels))
-            elif self.backbone == 'gin':
-                fnn = nn.Linear(self.hidden_channels, self.hidden_channels)
+            elif self.backbone == "gin":
+                # fnn = nn.Linear(self.hidden_channels, self.hidden_channels)
+                fnn = nn.Sequential(
+                    nn.Linear(self.hidden_channels, self.hidden_channels),
+                    nn.LeakyReLU(),
+                    nn.Linear(self.hidden_channels, self.hidden_channels),
+                )
                 convs.append(GINConv(fnn))
-            elif self.backbone == 'gat':
-                convs.append(GATConv(self.hidden_channels, self.hidden_channels // 4, heads=4))
+            elif self.backbone == "gat":
+                convs.append(
+                    GATConv(self.hidden_channels, self.hidden_channels // 4, heads=4)
+                )
         return convs
 
     def _build_graph_norms(self):
@@ -80,18 +107,18 @@ class DualRoadGNN(nn.Module):
         for i in range(self.num_layers):
             graph_norms.append(GraphNorm(self.hidden_channels))
         return graph_norms
-    
+
     def _build_auxiliary_graph(self, x, batch):
         feature_graph_edge_index = knn_graph(x, self.k, batch, loop=True, cosine=True)
         return feature_graph_edge_index
 
-    def forward(self, x, edge_index, batch):
+    def forward(self, x, edge_index, batch, *arg):
         originl_x = x
         x = self.embedding(x)
-        
+
         feature_graph_edge_index = self._build_auxiliary_graph(x, batch)
 
-        all_x = []  
+        all_x = []
 
         for i in range(self.num_layers - 1):
             prev_x = x
@@ -119,23 +146,36 @@ class DualRoadGNN(nn.Module):
         for i in range(self.num_layers):
             graph_feature += global_mean_pool(all_x[i - 1], batch)
         return graph_feature, 0
-    
+
 
 class KFNDualRoadGNN(DualRoadGNN):
     def _build_auxiliary_graph(self, x, batch):
-        return k_farthest_graph(x, self.k, batch, loop=True, cosine=True, direction=True)
-    
+        return k_farthest_graph(
+            x, self.k, batch, loop=True, cosine=True, direction=True
+        )
+
 
 class KFNDualRoadSTSplitGNN(DualRoadGNN):
     def _build_auxiliary_graph(self, x, batch):
-        return k_farthest_graph(x, self.k, batch, loop=True, cosine=True, direction=True)
-    
+        return k_farthest_graph(
+            x, self.k, batch, loop=True, cosine=True, direction=True
+        )
+
     def _build_convs(self):
         from st_split_gnn import SpanTreeSplitGNN, SpanTreeSplitConv
+
         convs = nn.ModuleList()
         for i in range(self.num_layers):
             # convs.append(SpanTreeSplitGNN(in_channels=self.hidden_channels, hidden_channels=self.hidden_channels, num_layers=1, num_splits=2, dropout=self.dropout))
-            convs.append(SpanTreeSplitConv(in_channels=self.hidden_channels, out_channels=self.hidden_channels, num_splits=2, dropout=self.dropout, backbone=self.backbone))
+            convs.append(
+                SpanTreeSplitConv(
+                    in_channels=self.hidden_channels,
+                    out_channels=self.hidden_channels,
+                    num_splits=2,
+                    dropout=self.dropout,
+                    backbone=self.backbone,
+                )
+            )
         return convs
 
 
@@ -143,13 +183,14 @@ class KRNDualRoadGNN(DualRoadGNN):
     def _build_auxiliary_graph(self, x, batch):
         return k_random_graph(x, self.k, batch, loop=True)
 
+
 def k_farthest_graph(
     x: Tensor,
     k: int,
     batch: Optional[Tensor] = None,
     loop: bool = False,
     cosine: bool = True,
-    direction: bool = True, #默认单向
+    direction: bool = True,  # 默认单向
 ) -> Tensor:
     """
     计算基于特征空间中 K-最远邻居的图的边索引 (edge_index)，支持批处理。
@@ -168,34 +209,39 @@ def k_farthest_graph(
     # 如果 batch 为 None，我们创建一个单图 batch 向量，并调用核心逻辑
     if batch is None:
         batch = x.new_zeros(x.size(0), dtype=torch.long)
-    
+
     num_nodes = x.size(0)
-    
+
     # 获取每个图的节点数 (n_i)
     num_graphs = batch.max().item() + 1
-    
+
     # PyTorch Geometric 的 'ptr' (Pointer) 机制，用于定位批次中的子图
     # [0, n1, n1+n2, n1+n2+n3, ..., N]
-    ptr = scatter(torch.ones(num_nodes, dtype=torch.long, device=x.device),
-                  batch, dim=0, dim_size=num_graphs, reduce='sum').cumsum(0)
+    ptr = scatter(
+        torch.ones(num_nodes, dtype=torch.long, device=x.device),
+        batch,
+        dim=0,
+        dim_size=num_graphs,
+        reduce="sum",
+    ).cumsum(0)
     ptr = torch.cat([x.new_zeros(1, dtype=torch.long), ptr])
-    
+
     all_edge_indices = []
-    
+
     for i in range(num_graphs):
         # 1. 提取当前子图的特征和节点全局索引
         start_idx = ptr[i]
-        end_idx = ptr[i+1]
-        
+        end_idx = ptr[i + 1]
+
         # 当前子图的特征 X_i
         x_i = x[start_idx:end_idx]
-        n_i = x_i.size(0) # 当前子图的节点数
-        
+        n_i = x_i.size(0)  # 当前子图的节点数
+
         if n_i == 0:
             continue
-            
+
         # 2. 计算当前子图内的距离矩阵 D_i (n_i x n_i)
-        
+
         if cosine:
             x_norm = x_i / x_i.norm(dim=1, keepdim=True).clamp(min=1e-8)
             S = torch.mm(x_norm, x_norm.t())
@@ -206,46 +252,48 @@ def k_farthest_graph(
             D_i = D_i.clamp(min=0.0)
 
         # 3. 选取最远邻居 (topk)
-        
+
         k_adjusted = min(k + 1, n_i)
-        
+
         # _, indices: 形状 [n_i, k_adjusted]，包含最远邻居的局部索引
         _, indices = torch.topk(D_i, k=k_adjusted, dim=1, largest=True)
-        
+
         # 4. 构建 edge_index (局部索引)
-        source_nodes_local = torch.arange(n_i, device=x.device).repeat_interleave(k_adjusted)
+        source_nodes_local = torch.arange(n_i, device=x.device).repeat_interleave(
+            k_adjusted
+        )
         target_nodes_local = indices.flatten()
-        
+
         edge_index_local = torch.stack([source_nodes_local, target_nodes_local], dim=0)
 
         # 5. 可选: 移除自环 (局部索引)
         if not loop:
             mask = edge_index_local[0] != edge_index_local[1]
             edge_index_local = edge_index_local[:, mask]
-        
+
         # 6. 转换回全局索引并存储
         # 局部索引 + start_idx = 全局索引
         edge_index_global = edge_index_local + start_idx
 
         if not direction:
             # 强制双向：拼接翻转后的边
-            edge_index_global = torch.cat([edge_index_global, edge_index_global.flip(0)], dim=1)
+            edge_index_global = torch.cat(
+                [edge_index_global, edge_index_global.flip(0)], dim=1
+            )
 
         all_edge_indices.append(edge_index_global)
 
     # 7. 合并所有子图的边索引
     if len(all_edge_indices) == 0:
         return x.new_empty((2, 0), dtype=torch.long)
-        
+
     final_edge_index = torch.cat(all_edge_indices, dim=1)
-    
+
     return final_edge_index
 
+
 def k_random_graph(
-    x: Tensor,
-    k: int,
-    batch: Optional[Tensor] = None,
-    loop: bool = False
+    x: Tensor, k: int, batch: Optional[Tensor] = None, loop: bool = False
 ) -> Tensor:
     """
     构建基于随机选择 K 个邻居的图的边索引 (edge_index)，支持批处理。
@@ -260,15 +308,20 @@ def k_random_graph(
     返回:
         Tensor: 边索引，形状为 [2, num_edges]。
     """
-    
+
     if batch is None:
         batch = x.new_zeros(x.size(0), dtype=torch.long)
-    
+
     num_nodes = x.size(0)
     num_graphs = batch.max().item() + 1
 
-    ptr = scatter(torch.ones(num_nodes, dtype=torch.long, device=x.device),
-                  batch, dim=0, dim_size=num_graphs, reduce='sum').cumsum(0)
+    ptr = scatter(
+        torch.ones(num_nodes, dtype=torch.long, device=x.device),
+        batch,
+        dim=0,
+        dim_size=num_graphs,
+        reduce="sum",
+    ).cumsum(0)
     ptr = torch.cat([x.new_zeros(1, dtype=torch.long), ptr])
 
     all_edge_indices = []
@@ -304,7 +357,9 @@ def k_random_graph(
         target_nodes_local = target_nodes_local_matrix.flatten()
         source_nodes_local_repeat = source_nodes_local.repeat_interleave(k_sample)
 
-        edge_index_local = torch.stack([source_nodes_local_repeat, target_nodes_local], dim=0)
+        edge_index_local = torch.stack(
+            [source_nodes_local_repeat, target_nodes_local], dim=0
+        )
         edge_index_global = edge_index_local + start_idx
         all_edge_indices.append(edge_index_global)
 

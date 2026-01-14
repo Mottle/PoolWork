@@ -285,7 +285,7 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
     elif model_type == 'dualroad':
         model = DualRoadGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, k = 3).to(run_device)
     elif model_type == 'dualroad_kf':
-        model = KFNDualRoadGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, k = 3).to(run_device)
+        model = KFNDualRoadGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, k = 3, backbone='gin').to(run_device)
     elif model_type == 'dualroad_kr':
         model = KRNDualRoadGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, k = 3).to(run_device)
     elif model_type == 'dualroad_rev_attn':
@@ -569,7 +569,7 @@ if __name__ == '__main__':
     config.seed = None
     config.kfold = 10
 
-    models = ['hybird_gin']
+    models = ['dualroad_kf']
     # models = ['topk']
     seeds = [0, 114514, 1919810, 77777]
     for model in models:

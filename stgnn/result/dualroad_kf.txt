@@ -309,3 +309,57 @@ MSRC_21(563) last  : 92.71% ± 2.19%
 MSRC_21(563) last10: 92.77% ± 2.38%
 MSRC_21(563) last50: 92.74% ± 2.39%
 总运行时间: 12.10 min
+
+
+config setting: WRONG GIN
+hid_dim: 128, layers: 3, model: dualroad_kf, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: TrueDD(1178) all   : 75.11% ± 3.46%
+DD(1178) last  : 75.63% ± 4.06%
+DD(1178) last10: 75.54% ± 3.17%
+DD(1178) last50: 75.26% ± 3.32%
+总运行时间: 34.91 min
+
+config setting: gin
+hid_dim: 128, layers: 3, model: dualroad_kf, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: TrueDD(1178) all   : 74.24% ± 4.01%
+DD(1178) last  : 75.38% ± 4.57%
+DD(1178) last10: 74.68% ± 4.37%
+DD(1178) last50: 74.24% ± 4.22%
+总运行时间: 32.27 min
+PROTEINS(1113) all   : 73.44% ± 3.31%
+PROTEINS(1113) last  : 72.52% ± 4.60%
+PROTEINS(1113) last10: 72.26% ± 3.31%
+PROTEINS(1113) last50: 72.77% ± 3.61%
+总运行时间: 9.10 min
+NCI1(4110) all   : 78.68% ± 1.11%
+NCI1(4110) last  : 81.09% ± 1.66%
+NCI1(4110) last10: 80.35% ± 1.46%
+NCI1(4110) last50: 79.88% ± 1.42%
+总运行时间: 63.96 min
+NCI109(4127) all   : 77.48% ± 1.68%
+NCI109(4127) last  : 78.99% ± 1.98%
+NCI109(4127) last10: 78.97% ± 1.85%
+NCI109(4127) last50: 78.73% ± 1.75%
+总运行时间: 57.55 min
+COX2(467) all   : 80.18% ± 3.04%
+COX2(467) last  : 80.70% ± 6.23%
+COX2(467) last10: 80.04% ± 3.82%
+COX2(467) last50: 80.30% ± 4.03%
+总运行时间: 9.20 min
+IMDB-BINARY(1000) all   : 65.79% ± 4.29%
+IMDB-BINARY(1000) last  : 69.10% ± 6.28%
+IMDB-BINARY(1000) last10: 68.45% ± 4.97%
+IMDB-BINARY(1000) last50: 68.47% ± 5.07%
+总运行时间: 14.38 min
+IMDB-MULTI(1500) all   : 44.45% ± 2.27%
+IMDB-MULTI(1500) last  : 45.93% ± 2.39%
+IMDB-MULTI(1500) last10: 45.96% ± 2.44%
+IMDB-MULTI(1500) last50: 45.52% ± 2.45%
+总运行时间: 23.07 min
+FRANKENSTEIN(4337) all   : 70.92% ± 1.33%
+FRANKENSTEIN(4337) last  : 72.33% ± 1.15%
+FRANKENSTEIN(4337) last10: 72.24% ± 1.45%
+FRANKENSTEIN(4337) last50: 72.13% ± 1.27%
+总运行时间: 74.49 min

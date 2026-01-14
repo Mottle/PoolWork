@@ -41,7 +41,8 @@ PROTEINS(1113) last  : 70.62% ± 2.86%
 PROTEINS(1113) last10: 70.70% ± 2.46%
 PROTEINS(1113) last50: 71.74% ± 3.00%
 总运行时间: 11.81 min
-config setting:
+
+config setting: multi mlp
 hid_dim: 128, layers: 3, model: hybird_gin, graph_norm: True, batch_size: 128
 epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
 use_amp: TrueDD(1178) all   : 73.07% ± 3.06%
@@ -54,3 +55,33 @@ PROTEINS(1113) last  : 69.82% ± 3.88%
 PROTEINS(1113) last10: 69.59% ± 4.46%
 PROTEINS(1113) last50: 71.03% ± 3.96%
 总运行时间: 12.86 min
+
+single mlp
+config setting:
+hid_dim: 128, layers: 3, model: hybird_gin, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: TrueDD(1178) all   : 73.37% ± 3.31%
+DD(1178) last  : 74.10% ± 3.89%
+DD(1178) last10: 73.33% ± 4.26%
+DD(1178) last50: 73.21% ± 3.52%
+总运行时间: 38.62 min
+PROTEINS(1113) all   : 72.78% ± 3.01%
+PROTEINS(1113) last  : 70.80% ± 4.83%
+PROTEINS(1113) last10: 70.97% ± 3.05%
+PROTEINS(1113) last50: 71.92% ± 3.25%
+总运行时间: 11.16 min
+NCI1(4110) all   : 79.33% ± 0.94%
+NCI1(4110) last  : 80.95% ± 1.72%
+NCI1(4110) last10: 80.71% ± 1.28%
+NCI1(4110) last50: 80.54% ± 1.21%
+总运行时间: 58.10 min
+NCI109(4127) all   : 78.11% ± 1.55%
+NCI109(4127) last  : 79.65% ± 2.15%
+NCI109(4127) last10: 79.51% ± 1.94%
+NCI109(4127) last50: 79.44% ± 1.80%
+总运行时间: 66.23 min
+COX2(467) all   : 79.06% ± 2.27%
+COX2(467) last  : 77.96% ± 8.30%
+COX2(467) last10: 78.83% ± 4.57%
+COX2(467) last50: 79.13% ± 3.96%
+总运行时间: 8.00 min
