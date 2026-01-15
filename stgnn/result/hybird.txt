@@ -234,3 +234,23 @@ COLLAB(5000) last  : 76.34% ± 1.90%
 COLLAB(5000) last10: 76.26% ± 1.69%
 COLLAB(5000) last50: 76.24% ± 1.60%
 总运行时间: 303.41 min
+
+U & gcn norm & fix selfloop:
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: TrueDD(1178) all   : 75.12% ± 2.89%
+DD(1178) last  : 75.46% ± 3.29%
+DD(1178) last10: 75.35% ± 3.33%
+DD(1178) last50: 75.43% ± 3.08%
+总运行时间: 37.38 min
+PROTEINS(1113) all   : 73.45% ± 2.99%
+PROTEINS(1113) last  : 72.42% ± 4.90%
+PROTEINS(1113) last10: 71.69% ± 4.01%
+PROTEINS(1113) last50: 72.96% ± 3.22%
+总运行时间: 10.51 min
+NCI1(4110) all   : 78.68% ± 0.76%
+NCI1(4110) last  : 79.68% ± 1.25%
+NCI1(4110) last10: 80.20% ± 0.95%
+NCI1(4110) last50: 80.13% ± 0.87%
+总运行时间: 76.73 min

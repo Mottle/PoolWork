@@ -4,6 +4,8 @@ import torch.nn.functional as F
 from torch_geometric.nn import MessagePassing
 from torch_geometric.utils import add_self_loops, degree, dense_to_sparse, to_dense_adj
 from torch_scatter import scatter_max, scatter_add, scatter_softmax
+from torch_geometric.utils import coalesce
+import math
 
 # from torch_geometric.nn.conv.gcn_conv import gcn_norm
 import torch_scatter
@@ -119,6 +121,11 @@ class PHopLinkGCNConv(MessagePassing):
 
         for p in range(1, self.P + 1):
             edge_index_p, edge_weight_p = edge_index_l[p - 1], edge_wight_l[p - 1]
+
+            if self.self_loops:
+                edge_index_p, edge_weight_p = add_self_loops(
+                    edge_index_p, edge_weight_p, fill_value=1, num_nodes=N
+                )
 
             # 对称归一化
             edge_index_p, edge_weight_p = symmetric_normalize(
@@ -282,9 +289,8 @@ class PHopLinkGINRWConv(MessagePassing):
         return torch_scatter.scatter(
             inputs, index, dim=0, reduce=self.aggr, dim_size=dim_size
         )
-
-
-class PHopLinkGINRWConv(MessagePassing):
+    
+class PHopLinkGINDiffConv(MessagePassing):
     def __init__(
         self,
         in_channels: int,
@@ -293,7 +299,7 @@ class PHopLinkGINRWConv(MessagePassing):
         aggr: str = "add",
         self_loops: bool = True,
     ):
-        super(PHopLinkGINRWConv, self).__init__(aggr=aggr)
+        super(PHopLinkGINDiffConv, self).__init__(aggr=aggr)
         self.P = P
         self.self_loops = self_loops
         self.in_channels = in_channels
@@ -326,6 +332,11 @@ class PHopLinkGINRWConv(MessagePassing):
         for p in range(1, self.P + 1):
             edge_index_p, edge_weight_p = edge_index_l[p - 1], edge_wight_l[p - 1]
 
+            # 随机游走归一化
+            edge_index_p, edge_weight_p = random_walk_normalize(
+                edge_index_p, N, edge_weight_p, smoothing=False
+            )
+
             msg = self.propagate(
                 edge_index_p, x=x, edge_weight=edge_weight_p, size=(N, N)
             )
@@ -337,6 +348,74 @@ class PHopLinkGINRWConv(MessagePassing):
             outputs += self.mlp(msg) * d_weight[p - 1]
 
         # outputs = self.mlp(outputs)
+
+        return outputs + self.hop_bias
+
+    def message(self, x_j, edge_weight):
+        return edge_weight.view(-1, 1) * x_j
+
+    def aggregate(self, inputs, index, dim_size=None):
+        return torch_scatter.scatter(
+            inputs, index, dim=0, reduce=self.aggr, dim_size=dim_size
+        )
+
+
+class PHopLinkGINConv(MessagePassing):
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        P: int = 3,
+        aggr: str = "add",
+        self_loops: bool = True,
+    ):
+        super(PHopLinkGINConv, self).__init__(aggr=aggr)
+        self.P = P
+        self.self_loops = self_loops
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+
+        self.eps = nn.Parameter(torch.zeros(1))
+
+        self.mlp = nn.ModuleList([self.build_mlp(in_channels, out_channels) for _ in range(P)])
+
+        # 多跳权重
+        self.d = nn.Parameter(torch.ones(P, out_channels))
+        self.hop_bias = nn.Parameter(torch.zeros(out_channels))
+        # self.hop_linear = nn.ModuleList([nn.Linear(in_channels, out_channels) for _ in range(P)])
+    
+    def build_mlp(self, in_channels, out_channels):
+        return nn.Sequential(
+            nn.Linear(in_channels, out_channels),
+            nn.LeakyReLU(),
+            nn.Linear(out_channels, out_channels),
+        )
+
+    def forward(self, x, edge_index, A_phop=None):
+        N = x.size(0)
+
+        if A_phop is None:
+            raise ValueError("A_phop is None")
+
+        outputs = torch.zeros(N, self.out_channels, device=x.device)
+        d_weight = torch.softmax(self.d, dim=0)
+
+        edge_index_l, edge_wight_l = A_phop
+
+        for p in range(1, self.P + 1):
+            edge_index_p, edge_weight_p = edge_index_l[p - 1], edge_wight_l[p - 1]
+
+            if self.self_loops:
+                edge_index_p, edge_weight_p = add_self_loops(
+                    edge_index_p, num_nodes=N, edge_attr=edge_weight_p
+                )
+
+            msg = self.propagate(
+                edge_index_p, x=x, edge_weight=edge_weight_p, size=(N, N)
+            )
+
+            msg = msg + (1 + self.eps) * x
+            outputs += self.mlp[p-1](msg) * d_weight[p - 1]
 
         return outputs + self.hop_bias
 
@@ -489,3 +568,61 @@ def symmetric_normalize(edge_index, num_nodes, edge_weight=None):
 
     norm = deg_inv_sqrt[row] * deg_inv_sqrt[col] * edge_weight
     return edge_index, norm
+
+
+def diffusion_normalize(powers_index, powers_weight, method='ppr', alpha=0.1, t=2.0, num_nodes=None):
+    """
+    参数:
+    - powers_index: List[Tensor], 每一项是 A^k 的 edge_index
+    - powers_weight: List[Tensor], 每一项是 A^k 的 edge_weight
+    - method: 'ppr' 或 'heat'
+    - alpha: PPR 的重启概率 (0 < alpha < 1)
+    - t: Heat Kernel 的扩散时间
+    - num_nodes: 图的节点总数
+    """
+    K = len(powers_index) - 1
+    all_indices = []
+    all_weights = []
+
+    for k in range(K + 1):
+        # 1. 计算当前阶数的权重 w_k
+        if method == 'ppr':
+            # w_k = alpha * (1 - alpha)^k
+            weight_k = alpha * ((1 - alpha) ** k)
+        elif method == 'heat':
+            # w_k = exp(-t) * t^k / k!
+            weight_k = math.exp(-t) * (t ** k) / math.factorial(k)
+        else:
+            raise ValueError("Method must be 'ppr' or 'heat'")
+
+        # 2. 将 A^k 的权重乘以系数 w_k
+        all_indices.append(powers_index[k])
+        all_weights.append(powers_weight[k] * weight_k)
+
+    # 3. 合并所有阶数的边信息
+    # 将所有的 edge_index 横向拼接 [2, E_0 + E_1 + ...]
+    final_edge_index = torch.cat(all_indices, dim=1)
+    # 将所有的 edge_weight 纵向拼接 [E_0 + E_1 + ...]
+    final_edge_weight = torch.cat(all_weights, dim=0)
+
+    # 4. 关键步骤：使用 coalesce 对相同 (i, j) 位置的权值求和
+    # coalesce 会自动合并重复边并累加对应的 values
+    edge_index_diff, edge_weight_diff = coalesce(
+        final_edge_index, 
+        final_edge_weight, 
+        num_nodes=num_nodes
+    )
+
+    return edge_index_diff, edge_weight_diff
+
+# --- 使用示例 ---
+# 假设你已经有了 A^0, A^1, A^2 的稀疏表示
+# A^0 通常是单位矩阵 I (edge_index 是自环, weight 是 1)
+# powers_idx = [edge_index_0, edge_index_1, edge_index_2]
+# powers_w = [edge_weight_0, edge_weight_1, edge_weight_2]
+
+# 计算 PPR 扩散
+# ppr_index, ppr_weight = compute_diffusion(powers_idx, powers_w, method='ppr', alpha=0.15)
+
+# 计算 Heat Kernel 扩散
+# hk_index, hk_weight = compute_diffusion(powers_idx, powers_w, method='heat', t=1.5)
