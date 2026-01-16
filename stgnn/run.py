@@ -453,15 +453,15 @@ def datasets(sets='common'):
         ]
     elif sets == 'common':
         datasets = [
-            'DD',
-            'PROTEINS',
-            'NCI1',
-            'NCI109',
+            # 'DD',
+            # 'PROTEINS',
+            # 'NCI1',
+            # 'NCI109',
             'COX2',
-            'IMDB-BINARY',
-            'IMDB-MULTI',
-            'FRANKENSTEIN',
-            'COLLAB',
+            # 'IMDB-BINARY',
+            # 'IMDB-MULTI',
+            # 'FRANKENSTEIN',
+            # 'COLLAB',
             # 'REDDIT-BINARY',
             # 'Synthie',
             # 'SYNTHETIC',

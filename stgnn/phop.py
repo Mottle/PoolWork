@@ -368,6 +368,7 @@ class PHopLinkGINConv(MessagePassing):
         P: int = 3,
         aggr: str = "add",
         self_loops: bool = True,
+        norm: bool = True
     ):
         super(PHopLinkGINConv, self).__init__(aggr=aggr)
         self.P = P
@@ -378,6 +379,7 @@ class PHopLinkGINConv(MessagePassing):
         self.eps = nn.Parameter(torch.zeros(1))
 
         self.mlp = nn.ModuleList([self.build_mlp(in_channels, out_channels) for _ in range(P)])
+        self.norm = norm
 
         # 多跳权重
         self.d = nn.Parameter(torch.ones(P, out_channels))
@@ -409,6 +411,9 @@ class PHopLinkGINConv(MessagePassing):
                 edge_index_p, edge_weight_p = add_self_loops(
                     edge_index_p, num_nodes=N, edge_attr=edge_weight_p
                 )
+            
+            if self.norm:
+                edge_index_p, edge_weight_p = diffusion_normalize(edge_index_p, edge_weight_p, num_nodes=N)
 
             msg = self.propagate(
                 edge_index_p, x=x, edge_weight=edge_weight_p, size=(N, N)
@@ -580,33 +585,44 @@ def diffusion_normalize(powers_index, powers_weight, method='ppr', alpha=0.1, t=
     - t: Heat Kernel 的扩散时间
     - num_nodes: 图的节点总数
     """
+    # 健壮性检查：如果传入的是单个 Tensor 而不是列表，将其包装成列表
+    if isinstance(powers_index, torch.Tensor):
+        powers_index = [powers_index]
+    if isinstance(powers_weight, torch.Tensor):
+        powers_weight = [powers_weight]
+
     K = len(powers_index) - 1
     all_indices = []
     all_weights = []
 
     for k in range(K + 1):
-        # 1. 计算当前阶数的权重 w_k
+        # 计算权重 w_k
         if method == 'ppr':
-            # w_k = alpha * (1 - alpha)^k
-            weight_k = alpha * ((1 - alpha) ** k)
+            weight_k = alpha * (float(1 - alpha) ** k)
         elif method == 'heat':
-            # w_k = exp(-t) * t^k / k!
             weight_k = math.exp(-t) * (t ** k) / math.factorial(k)
-        else:
-            raise ValueError("Method must be 'ppr' or 'heat'")
+        
+        # 核心修复：确保 index 是 [2, E] 形状且 weight 是 [E] 形状
+        idx = powers_index[k]
+        w = powers_weight[k]
+        
+        # 自动处理可能存在的空边情况
+        if idx.numel() == 0:
+            continue
+            
+        all_indices.append(idx)
+        all_weights.append(w * weight_k)
 
-        # 2. 将 A^k 的权重乘以系数 w_k
-        all_indices.append(powers_index[k])
-        all_weights.append(powers_weight[k] * weight_k)
+    # 如果列表为空（没有任何边），返回空的 sparse 结构
+    if len(all_indices) == 0:
+        return torch.zeros((2, 0), dtype=torch.long, device=powers_index[0].device), \
+               torch.zeros((0,), device=powers_index[0].device)
 
-    # 3. 合并所有阶数的边信息
-    # 将所有的 edge_index 横向拼接 [2, E_0 + E_1 + ...]
-    final_edge_index = torch.cat(all_indices, dim=1)
-    # 将所有的 edge_weight 纵向拼接 [E_0 + E_1 + ...]
+    # 1. 拼接
+    final_edge_index = torch.cat(all_indices, dim=1)  # 这里不会再报错，因为已确保是 Tensor 列表
     final_edge_weight = torch.cat(all_weights, dim=0)
 
-    # 4. 关键步骤：使用 coalesce 对相同 (i, j) 位置的权值求和
-    # coalesce 会自动合并重复边并累加对应的 values
+    # 2. 合并重复项 (coalesce)
     edge_index_diff, edge_weight_diff = coalesce(
         final_edge_index, 
         final_edge_weight, 
