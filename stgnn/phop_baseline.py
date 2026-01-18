@@ -146,7 +146,7 @@ class HybirdPhopGNN(nn.Module):
                 prefix = 'u'
             edge_index_l = []
             edge_weight_l = []
-            for p in range(6):
+            for p in range(self.p):
                 edge_index_l.append(source[f'{prefix}_{p}_edge_index'])
                 edge_weight_l.append(source[f'{prefix}_{p}_edge_weight'])
             return edge_index_l, edge_weight_l

@@ -254,3 +254,11 @@ NCI1(4110) last  : 79.68% ± 1.25%
 NCI1(4110) last10: 80.20% ± 0.95%
 NCI1(4110) last50: 80.13% ± 0.87%
 总运行时间: 76.73 min
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: Trueogbg-molhiv all   : 73.57% ± 0.00%
+ogbg-molhiv last  : 73.63% ± 0.00%
+ogbg-molhiv last10: 73.05% ± 0.00%
+ogbg-molhiv last50: 73.31% ± 0.00%
+总运行时间: 29.53 min

@@ -91,3 +91,27 @@ FRANKENSTEIN(4337) last  : 57.54% ± 5.02%
 FRANKENSTEIN(4337) last10: 58.02% ± 3.35%
 FRANKENSTEIN(4337) last50: 56.86% ± 2.47%
 总运行时间: 8.88 min
+config setting:
+hid_dim: 128, layers: 3, model: graph_gps, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: Trueogbg-molhiv all   : 50.25% ± 0.00%
+ogbg-molhiv last  : 50.00% ± 0.00%
+ogbg-molhiv last10: 50.00% ± 0.00%
+ogbg-molhiv last50: 50.10% ± 0.00%
+总运行时间: 8.31 min
+config setting:
+hid_dim: 128, layers: 3, model: graph_gps, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: Trueogbg-molhiv all   : 50.12% ± 0.00%
+ogbg-molhiv last  : 50.00% ± 0.00%
+ogbg-molhiv last10: 50.00% ± 0.00%
+ogbg-molhiv last50: 49.96% ± 0.00%
+总运行时间: 7.38 min
+config setting:
+hid_dim: 128, layers: 3, model: graph_gps, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: Trueogbg-molhiv all   : 50.45% ± 0.00%
+ogbg-molhiv last  : 50.00% ± 0.00%
+ogbg-molhiv last10: 50.00% ± 0.00%
+ogbg-molhiv last50: 50.05% ± 0.00%
+总运行时间: 10.42 min

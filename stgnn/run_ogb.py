@@ -34,6 +34,7 @@ from h2gcn import H2GCN
 
 # ==== OGB ====
 from ogb.graphproppred import PygGraphPropPredDataset, Evaluator
+from utils.re_ogbdataset import ReOGBDataset
 
 
 # ============================================================
@@ -70,12 +71,12 @@ def train_model(
             data.x = torch.ones((data.num_nodes, 1))
         data = data.to(device)
 
-        if pooler.push_pe is not None:
-            pe = data.pe.to(device)
-            pooler.push_pe(pe)
+        # if pooler.push_pe is not None:
+        #     pe = data.pe.to(device)
+        #     pooler.push_pe(pe)
 
         with torch.amp.autocast(device_type=device_type, enabled=use_amp):
-            pooled, additional_loss = pooler(data.x, data.edge_index, data.batch, data)
+            pooled, additional_loss = pooler(data.x.float(), data.edge_index, data.batch, pe = data.pe.to(device), source = data)
             out = classifier(pooled)
 
             if dataset_name == "ogbg-molpcba":
@@ -137,12 +138,12 @@ def test_model(
                 data.x = torch.ones((data.num_nodes, 1))
             data = data.to(device)
 
-            if pooler.push_pe is not None:
-                pe = data.pe.to(device)
-                pooler.push_pe(pe)
+            # if pooler.push_pe is not None:
+            #     pe = data.pe.to(device)
+            #     pooler.push_pe(pe)
 
             with torch.amp.autocast(device_type=device_type, enabled=use_amp):
-                pooled, _ = pooler(data.x, data.edge_index, data.batch, data)
+                pooled, _ = pooler(data.x.float(), data.edge_index, data.batch, pe = data.pe.to(device), source = data)
                 out = classifier(pooled)
 
             y_true.append(data.y.cpu())
@@ -520,8 +521,11 @@ def process_results(results: list[BenchmarkResult]):
 def datasets():
     # 可以自由增减，只要是 graph-level 且非 code2 即可
     names = ["ogbg-molhiv", "ogbg-molpcba", "ogbg-ppa"]
+    from torch_geometric.data.data import DataEdgeAttr, DataTensorAttr, GlobalStorage
+    torch.serialization.add_safe_globals([DataEdgeAttr, DataTensorAttr, GlobalStorage])
     for name in names:
-        yield name, PygGraphPropPredDataset(name=name)
+        # yield name, PygGraphPropPredDataset(name=name)
+        yield name, ReOGBDataset(root=DATASET_PATH, name=name)
 
 
 # ============================================================
@@ -592,7 +596,7 @@ if __name__ == "__main__":
     config.seed = 0
     config.amp = True  # 开启混合精度
 
-    models = ["hybird_rw"]
+    models = ["graph_gps"]
     for model in models:
         config.model = model
         run(config)

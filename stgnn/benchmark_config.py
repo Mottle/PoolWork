@@ -5,7 +5,7 @@ import random
 class BenchmarkConfig:
     def __init__(self):
         self.hidden_channels: int = 64
-        self.num_layers: int = 3
+        self.num_layers: int = 8
         self.model: str = 'gcn'
         self.graph_norm: bool = True
         self.batch_size: int = 128

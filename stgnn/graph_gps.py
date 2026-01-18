@@ -210,6 +210,45 @@ class LaplacianPE(nn.Module):
 
         return pe
 
+class SignNet(nn.Module):
+    def __init__(self, pe_dim, hidden_channels):
+        super().__init__()
+        # 这里的 MLP 负责处理单个特征向量
+        # 输入维度是 1 (每个 eigenvector 的一列)
+        self.mlp = nn.Sequential(
+            nn.Linear(1, hidden_channels),
+            nn.ReLU(),
+            nn.Linear(hidden_channels, hidden_channels)
+        )
+        
+        # 最后的线性层将所有特征向量的结果融合
+        self.post_lin = nn.Linear(pe_dim * hidden_channels, hidden_channels)
+
+    def forward(self, pe):
+        """
+        pe: [N, pe_dim] - 每个节点有 k 个特征向量分量
+        """
+        N, K = pe.shape
+        outputs = []
+        
+        # 遍历每一个特征向量 (每一列)
+        for i in range(K):
+            v = pe[:, i:i+1] # [N, 1]
+            
+            # 符号不变性变换: f(v) + f(-v)
+            out_pos = self.mlp(v)    # [N, hidden_channels]
+            out_neg = self.mlp(-v)   # [N, hidden_channels]
+            
+            # 相加保证了无论输入 v 还是 -v，结果都一样
+            out = out_pos + out_neg  # [N, hidden_channels]
+            outputs.append(out)
+            
+        # 拼接所有特征向量的变换结果
+        x_pe = torch.cat(outputs, dim=-1) # [N, K * hidden_channels]
+        
+        # 映射回模型所需的维度
+        return self.post_lin(x_pe) # [N, hidden_channels]
+
 class GraphGPS(nn.Module):
     """
     一个完整的 GraphGPS 模型：
@@ -235,7 +274,6 @@ class GraphGPS(nn.Module):
         out_channels: int,
         num_layers: int = 3,
         dropout: float = 0.1,
-        use_pe: bool = True,
         pe_dim: int = 20,
         use_edge_attr: bool = False,
     ):
@@ -246,7 +284,6 @@ class GraphGPS(nn.Module):
         self.out_channels = out_channels
         self.num_layers = num_layers
         self.dropout = dropout
-        self.use_pe = use_pe
         self.pe_dim = pe_dim
         self.use_edge_attr = use_edge_attr
 
@@ -256,10 +293,9 @@ class GraphGPS(nn.Module):
         else:
             self.node_emb = nn.Identity()
 
-        # ---- Laplacian PE 映射（SignNet 风格的简单版本）----
-        if self.use_pe:
-            self.pe_lin = nn.Linear(pe_dim, hidden_channels)
-            self.pe_norm = nn.LayerNorm(hidden_channels)
+        self.pe_encoder = SignNet(pe_dim, hidden_channels) 
+        self.pe_norm = nn.LayerNorm(hidden_channels)
+        # self.edge_emb = nn.Linear(edge_in_dim, hidden_channels)
 
         # ---- 堆叠多个 GraphGPSConv 层 ----
         self.layers = nn.ModuleList()
@@ -280,30 +316,22 @@ class GraphGPS(nn.Module):
             nn.Linear(hidden_channels, out_channels),
         )
 
-    def push_pe(self, pe):
-        self.pe = pe
+    # def push_pe(self, pe):
+    #     self.pe = pe
 
-    def forward(self, x, edge_index, batch, edge_attr=None):
+    def forward(self, x, edge_index, batch, edge_attr=None, pe=None, *args, **kwargs):
         """
         x:         [N, in_channels]
         edge_index:[2, E]
         batch:     [N]
         edge_attr: [E, edge_dim] (可选, 仅在 use_edge_attr=True 时使用)
-        pe:        [N, pe_dim] (可选, 仅在 use_pe=True 时使用)
         """
         # ---- 节点嵌入 ----
         x = self.node_emb(x)
 
-        pe = self.pe
-        self.pe = None
-
-        # ---- 可选 Laplacian PE ----
-        if self.use_pe:
-            if pe is None:
-                raise ValueError("use_pe=True 但 forward 未提供 pe (Laplacian PE)。")
-            pe_proj = self.pe_lin(pe)
-            pe_proj = self.pe_norm(pe_proj)
-            x = x + pe_proj
+        pe_proj = self.pe_encoder(pe)
+        pe_proj = self.pe_norm(pe_proj)
+        x = x + pe_proj
 
         # ---- 多层 GraphGPSConv ----
         for layer in self.layers:
