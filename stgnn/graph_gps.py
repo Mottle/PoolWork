@@ -148,67 +148,67 @@ def build_gps_layer(channels: int, dropout: float = 0.1, edge_attr: bool = False
 
 
 
-class LaplacianPE(nn.Module):
-    def __init__(self, k: int = 20, normalization: str = "sym"):
-        """
-        k: 取前 k 个拉普拉斯特征向量
-        normalization: "sym" / "rw" / None
-        """
-        super().__init__()
-        self.k = k
-        self.normalization = normalization
+# class LaplacianPE(nn.Module):
+#     def __init__(self, k: int = 20, normalization: str = "sym"):
+#         """
+#         k: 取前 k 个拉普拉斯特征向量
+#         normalization: "sym" / "rw" / None
+#         """
+#         super().__init__()
+#         self.k = k
+#         self.normalization = normalization
 
-    def compute_lap_pe_single(self, edge_index, num_nodes):
+#     def compute_lap_pe_single(self, edge_index, num_nodes):
 
-        # 1. PyG 拉普拉斯
-        edge_index_lap, edge_weight_lap = get_laplacian(
-            edge_index, normalization=self.normalization, num_nodes=num_nodes
-        )
+#         # 1. PyG 拉普拉斯
+#         edge_index_lap, edge_weight_lap = get_laplacian(
+#             edge_index, normalization=self.normalization, num_nodes=num_nodes
+#         )
 
-        # 2. 转成 SciPy 稀疏矩阵
-        L = to_scipy_sparse_matrix(edge_index_lap, edge_weight_lap, num_nodes=num_nodes)
+#         # 2. 转成 SciPy 稀疏矩阵
+#         L = to_scipy_sparse_matrix(edge_index_lap, edge_weight_lap, num_nodes=num_nodes)
 
-        # 3. 取最小的 k 个特征向量
-        k = min(self.k, num_nodes - 2)
-        if k <= 0:
-            return torch.zeros((num_nodes, self.k))
+#         # 3. 取最小的 k 个特征向量
+#         k = min(self.k, num_nodes - 2)
+#         if k <= 0:
+#             return torch.zeros((num_nodes, self.k))
 
-        eigvals, eigvecs = sla.eigsh(L, k=k, which="SM")
-        pe = torch.from_numpy(eigvecs).float()  # CPU tensor
+#         eigvals, eigvecs = sla.eigsh(L, k=k, which="SM")
+#         pe = torch.from_numpy(eigvecs).float()  # CPU tensor
 
-        # 如果节点数 < k，补零
-        if pe.size(1) < self.k:
-            pad = torch.zeros(num_nodes, self.k - pe.size(1))
-            pe = torch.cat([pe, pad], dim=1)
+#         # 如果节点数 < k，补零
+#         if pe.size(1) < self.k:
+#             pad = torch.zeros(num_nodes, self.k - pe.size(1))
+#             pe = torch.cat([pe, pad], dim=1)
 
-        return pe
+#         return pe
 
-    def forward(self, x, edge_index, batch):
-        device = x.device
-        N = x.size(0)
+#     def forward(self, x, edge_index, batch):
+#         device = x.device
+#         N = x.size(0)
 
-        pe = torch.zeros((N, self.k), device=device)
+#         pe = torch.zeros((N, self.k), device=device)
 
-        for g in batch.unique():
-            mask = (batch == g)
-            idx = mask.nonzero(as_tuple=False).view(-1)
+#         for g in batch.unique():
+#             mask = (batch == g)
+#             idx = mask.nonzero(as_tuple=False).view(-1)
 
-            # 子图 edge_index
-            sub_edge_mask = mask[edge_index[0]]
-            sub_edge = edge_index[:, sub_edge_mask]
+#             # 子图 edge_index
+#             sub_edge_mask = mask[edge_index[0]]
+#             sub_edge = edge_index[:, sub_edge_mask]
 
-            new_index = torch.zeros(N, dtype=torch.long, device=device)
-            new_index[idx] = torch.arange(idx.size(0), device=device)
+#             new_index = torch.zeros(N, dtype=torch.long, device=device)
+#             new_index[idx] = torch.arange(idx.size(0), device=device)
 
-            sub_edge = new_index[sub_edge]
+#             sub_edge = new_index[sub_edge]
 
-            # 计算 LapPE（CPU）
-            pe_g = self.compute_lap_pe_single(sub_edge.cpu(), idx.size(0))
+#             # 计算 LapPE（CPU）
+#             pe_g = self.compute_lap_pe_single(sub_edge.cpu(), idx.size(0))
 
-            # 放回 GPU
-            pe[idx] = pe_g.to(device)
+#             # 放回 GPU
+#             pe[idx] = pe_g.to(device)
 
-        return pe
+#         return pe
 
 class SignNet(nn.Module):
     def __init__(self, pe_dim, hidden_channels):
@@ -272,7 +272,7 @@ class GraphGPS(nn.Module):
         in_channels: int,
         hidden_channels: int,
         out_channels: int,
-        num_layers: int = 3,
+        num_layers: int = 8,
         dropout: float = 0.1,
         pe_dim: int = 20,
         use_edge_attr: bool = False,
@@ -315,9 +315,16 @@ class GraphGPS(nn.Module):
             nn.Dropout(dropout),
             nn.Linear(hidden_channels, out_channels),
         )
+        self._init_weights()
 
     # def push_pe(self, pe):
     #     self.pe = pe
+    def _init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.xavier_uniform_(m.weight)
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
 
     def forward(self, x, edge_index, batch, edge_attr=None, pe=None, *args, **kwargs):
         """

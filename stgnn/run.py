@@ -453,15 +453,15 @@ def datasets(sets='common'):
         ]
     elif sets == 'common':
         datasets = [
-            # 'DD',
-            # 'PROTEINS',
-            # 'NCI1',
-            # 'NCI109',
+            'DD',
+            'PROTEINS',
+            'NCI1',
+            'NCI109',
             'COX2',
-            # 'IMDB-BINARY',
-            # 'IMDB-MULTI',
-            # 'FRANKENSTEIN',
-            # 'COLLAB',
+            'IMDB-BINARY',
+            'IMDB-MULTI',
+            'FRANKENSTEIN',
+            'COLLAB',
             # 'REDDIT-BINARY',
             # 'Synthie',
             # 'SYNTHETIC',
@@ -569,7 +569,7 @@ if __name__ == '__main__':
     config.seed = None
     config.kfold = 10
 
-    models = ['hybird_gin']
+    models = ['appnp']
     # models = ['topk']
     seeds = [0, 114514, 1919810, 77777]
     for model in models:
