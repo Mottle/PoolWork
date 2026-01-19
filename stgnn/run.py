@@ -27,6 +27,7 @@ from kan_based_gin import KANBasedGIN
 from graph_gps import GraphGPS
 from sign import StackedSIGN
 from h2gcn import H2GCN
+from appnp import APPNPs
 
 def compute_loss(loss1, loss2):
     return loss1 + loss2 / (loss1 + loss2 + 1e-6).detach()
@@ -94,9 +95,9 @@ def train_model(pooler, classifier, train_loader, optimizer, criterion, device, 
         data = data.to(device)
 
         # PE 处理逻辑保持不变
-        if pooler.push_pe is not None:
-            pe = data.pe.to(device)
-            pooler.push_pe(pe)
+        # if pooler.push_pe is not None:
+        #     pe = data.pe.to(device)
+        #     pooler.push_pe(pe)
 
         # 2. 前向传播使用 autocast 上下文
         with torch.amp.autocast(device_type=device_type, enabled=use_amp):
@@ -172,9 +173,9 @@ def test_model(pooler, classifier, test_loader, criterion, device, use_amp=False
                 data.x = torch.ones((data.num_nodes, 1))
             data = data.to(device)
 
-            if pooler.push_pe is not None:
-                pe = data.pe.to(device)
-                pooler.push_pe(pe)
+            # if pooler.push_pe is not None:
+            #     pe = data.pe.to(device)
+            #     pooler.push_pe(pe)
 
             # 在推理阶段也开启 autocast 以保持精度/性能策略与训练一致
             with torch.amp.autocast(device_type=device_type, enabled=use_amp):
@@ -315,7 +316,8 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
     elif model_type == 'mix_hop':
         model = BaseLineRc(input_dim, hidden_dim, hidden_dim, backbone='mix_hop', num_layers=num_layers, dropout=dropout, embed=True).to(run_device)
     elif model_type == 'appnp':
-        model = BaseLineRc(input_dim, hidden_dim, hidden_dim, backbone='appnp', num_layers=num_layers, dropout=dropout, embed=True).to(run_device)
+        # model = BaseLineRc(input_dim, hidden_dim, hidden_dim, backbone='appnp', num_layers=num_layers, dropout=dropout, embed=True).to(run_device)
+        model = APPNPs(input_dim, hidden_dim, hidden_dim, mlp_layers=3, K=10, alpha=0.1, dropout=dropout).to(run_device)
     # elif model_type == 'sign':
     #     model = BaseLineRc(input_dim, hidden_dim, hidden_dim, backbone='sign', num_layers=num_layers, dropout=dropout, embed=True).to(run_device)
     # elif model_type == 'graph_gps':

@@ -66,7 +66,7 @@ class BaseLineRc(nn.Module):
                 (lambda x: x.view(x.size(0), 3, out_channels).mean(dim = 1))
             ])
         elif self.backbone == "appnp":
-            return APPNP(K=1, alpha=0.1, dropout=self.dropout)
+            return APPNP(K=3, alpha=0.5, dropout=self.dropout)
         elif self.backbone == 'gcn2':
             return GCN2Conv(out_channels, alpha=0.5)
         else:
@@ -120,6 +120,7 @@ class BaseLineRc(nn.Module):
 
             feature = global_mean_pool(x, batch)
             feature_all.append(feature)
-        merge_feature = torch.mean(torch.stack(feature_all, dim=0), dim=0)
+        # merge_feature = torch.mean(torch.stack(feature_all, dim=0), dim=0)
+        merge_feature = feature_all[-1]
 
         return merge_feature, 0

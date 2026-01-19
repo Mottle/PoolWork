@@ -81,3 +81,68 @@ COLLAB(5000) last  : 70.16% ± 2.44%
 COLLAB(5000) last10: 69.63% ± 2.29%
 COLLAB(5000) last50: 69.83% ± 2.12%
 总运行时间: 167.03 min
+
+k = 3 alpha=0.5
+config setting:
+hid_dim: 128, layers: 3, model: appnp, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: TrueDD(1178) all   : 71.72% ± 4.78%
+DD(1178) last  : 76.31% ± 4.75%
+DD(1178) last10: 75.07% ± 4.80%
+DD(1178) last50: 75.38% ± 4.85%
+总运行时间: 49.96 min
+PROTEINS(1113) all   : 66.03% ± 4.40%
+PROTEINS(1113) last  : 62.72% ± 10.84%
+PROTEINS(1113) last10: 59.73% ± 8.40%
+PROTEINS(1113) last50: 62.64% ± 8.45%
+总运行时间: 7.02 min
+NCI1(4110) all   : 60.87% ± 0.88%
+NCI1(4110) last  : 60.22% ± 2.33%
+NCI1(4110) last10: 60.35% ± 1.78%
+NCI1(4110) last50: 60.81% ± 1.43%
+总运行时间: 20.11 min
+NCI109(4127) all   : 60.67% ± 1.33%
+NCI109(4127) last  : 60.17% ± 2.14%
+NCI109(4127) last10: 60.59% ± 2.16%
+NCI109(4127) last50: 60.94% ± 1.76%
+总运行时间: 24.88 min
+COX2(467) all   : 79.02% ± 2.80%
+COX2(467) last  : 80.08% ± 3.21%
+COX2(467) last10: 79.57% ± 3.64%
+COX2(467) last50: 79.94% ± 3.81%
+总运行时间: 8.56 min
+IMDB-BINARY(1000) all   : 49.80% ± 3.97%
+IMDB-BINARY(1000) last  : 49.00% ± 3.97%
+IMDB-BINARY(1000) last10: 49.48% ± 4.70%
+IMDB-BINARY(1000) last50: 49.72% ± 4.66%
+总运行时间: 3.30 min
+IMDB-MULTI(1500) all   : 35.61% ± 2.30%
+IMDB-MULTI(1500) last  : 35.67% ± 3.13%
+IMDB-MULTI(1500) last10: 35.88% ± 2.90%
+IMDB-MULTI(1500) last50: 35.91% ± 2.85%
+总运行时间: 5.05 min
+FRANKENSTEIN(4337) all   : 49.67% ± 0.54%
+FRANKENSTEIN(4337) last  : 44.64% ± 2.03%
+FRANKENSTEIN(4337) last10: 44.47% ± 1.92%
+FRANKENSTEIN(4337) last50: 44.70% ± 2.04%
+总运行时间: 18.42 min
+COLLAB(5000) all   : 63.48% ± 2.58%
+COLLAB(5000) last  : 63.56% ± 2.96%
+COLLAB(5000) last10: 63.77% ± 3.14%
+COLLAB(5000) last50: 63.92% ± 2.79%
+总运行时间: 87.97 min
+
+k = 3 alpha=0.5 last feature as Result
+config setting:
+hid_dim: 128, layers: 3, model: appnp, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: TrueDD(1178) all   : 71.43% ± 5.18%
+DD(1178) last  : 74.27% ± 6.53%
+DD(1178) last10: 74.55% ± 4.98%
+DD(1178) last50: 74.77% ± 5.37%
+总运行时间: 49.99 min
+PROTEINS(1113) all   : 67.46% ± 4.03%
+PROTEINS(1113) last  : 65.69% ± 5.98%
+PROTEINS(1113) last10: 64.31% ± 4.95%
+PROTEINS(1113) last50: 65.76% ± 5.11%
+总运行时间: 7.38 min
