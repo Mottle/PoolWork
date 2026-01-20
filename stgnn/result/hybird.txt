@@ -112,7 +112,7 @@ COLLAB(5000) last10: 75.49% ± 1.73%
 COLLAB(5000) last50: 75.31% ± 1.69%
 总运行时间: 444.07 min
 
-single road gcnn norn
+single road gcnn norm
 config setting:
 hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
 epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
@@ -147,7 +147,7 @@ FRANKENSTEIN(4337) last10: 71.02% ± 1.96%
 FRANKENSTEIN(4337) last50: 70.80% ± 1.98%
 总运行时间: 74.76 min
 
-dual road gcnn norn:
+dual road gcnn norm:
 config setting:
 hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
 epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
@@ -265,3 +265,28 @@ DD(1178) last  : 75.89% ± 3.50%
 DD(1178) last10: 74.90% ± 4.17%
 DD(1178) last50: 74.69% ± 3.72%
 总运行时间: 37.09 min
+
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+DD(1178) all   : 73.51% ± 4.54%
+DD(1178) last  : 73.17% ± 5.72%
+DD(1178) last10: 73.13% ± 5.47%
+DD(1178) last50: 73.84% ± 4.97%
+总运行时间: 30.95 min
+PROTEINS(1113) all   : 72.77% ± 3.62%
+PROTEINS(1113) last  : 74.84% ± 4.09%
+PROTEINS(1113) last10: 74.37% ± 4.07%
+PROTEINS(1113) last50: 74.28% ± 3.97%
+总运行时间: 21.22 min
+NCI1(4110) all   : 74.77% ± 1.71%
+NCI1(4110) last  : 77.25% ± 2.23%
+NCI1(4110) last10: 77.33% ± 2.40%
+NCI1(4110) last50: 77.05% ± 2.03%
+总运行时间: 68.15 min
+NCI109(4127) all   : 73.88% ± 1.86%
+NCI109(4127) last  : 76.21% ± 2.13%
+NCI109(4127) last10: 76.12% ± 2.11%
+NCI109(4127) last50: 76.01% ± 2.00%
+总运行时间: 71.47 min

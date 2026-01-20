@@ -33,6 +33,7 @@ from appnp import APPNPs
 from deeper_gcn import DeeperGCN
 from dgn import DGN
 from stgnn.dvdgn import DVDGN
+from gated_gcn import GatedGCN
 
 def compute_loss(loss1, loss2):
     return loss1 + loss2 / (loss1 + loss2 + 1e-6).detach()
@@ -217,6 +218,7 @@ def run_fold(dataset, loader, current_fold: int, config: BenchmarkConfig):
     # 优化器和损失函数
     optimizer = build_optimizer(model, classifier, config)
     criterion = nn.CrossEntropyLoss()
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau( optimizer, mode='min', factor=0.5, patience=10, min_lr=1e-6, verbose=True )
     
     # 训练循环
     epochs = config.epochs
@@ -241,6 +243,8 @@ def run_fold(dataset, loader, current_fold: int, config: BenchmarkConfig):
         val_loss, val_acc     = test_model(model, classifier, val_loader, criterion, run_device, use_amp=use_amp)
         test_loss, test_acc   = test_model(model, classifier, test_loader, criterion, run_device, use_amp=use_amp)
 
+        scheduler.step(val_loss)
+
         if epoch > no_record_epoch_num:
             train_loss_list.append(train_loss)
             train_acc_res.append(train_acc)
@@ -262,7 +266,7 @@ def run_fold(dataset, loader, current_fold: int, config: BenchmarkConfig):
             print(f'{log_prefix}, Epoch {epoch+1:03d} '
                   f'Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, '
                   f'Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}, '
-                  f'Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}')
+                  f'Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}, lr: {optimizer.param_groups[0]["lr"]:.6f}')
     
     stamp_end = get_time_sync()
 
@@ -320,7 +324,7 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
         model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3, backbone='rw').to(run_device)
     elif model_type == 'hybird_gin':
         model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3, backbone='gin').to(run_device)
-    elif model_type == 'dvrl':
+    elif model_type == 'dvdgn':
         model = DVDGN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3, dirs=1, add_self_loops=False).to(run_device)
     elif model_type == 'mix_hop':
         model = BaseLineRc(input_dim, hidden_dim, hidden_dim, backbone='mix_hop', num_layers=num_layers, dropout=dropout, embed=True).to(run_device)
@@ -339,6 +343,8 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
         model = H2GCN(input_dim, hidden_dim, k = 2, dropout=dropout).to(run_device)
     elif model_type == 'gcn2':
         model = BaseLineRc(input_dim, hidden_dim, hidden_dim, backbone='gcn2', num_layers=num_layers, dropout=dropout, embed=True).to(run_device)
+    elif model_type == 'gated_gcn':
+        model = GatedGCN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
     elif model_type == 'deeper_gcn':
         model = DeeperGCN(input_dim, hidden_dim // 2, hidden_dim, num_layers=num_layers * 4, dropout=dropout).to(run_device)
     elif model_type == 'dgn':
@@ -476,7 +482,7 @@ def datasets(sets='common'):
             'IMDB-BINARY',
             'IMDB-MULTI',
             'FRANKENSTEIN',
-            'COLLAB',
+            # 'COLLAB',
             # 'REDDIT-BINARY',
             # 'Synthie',
             # 'SYNTHETIC',
@@ -576,7 +582,7 @@ if __name__ == '__main__':
     config.graph_norm = True
     config.batch_size = 128
     config.epochs = 500
-    config.dropout = 0.1
+    config.dropout = 0.5
     # config.use_simple_datasets = False
     config.sets = 'common'
     config.catch_error = False
@@ -585,7 +591,7 @@ if __name__ == '__main__':
     config.seed = None
     config.kfold = 10
 
-    models = ['dvrl']
+    models = ['gated_gcn']
     # models = ['topk']
     seeds = [0, 114514, 1919810, 77777]
     for model in models:

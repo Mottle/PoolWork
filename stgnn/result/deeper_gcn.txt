@@ -1,7 +1,8 @@
 config setting:
 hid_dim: 128, layers: 3, model: deeper_gcn, graph_norm: True, batch_size: 128
 epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
-use_amp: TrueDD(1178) all   : 68.52% ± 5.31%
+use_amp: True
+DD(1178) all   : 68.52% ± 5.31%
 DD(1178) last  : 71.72% ± 4.17%
 DD(1178) last10: 70.56% ± 5.05%
 DD(1178) last50: 70.29% ± 5.46%

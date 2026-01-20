@@ -73,7 +73,7 @@ class PHopBaseLine(nn.Module):
         return merge_feature, 0
 
 class HybirdPhopGNN(nn.Module):
-    def __init__(self, in_channels, hidden_channels, num_layers=3, dropout=0.5, k = 3, p = 3, backbone = 'gcn', self_loops: bool = True):
+    def __init__(self, in_channels, hidden_channels, num_layers=3, dropout=0.5, k = 3, p = 3, backbone = 'gcn', self_loops: bool = True, residual: bool = False):
         super(HybirdPhopGNN, self).__init__()
         self.in_channels = max(in_channels, 1)
         self.hidden_channels = hidden_channels
@@ -84,7 +84,7 @@ class HybirdPhopGNN(nn.Module):
         self.backbone = backbone
         self.self_loop = self_loops
         self.push_pe = None
-
+        self.residual = residual
         if num_layers < 2:
             raise ValueError("Number of layers should be greater than 1.")
         
@@ -195,16 +195,18 @@ class HybirdPhopGNN(nn.Module):
             combined = torch.cat([x, feature_x], dim=-1)
             gate = torch.sigmoid(self.fusion_gate_linear(combined))
 
-            fusion_x = gate * x + (1 - gate) * feature_x + prev_x
+            fusion_x = gate * x + (1 - gate) * feature_x # + prev_x
 
+            if self.residual:
+                fusion_x += prev_x
             # fusion_x = self.fusion_dense_mlp(combined) + prev_x
             all_x.append(fusion_x)
             x = fusion_x
 
-        # graph_feature = 0
-        # for i in range(self.num_layers):
-        #     graph_feature += global_mean_pool(all_x[i - 1], batch)
-        graph_feature = global_mean_pool(all_x[-1], batch)
+        graph_feature = 0
+        for i in range(self.num_layers):
+            graph_feature += global_mean_pool(all_x[i], batch)
+        # graph_feature = global_mean_pool(all_x[-1], batch)
         return graph_feature, 0
     
 def compute_A_phop(edge_index, num_nodes, P):
