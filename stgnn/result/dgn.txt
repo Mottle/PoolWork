@@ -1,0 +1,14 @@
+config setting:
+hid_dim: 128, layers: 3, model: dgn, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+DD(1178) all   : 74.12% ± 4.13%
+DD(1178) last  : 76.48% ± 4.24%
+DD(1178) last10: 76.22% ± 3.66%
+DD(1178) last50: 76.25% ± 3.93%
+总运行时间: 29.27 min
+PROTEINS(1113) all   : 75.00% ± 3.22%
+PROTEINS(1113) last  : 76.19% ± 3.05%
+PROTEINS(1113) last10: 75.99% ± 3.43%
+PROTEINS(1113) last50: 75.85% ± 3.34%
+总运行时间: 7.75 min

@@ -146,3 +146,23 @@ PROTEINS(1113) last  : 65.69% ± 5.98%
 PROTEINS(1113) last10: 64.31% ± 4.95%
 PROTEINS(1113) last50: 65.76% ± 5.11%
 总运行时间: 7.38 min
+
+alpha = 0.1, k = 10
+config setting:
+hid_dim: 128, layers: 3, model: appnp, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: TrueDD(1178) all   : 67.97% ± 3.68%
+DD(1178) last  : 67.58% ± 5.45%
+DD(1178) last10: 69.74% ± 3.07%
+DD(1178) last50: 69.43% ± 3.76%
+总运行时间: 55.87 min
+PROTEINS(1113) all   : 70.17% ± 5.09%
+PROTEINS(1113) last  : 71.08% ± 5.23%
+PROTEINS(1113) last10: 71.26% ± 5.10%
+PROTEINS(1113) last50: 71.14% ± 5.06%
+总运行时间: 12.78 min
+NCI1(4110) all   : 57.24% ± 2.20%
+NCI1(4110) last  : 57.81% ± 3.94%
+NCI1(4110) last10: 58.79% ± 2.42%
+NCI1(4110) last50: 58.48% ± 2.44%
+总运行时间: 30.27 min

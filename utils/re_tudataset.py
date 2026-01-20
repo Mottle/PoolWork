@@ -12,7 +12,7 @@ from torch_geometric.data import Data
 
 
 class ReTUDataset(TUDataset):
-    def __init__(self, root: str, name: str, pe_dim: int = 20, P: int = 6, **kwargs) -> None:
+    def __init__(self, root: str, name: str, pe_dim: int = 20, P: int = 4, **kwargs) -> None:
         self.pe_dim = pe_dim
         self.P = P
         super().__init__(root, name, **kwargs)
@@ -39,7 +39,7 @@ class ReTUDataset(TUDataset):
                 normalization="sym"
             )
 
-            A_p_list, U_p_list = compute_Ap_Up(
+            A_p_list, U_p_list = compute_Ap_Up_optimized(
                 data.edge_index,
                 data.num_nodes,
                 P=self.P
@@ -399,4 +399,54 @@ def compute_Ap_Up(edge_index, num_nodes, P):
         A_prev = Ap
         Ap = torch.sparse.mm(Ap, A_sparse).coalesce()
 
+    return A_p_list, U_p_list
+
+def compute_Ap_Up_optimized(edge_index, num_nodes, P):
+    device = torch.device('cpu') # 预处理建议全程在 CPU，避免显存溢出
+    edge_index = edge_index.to(device)
+    
+    # 转换为 CSR 格式，矩阵乘法更快且内存更省
+    A_sparse = torch.sparse_coo_tensor(
+        edge_index,
+        torch.ones(edge_index.size(1), dtype=torch.float32, device=device),
+        (num_nodes, num_nodes)
+    ).coalesce()
+    
+    # 初始化 A_prev (I)
+    idx = torch.arange(num_nodes, device=device)
+    A_prev = torch.sparse_coo_tensor(
+        torch.stack([idx, idx], dim=0),
+        torch.ones(num_nodes, device=device),
+        (num_nodes, num_nodes)
+    ).coalesce()
+
+    Ap = A_sparse
+    A_p_list = []
+    U_p_list = []
+
+    for p in range(1, P + 1):
+        # 1. 存储 Ap
+        A_p_list.append({
+            'idx': Ap.indices().clone(),
+            'wei': Ap.values().clone()
+        })
+
+        # 2. 计算 Up = Ap - A_prev
+        # 优化点：手动处理减法逻辑或使用 coalesce 后的值过滤
+        Up = (Ap - A_prev).coalesce()
+        
+        # 3. 过滤掉值为 0 的元素（即 Ap 和 A_prev 重合的部分）
+        # 这能极大减小 Up 的存储体积
+        mask = Up.values() != 0
+        U_p_list.append({
+            'idx': Up.indices()[:, mask].clone(),
+            'wei': Up.values()[mask].clone()
+        })
+
+        if p < P:
+            A_prev = Ap
+            # 使用 torch.sparse.mm 前确保矩阵是 coalesce 的
+            # 注意：Ap 的非零元会爆炸增长，这里是内存瓶颈
+            Ap = torch.sparse.mm(Ap, A_sparse).coalesce()
+            
     return A_p_list, U_p_list

@@ -170,7 +170,7 @@ class HybirdPhopGNN(nn.Module):
             return compute_U_phop(edge_index, N, self.p)
 
     # @torch.compile
-    def forward(self, x, edge_index, batch, source = None):
+    def forward(self, x, edge_index, batch, source = None, *args, **kwargs):
         originl_x = x
         x = self.embedding(x)
         
@@ -202,9 +202,10 @@ class HybirdPhopGNN(nn.Module):
             all_x.append(fusion_x)
             x = fusion_x
 
-        graph_feature = 0
-        for i in range(self.num_layers):
-            graph_feature += global_mean_pool(all_x[i - 1], batch)
+        # graph_feature = 0
+        # for i in range(self.num_layers):
+        #     graph_feature += global_mean_pool(all_x[i - 1], batch)
+        graph_feature = global_mean_pool(all_x[-1], batch)
         return graph_feature, 0
     
 def compute_A_phop(edge_index, num_nodes, P):

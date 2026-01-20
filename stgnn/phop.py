@@ -122,12 +122,11 @@ class PHopLinkGCNConv(MessagePassing):
         for p in range(1, self.P + 1):
             edge_index_p, edge_weight_p = edge_index_l[p - 1], edge_wight_l[p - 1]
 
-            if self.self_loops:
-                edge_index_p, edge_weight_p = add_self_loops(
-                    edge_index_p, edge_weight_p, fill_value=1, num_nodes=N
-                )
+            # if self.self_loops:
+            #     edge_index_p, edge_weight_p = add_self_loops(
+            #         edge_index_p, edge_weight_p, fill_value=1, num_nodes=N
+            #     )
 
-            # 对称归一化
             edge_index_p, edge_weight_p = symmetric_normalize(
                 edge_index_p, N, edge_weight_p
             )
@@ -138,7 +137,6 @@ class PHopLinkGCNConv(MessagePassing):
             )
             # msg = self.linear(msg)  # [N, out_channels] fix
 
-            # 每个 hop 的向量权重和偏置
             # outputs += msg * self.d[p-1] + self.hop_bias[p-1]
             outputs += msg * d_weight[p - 1] + self.hop_bias[p - 1]
 

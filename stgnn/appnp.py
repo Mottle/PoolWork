@@ -25,7 +25,7 @@ class APPNPs(torch.nn.Module):
         # ----- Output layer -----
         self.out_lin = nn.Linear(hidden_channels, out_channels)
 
-    @torch.compile
+    # @torch.compile
     def forward(self, x, edge_index, batch=None, *args, **kwargs):
         # 1. MLP feature transformation
         x = self.mlp(x)

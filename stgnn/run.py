@@ -1,3 +1,5 @@
+import torch_geometric
+import torch_geometric.transforms
 import context
 import torch
 import numpy as np
@@ -28,6 +30,8 @@ from graph_gps import GraphGPS
 from sign import StackedSIGN
 from h2gcn import H2GCN
 from appnp import APPNPs
+from deeper_gcn import DeeperGCN
+from dgn import DGN
 
 def compute_loss(loss1, loss2):
     return loss1 + loss2 / (loss1 + loss2 + 1e-6).detach()
@@ -101,7 +105,8 @@ def train_model(pooler, classifier, train_loader, optimizer, criterion, device, 
 
         # 2. 前向传播使用 autocast 上下文
         with torch.amp.autocast(device_type=device_type, enabled=use_amp):
-            pooled, additional_loss = pooler(data.x, data.edge_index, data.batch, data)
+            pe = data.pe if hasattr(data, 'pe') else None
+            pooled, additional_loss = pooler(data.x, data.edge_index, data.batch, pe=pe)
             out = classifier(pooled)
             loss = compute_loss(criterion(out, data.y), additional_loss)
 
@@ -179,7 +184,8 @@ def test_model(pooler, classifier, test_loader, criterion, device, use_amp=False
 
             # 在推理阶段也开启 autocast 以保持精度/性能策略与训练一致
             with torch.amp.autocast(device_type=device_type, enabled=use_amp):
-                pooled, additional_loss = pooler(data.x, data.edge_index, data.batch, data)
+                pe = data.pe if hasattr(data, 'pe') else None
+                pooled, additional_loss = pooler(data.x, data.edge_index, data.batch, pe=pe)
                 out = classifier(pooled)
                 loss = compute_loss(criterion(out, data.y), additional_loss)
             
@@ -299,8 +305,8 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
         model = KANBasedGIN(input_dim, hidden_dim, num_layers=num_layers).to(run_device)
     elif model_type == 'quad_gin':
         model = BaseLine(input_dim, hidden_dim, hidden_dim, backbone='quad', num_layers=num_layers, dropout=dropout).to(run_device)
-    elif model_type == 'gt':
-        model = BaseLine(input_dim, hidden_dim, hidden_dim, backbone='gt', num_layers=num_layers, dropout=dropout).to(run_device)
+    # elif model_type == 'gt':
+    #     model = BaseLine(input_dim, hidden_dim, hidden_dim, backbone='gt', num_layers=num_layers, dropout=dropout).to(run_device)
     elif model_type == 'phop_gcn':
         model = BaseLine(input_dim, hidden_dim, hidden_dim, backbone='phop_gcn', num_layers=num_layers, dropout=dropout, embed=True).to(run_device)
     elif model_type == 'phop_gin':
@@ -330,6 +336,10 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
         model = H2GCN(input_dim, hidden_dim, k = 2, dropout=dropout).to(run_device)
     elif model_type == 'gcn2':
         model = BaseLineRc(input_dim, hidden_dim, hidden_dim, backbone='gcn2', num_layers=num_layers, dropout=dropout, embed=True).to(run_device)
+    elif model_type == 'deeper_gcn':
+        model = DeeperGCN(input_dim, hidden_dim // 2, hidden_dim, num_layers=num_layers * 4, dropout=dropout).to(run_device)
+    elif model_type == 'dgn':
+        model = DGN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
 
     classifier = Classifier(hidden_dim, hidden_dim, num_classes).to(run_device)
 
@@ -481,6 +491,7 @@ def datasets(sets='common'):
             'infectious_ct2',
         ]
     for i in range(len(datasets)):
+        # eigPE = torch_geometric.transforms.AddLaplacianEigenvectorPE(k=5, attr_name='eig_vecs', is_undirected=True)
         yield ReTUDataset(root=DATASET_PATH, name=datasets[i])
 
 def set_random_seed(seed):
@@ -571,7 +582,7 @@ if __name__ == '__main__':
     config.seed = None
     config.kfold = 10
 
-    models = ['appnp']
+    models = ['hybird', 'hybird_gin']
     # models = ['topk']
     seeds = [0, 114514, 1919810, 77777]
     for model in models:
