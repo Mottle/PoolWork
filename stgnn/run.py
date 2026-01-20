@@ -32,6 +32,7 @@ from h2gcn import H2GCN
 from appnp import APPNPs
 from deeper_gcn import DeeperGCN
 from dgn import DGN
+from stgnn.dvdgn import DVDGN
 
 def compute_loss(loss1, loss2):
     return loss1 + loss2 / (loss1 + loss2 + 1e-6).detach()
@@ -319,6 +320,8 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
         model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3, backbone='rw').to(run_device)
     elif model_type == 'hybird_gin':
         model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3, backbone='gin').to(run_device)
+    elif model_type == 'dvrl':
+        model = DVDGN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3, dirs=1, add_self_loops=False).to(run_device)
     elif model_type == 'mix_hop':
         model = BaseLineRc(input_dim, hidden_dim, hidden_dim, backbone='mix_hop', num_layers=num_layers, dropout=dropout, embed=True).to(run_device)
     elif model_type == 'appnp':
@@ -582,7 +585,7 @@ if __name__ == '__main__':
     config.seed = None
     config.kfold = 10
 
-    models = ['hybird', 'hybird_gin']
+    models = ['dvrl']
     # models = ['topk']
     seeds = [0, 114514, 1919810, 77777]
     for model in models:

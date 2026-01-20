@@ -1,5 +1,4 @@
-from ast import mod
-from sympy import comp
+
 import torch
 from torch import nn
 from torch_geometric.nn import global_mean_pool
@@ -180,7 +179,7 @@ class HybirdPhopGNN(nn.Module):
 
         all_x = []
 
-        for i in range(self.num_layers - 1):
+        for i in range(self.num_layers):
             prev_x = x
 
             x = self.convs[i](x, edge_index, A_phop = SMp)

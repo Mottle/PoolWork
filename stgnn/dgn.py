@@ -39,8 +39,8 @@ class DGN(torch.nn.Module):
         u_i = pe[row]   # [E, k_dirs]
         u_j = pe[col]   # [E, k_dirs]
         diff = u_j - u_i
-        w_up = F.relu(diff)
-        w_down = F.relu(-diff)
+        w_up = F.leaky_relu(diff)
+        w_down = F.leaky_relu(-diff)
         return w_up, w_down
 
     def compute_degree_norm(self, edge_index, num_nodes):
