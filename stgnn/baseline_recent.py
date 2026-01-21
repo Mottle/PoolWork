@@ -17,7 +17,7 @@ class BaseLineRc(nn.Module):
         backbone="gcn",
         dropout=0.5,
         embed: bool = True,
-        pos_emb: bool = False
+        norm: bool = False,
     ):
         super(BaseLineRc, self).__init__()
         self.num_layers = num_layers
@@ -27,8 +27,7 @@ class BaseLineRc(nn.Module):
         self.backbone = backbone
         self.dropout = dropout
         self.embed = embed
-        self.pos_emb = pos_emb
-        self.pe_value = None
+        self.norm = norm
 
         if self.in_channels < 1:
             self.in_channels = 1
@@ -38,10 +37,11 @@ class BaseLineRc(nn.Module):
             self.in_channels = hidden_channels
 
         self.build_convs()
-        self.build_norms()
+        
+        if self.norm:
+            self.build_norms()
 
-        if pos_emb:
-            self.build_pe()
+        self.build_pe()
 
     def build_convs(self):
         if self.num_layers < 2:
@@ -87,20 +87,13 @@ class BaseLineRc(nn.Module):
             self._pe_norm
         )
 
-    def push_pe(self, pe = None):
-        if pe is not None:
-            self.pe_value = pe
-        else:
-            return self.pe_value
-
-    def forward(self, x, edge_index, batch, *args):
+    def forward(self, x, edge_index, batch, pe = None, *args, **kwargs):
         originl_x = x
         if self.embed:
             x = self.embedding(x)
             ori_emb_x = x
         
-        if self.pos_emb:
-            pe = self.pe_conv(self.pe_value)
+        if pe is not None:
             x = x + pe
 
         feature_all = []
@@ -113,7 +106,10 @@ class BaseLineRc(nn.Module):
                 x = self.convs[i](x, ori_emb_x, edge_index)
             else:
                 x = self.convs[i](x, edge_index)
-            x = self.norms[i](x, batch)
+            
+            if self.norm:
+                x = self.norms[i](x)
+
             x = F.leaky_relu(x)
             x = F.dropout(x, p=self.dropout, training=self.training)
             x = x + prev_x

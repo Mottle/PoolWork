@@ -16,29 +16,17 @@ from torch.utils.data import SubsetRandomSampler
 from benchmark_config import BenchmarkConfig
 from utils.benchmark_result import BenchmarkResult
 from torch.optim import Adam
+# 引入调度器相关模块
+from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR, ReduceLROnPlateau
+
 from classifier import Classifier
 from span_tree_gnn import SpanTreeGNN
-from span_tree_gnn_with_loss import SpanTreeGNNWithOrt
-from dual_road_gnn import DualRoadGNN, KFNDualRoadGNN, KRNDualRoadGNN, KFNDualRoadSTSplitGNN
-from dual_road_rev_attn_gnn import DualRoadRevAttnGNN
-from baseline import BaseLine
-from baseline_recent import BaseLineRc
-from phop_baseline import HybirdPhopGNN
-from st_split_gnn import SpanTreeSplitGNN
-from kan_based_gin import KANBasedGIN
 from graph_gps import GraphGPS
-from sign import StackedSIGN
-from h2gcn import H2GCN
-from appnp import APPNPs
-from deeper_gcn import DeeperGCN
-from dgn import DGN
-from stgnn.dvdgn import DVDGN
-from gated_gcn import GatedGCN
 
 def compute_loss(loss1, loss2):
     return loss1 + loss2 / (loss1 + loss2 + 1e-6).detach()
 
-# def train_model(pooler, classifier, train_loader, optimizer, criterion, device, use_amp = False):
+# def train_model(pooler, classifier, train_loader, optimizer, criterion, device, use_amp=False):
 #     pooler.train()
 #     classifier.train()
 
@@ -46,33 +34,38 @@ def compute_loss(loss1, loss2):
 #     correct = 0
 #     total = 0
     
-#     # all = len(train_loader)
-#     if use_amp:
-#         scaler = torch.amp.GradScaler()
+#     # 1. 初始化 Scaler (仅在开启 AMP 且是 CUDA 设备时生效)
+#     scaler = torch.amp.GradScaler(enabled=use_amp)
     
-#     cnt = 0
+#     # 获取设备类型字符串 (用于 autocast)
+#     device_type = 'cuda' if 'cuda' in str(device) else 'cpu'
+    
 #     for data in track(train_loader, description=f"Run train", disable=True):
-#         # if not data.is_undirected():
-#         #     print('WARNING: dataset is NOT undirected!!!')
-#         cnt += 1
 #         optimizer.zero_grad()
-#         if data.x == None or data.x.size(1) <= 0:
+#         if data.x is None or data.x.size(1) <= 0:
 #             data.x = torch.ones((data.num_nodes, 1))
 #         data = data.to(device)
 
-#         #pe
-#         if pooler.push_pe is not None:
-#             pe = data.pe.to(device)
-#             pooler.push_pe(pe)
+#         # 2. 前向传播使用 autocast 上下文
+#         with torch.amp.autocast(device_type=device_type, enabled=use_amp):
+#             pe = data.pe if hasattr(data, 'pe') else None
+#             pooled, additional_loss = pooler(data.x, data.edge_index, data.batch, pe=pe)
+#             out = classifier(pooled)
+#             loss = compute_loss(criterion(out, data.y), additional_loss)
 
-#         pooled, additional_loss = pooler(data.x, data.edge_index, data.batch, data)
-#         out = classifier(pooled)
-#         loss = compute_loss(criterion(out, data.y), additional_loss)
-#         loss.backward()
-#         optimizer.step()
-
-#         # alrs.step(loss)
+#         # 3. 反向传播与优化器更新
+#         if use_amp:
+#             # 缩放损失并反向传播
+#             scaler.scale(loss).backward()
+#             # scaler.step() 会先取消缩放梯度，如果梯度无 inf/NaN，则调用 optimizer.step()
+#             scaler.step(optimizer)
+#             # 更新缩放因子
+#             scaler.update()
+#         else:
+#             loss.backward()
+#             optimizer.step()
         
+#         # 统计逻辑保持不变
 #         total_loss += loss.item()
 #         pred = out.argmax(dim=1)
 #         correct += (pred == data.y).sum().item()
@@ -88,10 +81,7 @@ def train_model(pooler, classifier, train_loader, optimizer, criterion, device, 
     correct = 0
     total = 0
     
-    # 1. 初始化 Scaler (仅在开启 AMP 且是 CUDA 设备时生效)
     scaler = torch.amp.GradScaler(enabled=use_amp)
-    
-    # 获取设备类型字符串 (用于 autocast)
     device_type = 'cuda' if 'cuda' in str(device) else 'cpu'
     
     for data in track(train_loader, description=f"Run train", disable=True):
@@ -100,67 +90,43 @@ def train_model(pooler, classifier, train_loader, optimizer, criterion, device, 
             data.x = torch.ones((data.num_nodes, 1))
         data = data.to(device)
 
-        # PE 处理逻辑保持不变
-        # if pooler.push_pe is not None:
-        #     pe = data.pe.to(device)
-        #     pooler.push_pe(pe)
-
-        # 2. 前向传播使用 autocast 上下文
         with torch.amp.autocast(device_type=device_type, enabled=use_amp):
             pe = data.pe if hasattr(data, 'pe') else None
-            pooled, additional_loss = pooler(data.x, data.edge_index, data.batch, pe=pe)
+            # 注意：如果你的模型 forward 接收 pe，确保这里传了
+            pooled = pooler(data.x, data.edge_index, data.batch, pe=pe) 
+            # 如果 pooler 返回的是 (out, loss)，请自行解包，这里假设 GraphGPS 只返回 logits
+            # 根据上文 GraphGPS 代码，它只返回 out。如果你的接口有变化请调整。
+            if isinstance(pooled, tuple):
+                pooled, additional_loss = pooled
+            else:
+                additional_loss = 0
+            
             out = classifier(pooled)
             loss = compute_loss(criterion(out, data.y), additional_loss)
 
-        # 3. 反向传播与优化器更新
         if use_amp:
-            # 缩放损失并反向传播
             scaler.scale(loss).backward()
-            # scaler.step() 会先取消缩放梯度，如果梯度无 inf/NaN，则调用 optimizer.step()
+            # --- 新增: 梯度裁剪 (Gradient Clipping) ---
+            scaler.unscale_(optimizer) # 裁剪前必须 unscale
+            torch.nn.utils.clip_grad_norm_(pooler.parameters(), max_norm=1.0)
+            torch.nn.utils.clip_grad_norm_(classifier.parameters(), max_norm=1.0)
+            # ----------------------------------------
             scaler.step(optimizer)
-            # 更新缩放因子
             scaler.update()
         else:
             loss.backward()
+            # --- 新增: 梯度裁剪 (Gradient Clipping) ---
+            torch.nn.utils.clip_grad_norm_(pooler.parameters(), max_norm=1.0)
+            torch.nn.utils.clip_grad_norm_(classifier.parameters(), max_norm=1.0)
+            # ----------------------------------------
             optimizer.step()
         
-        # 统计逻辑保持不变
         total_loss += loss.item()
         pred = out.argmax(dim=1)
         correct += (pred == data.y).sum().item()
         total += data.y.size(0)
     
     return total_loss / len(train_loader), correct / total
-
-# def test_model(pooler, classifier, test_loader, criterion, device):
-#     pooler.eval()
-#     classifier.eval()
-
-#     total_loss = 0
-#     correct = 0
-#     total = 0
-    
-#     all = len(test_loader)
-#     with torch.no_grad():
-#         for data in track(test_loader,  description=f"Run test batch: {all}", disable=True):
-#             if data.x == None or data.x.size(1) <= 0:
-#                 data.x = torch.ones((data.num_nodes, 1))
-#             data = data.to(device)
-
-#             if pooler.push_pe is not None:
-#                 pe = data.pe.to(device)
-#                 pooler.push_pe(pe)
-
-#             pooled, additional_loss = pooler(data.x, data.edge_index, data.batch, data)
-#             out = classifier(pooled)
-#             loss = compute_loss(criterion(out, data.y), additional_loss)
-            
-#             total_loss += loss.item()
-#             pred = out.argmax(dim=1)
-#             correct += (pred == data.y).sum().item()
-#             total += data.y.size(0)
-    
-#     return total_loss / len(test_loader), correct / total
 
 def test_model(pooler, classifier, test_loader, criterion, device, use_amp=False):
     pooler.eval()
@@ -180,10 +146,6 @@ def test_model(pooler, classifier, test_loader, criterion, device, use_amp=False
                 data.x = torch.ones((data.num_nodes, 1))
             data = data.to(device)
 
-            # if pooler.push_pe is not None:
-            #     pe = data.pe.to(device)
-            #     pooler.push_pe(pe)
-
             # 在推理阶段也开启 autocast 以保持精度/性能策略与训练一致
             with torch.amp.autocast(device_type=device_type, enabled=use_amp):
                 pe = data.pe if hasattr(data, 'pe') else None
@@ -197,6 +159,36 @@ def test_model(pooler, classifier, test_loader, criterion, device, use_amp=False
             total += data.y.size(0)
     
     return total_loss / len(test_loader), correct / total
+
+# --- 构建调度器 ---
+def build_scheduler(optimizer, config: BenchmarkConfig):
+    warmup_epochs = config.warmup_epochs if hasattr(config, 'warmup_epochs') else 10
+    print(f"Using Warmup + Cosine Annealing Scheduler (Warmup: {warmup_epochs} epochs)")
+    
+    # 1. Warmup 阶段: 学习率从 lr * start_factor 线性增加到 lr
+    # start_factor 设为 1e-4 意味着从极小的 lr 开始预热
+    warmup_scheduler = LinearLR(
+        optimizer, 
+        start_factor=1e-4, 
+        end_factor=1.0, 
+        total_iters=warmup_epochs
+    )
+    
+    # 2. Cosine 阶段: 学习率从 lr 按余弦曲线下降到 min_lr (这里设为 lr * 1e-2)
+    # T_max 为剩下的 epoch 数
+    cosine_scheduler = CosineAnnealingLR(
+        optimizer, 
+        T_max=config.epochs - warmup_epochs, 
+        eta_min=config.lr * 1e-2
+    )
+    
+    # 3. 串联两个阶段
+    scheduler = SequentialLR(
+        optimizer, 
+        schedulers=[warmup_scheduler, cosine_scheduler], 
+        milestones=[warmup_epochs]
+    )
+    return scheduler, 'epoch' # 返回调度器和更新频率类型
 
 
 def run_fold(dataset, loader, current_fold: int, config: BenchmarkConfig):
@@ -213,12 +205,12 @@ def run_fold(dataset, loader, current_fold: int, config: BenchmarkConfig):
     # 创建模型
     model, classifier = build_models(num_node_features, num_classes, config)
     
-    # print(f"模型参数数量: {sum(p.numel() for p in pooler.parameters()) + sum(p.numel() for p in classifier.parameters())}")
-    
-    # 优化器和损失函数
+    # 优化器
     optimizer = build_optimizer(model, classifier, config)
     criterion = nn.CrossEntropyLoss()
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau( optimizer, mode='min', factor=0.5, patience=10, min_lr=1e-6, verbose=True )
+    
+    # --- 修改: 获取调度器 ---
+    scheduler, scheduler_type = build_scheduler(optimizer, config)
     
     # 训练循环
     epochs = config.epochs
@@ -235,15 +227,17 @@ def run_fold(dataset, loader, current_fold: int, config: BenchmarkConfig):
     early_stop_epoch_num = config.early_stop_epochs
     use_amp = config.amp
 
-    # global alrs
-    # alrs = ALRS(optimizer)
-
     for epoch in track(range(epochs), description=f'{log_prefix} 训练 {dataset}'):
         train_loss, train_acc = train_model(model, classifier, train_loader, optimizer, criterion, run_device, use_amp=use_amp)
         val_loss, val_acc     = test_model(model, classifier, val_loader, criterion, run_device, use_amp=use_amp)
         test_loss, test_acc   = test_model(model, classifier, test_loader, criterion, run_device, use_amp=use_amp)
 
-        scheduler.step(val_loss)
+        # --- 修改: 调度器步进逻辑 ---
+        if scheduler_type == 'plateau':
+            scheduler.step(val_loss)
+        else:
+            # Warmup/Cosine 通常每个 epoch 调用一次，不需要 metric
+            scheduler.step()
 
         if epoch > no_record_epoch_num:
             train_loss_list.append(train_loss)
@@ -253,20 +247,28 @@ def run_fold(dataset, loader, current_fold: int, config: BenchmarkConfig):
             test_loss_list.append(test_loss)
             test_acc_res.append(test_acc)
         
+        # --- 修改: Early Stop 逻辑 (Warmup 期间不早停) ---
         if config.early_stop and epoch > no_record_epoch_num:
+            # 获取 warmup 轮数，如果是 plateau 则为 0
+            min_warmup_epochs = config.warmup_epochs if (hasattr(config, 'warmup_epochs') and scheduler_type == 'epoch') else 0
+            
+            # 计算是否提升
             if val_acc < val_acc_res.get_max():
                 no_increased_times += 1
             else:
                 no_increased_times = 0
-            if no_increased_times >= early_stop_epoch_num:
+            
+            # 只有当当前 epoch 超过 warmup 期，且未提升次数超过阈值时，才停止
+            if epoch > min_warmup_epochs and no_increased_times >= early_stop_epoch_num:
                 print(f'Early stop at epoch {epoch+1}')
                 break
         
         if (epoch + 1) % 10 == 0:
+            current_lr = optimizer.param_groups[0]["lr"]
             print(f'{log_prefix}, Epoch {epoch+1:03d} '
                   f'Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, '
                   f'Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}, '
-                  f'Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}, lr: {optimizer.param_groups[0]["lr"]:.6f}')
+                  f'Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}, lr: {current_lr:.6f}')
     
     stamp_end = get_time_sync()
 
@@ -285,78 +287,27 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
     layer_norm = config.graph_norm
     dropout = config.dropout
     
-    # 创建模型####
-    # pooler = Pooler(input_dim, hidden_dim, num_layers=num_layers, pool_type=pooler_type, gnn_type=gnn_type, layer_norm=layer_norm).to(run_device)
-    
-    if model_type == 'mst':
-        model = SpanTreeGNN(input_dim, hidden_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
-    elif model_type == 'gcn' or model_type == 'gin' or model_type == 'gat':
-        model = BaseLine(input_dim, hidden_dim, hidden_dim, backbone=model_type, num_layers=num_layers, dropout=dropout, norm = layer_norm).to(run_device)
-    elif model_type == 'mstort':
-        model = SpanTreeGNNWithOrt(input_dim, hidden_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
-    elif model_type == 'dualroad':
-        model = DualRoadGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, k = 3).to(run_device)
-    elif model_type == 'dualroad_kf':
-        model = KFNDualRoadGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, k = 3, backbone='gin').to(run_device)
-    elif model_type == 'dualroad_kr':
-        model = KRNDualRoadGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, k = 3).to(run_device)
-    elif model_type == 'dualroad_rev_attn':
-        model = DualRoadRevAttnGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
-    elif model_type == 'dualroad_kf_sts':
-        model = KFNDualRoadSTSplitGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, k = 3).to(run_device)
-    elif model_type == 'st_split':
-        model = SpanTreeSplitGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, num_splits=4).to(run_device)
-    elif model_type == 'kan_gin':
-        model = KANBasedGIN(input_dim, hidden_dim, num_layers=num_layers).to(run_device)
-    elif model_type == 'quad_gin':
-        model = BaseLine(input_dim, hidden_dim, hidden_dim, backbone='quad', num_layers=num_layers, dropout=dropout, norm = layer_norm).to(run_device)
-    # elif model_type == 'gt':
-    #     model = BaseLine(input_dim, hidden_dim, hidden_dim, backbone='gt', num_layers=num_layers, dropout=dropout).to(run_device)
-    elif model_type == 'phop_gcn':
-        model = BaseLine(input_dim, hidden_dim, hidden_dim, backbone='phop_gcn', num_layers=num_layers, dropout=dropout, embed=True, norm = layer_norm).to(run_device)
-    elif model_type == 'phop_gin':
-        model = BaseLine(input_dim, hidden_dim, hidden_dim, backbone='phop_gin', num_layers=num_layers, dropout=dropout, embed=True, norm = layer_norm).to(run_device)
-    elif model_type == 'phop_linkgcn':
-        model = BaseLine(input_dim, hidden_dim, hidden_dim, backbone='phop_linkgcn', num_layers=num_layers, dropout=dropout, embed=True, norm = layer_norm).to(run_device)
-    elif model_type == 'hybird':
-        model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 2, k = 3).to(run_device)
-    elif model_type == 'hybird_rw':
-        model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3, backbone='rw').to(run_device)
-    elif model_type == 'hybird_gin':
-        model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3, backbone='gin').to(run_device)
-    elif model_type == 'dvdgn':
-        model = DVDGN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3, dirs=1, add_self_loops=False).to(run_device)
-    elif model_type == 'mix_hop':
-        model = BaseLineRc(input_dim, hidden_dim, hidden_dim, backbone='mix_hop', num_layers=num_layers, dropout=dropout, embed=True, norm = layer_norm).to(run_device)
-    elif model_type == 'appnp':
-        # model = BaseLineRc(input_dim, hidden_dim, hidden_dim, backbone='appnp', num_layers=num_layers, dropout=dropout, embed=True).to(run_device)
-        model = APPNPs(input_dim, hidden_dim, hidden_dim, mlp_layers=3, K=10, alpha=0.1, dropout=dropout).to(run_device)
-    # elif model_type == 'sign':
-    #     model = BaseLineRc(input_dim, hidden_dim, hidden_dim, backbone='sign', num_layers=num_layers, dropout=dropout, embed=True).to(run_device)
-    # elif model_type == 'graph_gps':
-    #     model = BaseLineRc(input_dim, hidden_dim, hidden_dim, backbone='graph_gps', num_layers=num_layers, dropout=dropout, embed=True, pos_emb=True).to(run_device)
-    elif model_type == 'graph_gps':
-        model = GraphGPS(input_dim, hidden_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
-    elif model_type == 'sign':
-        model = StackedSIGN(input_dim, hidden_dim, hidden_dim, num_layers=num_layers, num_hops=3, dropout=dropout).to(run_device)
-    elif model_type == 'h2gcn':
-        model = H2GCN(input_dim, hidden_dim, k = 2, dropout=dropout).to(run_device)
-    elif model_type == 'gcn2':
-        model = BaseLineRc(input_dim, hidden_dim, hidden_dim, backbone='gcn2', num_layers=num_layers, dropout=dropout, embed=True, norm = layer_norm).to(run_device)
-    elif model_type == 'gated_gcn':
-        model = GatedGCN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
-    elif model_type == 'deeper_gcn':
-        model = DeeperGCN(input_dim, hidden_dim // 2, hidden_dim, num_layers=num_layers * 4, dropout=dropout).to(run_device)
-    elif model_type == 'dgn':
-        model = DGN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
+    if model_type == 'graph_gps':
+        model = GraphGPS(input_dim, hidden_dim, hidden_dim, num_layers=num_layers, dropout=dropout, pe_dim=8).to(run_device)
+    else:
+        raise ValueError(f"模型类型无效: {model_type}")
 
     classifier = Classifier(hidden_dim, hidden_dim, num_classes).to(run_device)
 
     return model, classifier
 
+# --- 修改: 构建优化器 ---
 def build_optimizer(pooler, classifier, config: BenchmarkConfig):
-    # return torch.optim.Adam(list(pooler.parameters()) + list(classifier.parameters()), lr=0.001)
-    return Adam(list(pooler.parameters()) + list(classifier.parameters()), lr=config.lr)
+    params = list(pooler.parameters()) + list(classifier.parameters())
+    
+    # 尝试从配置中获取 weight_decay，默认 0
+    weight_decay = config.weight_decay if hasattr(config, 'weight_decay') else 0
+    
+    # Graph Transformer 推荐使用 AdamW
+    if config.model in ['graph_gps', 'gt', 'transformer', 'sign']:
+        return torch.optim.AdamW(params, lr=config.lr, weight_decay=weight_decay)
+    
+    return Adam(params, lr=config.lr, weight_decay=weight_decay)
 
 #对模型在dataset上运行k-fold
 def run_k_fold4dataset(dataset, config: BenchmarkConfig):
@@ -380,7 +331,6 @@ def run_k_fold4dataset(dataset, config: BenchmarkConfig):
     all_end = get_time_sync()
 
     #合并k-fold实验结果
-    # mean_result, max_result = merge_results(results)
     all, last, last_10, last_50 = process_results(results)
     print(
         '----------RESULTS----------\n',
@@ -394,15 +344,6 @@ def run_k_fold4dataset(dataset, config: BenchmarkConfig):
     )
 
     return all, last, last_10, last_50
-
-# def merge_results(results: list[BenchmarkResult]):
-#     mean_result = BenchmarkResult()
-#     max_result = BenchmarkResult()
-#     for result in results:
-#         mean_result.append(result.get_mean())
-#         max_result.append(result.get_max())
-
-#     return mean_result, max_result
 
 def format_result(mean, std):
     return f'{mean * 100:.2f}% ± {std * 100:.2f}%'
@@ -427,15 +368,6 @@ def process_results(results: list[BenchmarkResult]):
     last_10_std = np.std(last_10_res)
     last_50_mean = np.mean(last_50_res)
     last_50_std = np.std(last_50_res)
-    # for result in results:
-    #     all_mean += result.get_mean() / size
-    #     last_mean += result.get_mean(1) / size
-    #     last_10_mean += result.get_mean(10) / size
-    #     last_50_mean += result.get_mean(50) / size
-    #     all_std += result.get_std() / size
-    #     last_std += result.get_std(1) / size
-    #     last_10_std += result.get_std(10) / size
-    #     last_50_std += result.get_std(50) / size
 
     return (all_mean, all_std), (last_mean, last_std), (last_10_mean, last_10_std), (last_50_mean, last_50_std)
 
@@ -470,7 +402,6 @@ def datasets(sets='common'):
             'NCI1',
             'COX2',
             'IMDB-BINARY',
-            # 'MSRC_21'
         ]
     elif sets == 'common':
         datasets = [
@@ -482,12 +413,6 @@ def datasets(sets='common'):
             'IMDB-BINARY',
             'IMDB-MULTI',
             'FRANKENSTEIN',
-            # 'COLLAB',
-            # 'REDDIT-BINARY',
-            # 'Synthie',
-            # 'SYNTHETIC',
-            # 'MSRC_9',
-            # 'MSRC_21',
         ]
     elif sets == 'bio&chem':
         datasets = [
@@ -498,18 +423,7 @@ def datasets(sets='common'):
             'COX2',
             'FRANKENSTEIN'
         ]
-    elif sets == 'dense':
-        datasets = [
-            'mit_ct1', #d≈146.92
-            'mit_ct2',
-            # 'COLLAB', #d≈66
-            'highschool_ct1', #d≈20.8
-            'highschool_ct2',
-            'infectious_ct1', #d≈18.39
-            'infectious_ct2',
-        ]
     for i in range(len(datasets)):
-        # eigPE = torch_geometric.transforms.AddLaplacianEigenvectorPE(k=5, attr_name='eig_vecs', is_undirected=True)
         yield ReTUDataset(root=DATASET_PATH, name=datasets[i])
 
 def set_random_seed(seed):
@@ -518,14 +432,6 @@ def set_random_seed(seed):
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
-
-# def format_result(result):
-#     try:
-#         (ds, mean_result, max_result) = result
-#         return f'数据集: {ds}, mean: {mean_result.get_mean()}, max: {max_result.get_max()}'
-#     except:
-#         return 'NONE'
-
 
 def save_result(results, filename, spent_time, config: BenchmarkConfig, config_disp = False):
     with open(filename, 'a', encoding='utf-8') as f:
@@ -566,42 +472,41 @@ def run(config: BenchmarkConfig):
             results.append((f'{dataset}', all, last, last10, last50))
         dataset_end = get_time_sync()
         
-        # if config.use_simple_datasets:
-        #     save_result([(f'{dataset}', all, last, last10, last50)], f'./stgnn/result_simple/{config.model}.txt', dataset_end - dataset_start, config, id == 0)
-        # else:
         save_result([(f'{dataset}', all, last, last10, last50)], f'./stgnn/result_fin/{config.model}.txt', dataset_end - dataset_start, config, id == 0)
     all_end = get_time_sync()
 
     print(f'{config.format()}\n')
-
-    # for result in results:
-    #     print(format_result(result[0], result[1]))
     print(f'总运行时间: {(all_end - all_start) / 60:.2f} min')
 
 if __name__ == '__main__':
     global run_device
     run_device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    # now = datetime.now()
-    # now_str = now.strftime('%Y-%m-%d-%H-%M')
-
     config = BenchmarkConfig()
     config.hidden_channels = 128
     config.num_layers = 3
     config.graph_norm = False
     config.batch_size = 128
-    config.epochs = 500
+    config.epochs = 200
     config.dropout = 0.1
-    # config.use_simple_datasets = False
     config.sets = 'bio&chem'
     config.catch_error = False
     config.early_stop = True
     config.early_stop_epochs = 50
     config.seed = None
     config.kfold = 10
+    config.lr = 5e-4
+    
+    # --- 新增: Warmup 和 Weight Decay 配置 ---
+    config.warmup_epochs = 20  # 设置预热 epoch 数
+    config.weight_decay = 1e-4 # Transformer 建议设置权重衰减
+    config.amp = True         # 可根据显存情况开启 AMP
+    # ---------------------------------------
 
-    models = ['gat', 'mix_hop', 'appnp', 'gcn2', 'gated_gcn']
-    # models = ['topk']
+    # 将 GraphGPS 加入测试列表
+    models = ['graph_gps']
+    # models = ['gcn', 'gin', 'gat', 'mix_hop', 'appnp', 'gcn2']
+    
     seeds = [0, 114514, 1919810, 77777]
     for model in models:
         config.model = model
@@ -614,4 +519,3 @@ if __name__ == '__main__':
                 print(f'运行 {config.model} 时出错: {e}')
         else:
             run(config)
-    

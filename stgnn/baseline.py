@@ -1,12 +1,29 @@
 import torch
 from torch import nn
-from torch_geometric.nn import GCNConv, GINConv, global_mean_pool, TransformerConv
+from torch_geometric.nn import (
+    GCNConv,
+    GINConv,
+    GATConv,
+    global_mean_pool,
+    TransformerConv,
+)
 from torch_geometric.nn.norm import GraphNorm
 import torch.nn.functional as F
 from phop import PHopGCNConv, PHopGINConv, PHopLinkRWConv, PHopLinkGCNConv
 
+
 class BaseLine(nn.Module):
-    def __init__(self, in_channels: int, hidden_channels: int, out_channels: int, num_layers: int = 3, backbone = 'gcn', dropout = 0.5, embed: bool = False):
+    def __init__(
+        self,
+        in_channels: int,
+        hidden_channels: int,
+        out_channels: int,
+        num_layers: int = 3,
+        backbone="gcn",
+        dropout=0.5,
+        embed: bool = False,
+        norm: bool = False,
+    ):
         super(BaseLine, self).__init__()
         self.num_layers = num_layers
         self.in_channels = in_channels
@@ -15,6 +32,7 @@ class BaseLine(nn.Module):
         self.backbone = backbone
         self.dropout = dropout
         self.embed = embed
+        self.norm = norm
 
         if self.in_channels < 1:
             self.in_channels = 1
@@ -22,9 +40,10 @@ class BaseLine(nn.Module):
         if self.embed:
             self.embedding = nn.Linear(self.in_channels, hidden_channels)
             self.in_channels = hidden_channels
-        
+
         self.build_convs()
-        self.build_norms()
+        if self.norm:
+            self.build_norms()
 
     def build_convs(self):
         if self.num_layers < 2:
@@ -32,14 +51,18 @@ class BaseLine(nn.Module):
         self.convs = nn.ModuleList()
         for i in range(self.num_layers):
             if i == 0:
-                self.convs.append(self.build_conv(self.in_channels, self.hidden_channels))
+                self.convs.append(
+                    self.build_conv(self.in_channels, self.hidden_channels)
+                )
             else:
-                self.convs.append(self.build_conv(self.hidden_channels, self.hidden_channels))
+                self.convs.append(
+                    self.build_conv(self.hidden_channels, self.hidden_channels)
+                )
 
     def build_conv(self, in_channels, out_channels):
-        if self.backbone == 'gcn':
+        if self.backbone == "gcn":
             return GCNConv(in_channels, out_channels)
-        elif self.backbone == 'gin':
+        elif self.backbone == "gin":
             # fnn = nn.Sequential(
             #     nn.Linear(in_channels, out_channels),
             #     nn.LeakyReLU(),
@@ -47,16 +70,27 @@ class BaseLine(nn.Module):
             #     nn.LeakyReLU(),
             #     nn.Dropout(p=self.dropout)
             # )
-            fnn = nn.Linear(in_channels, out_channels)
+            # fnn = nn.Linear(in_channels, out_channels)
             # fnn = nn.Sequential(
             #     nn.Linear(in_channels, out_channels),
             #     nn.LeakyReLU(),
             #     nn.Linear(out_channels, out_channels),
             #     nn.Dropout(p=self.dropout)
             # )
+            fnn = nn.Sequential(
+                nn.Linear(in_channels, out_channels),
+                nn.LeakyReLU(),
+                nn.Linear(out_channels, out_channels),
+            )
             return GINConv(fnn)
-        elif self.backbone == 'quad':
+        elif self.backbone == "gat":
+            heads = 4
+            return GATConv(
+                in_channels, out_channels // heads, heads=heads, dropout=self.dropout
+            )
+        elif self.backbone == "quad":
             from utils.quadratic.quadratic import QuadraticLayer
+
             # fnn = QuadraticLayer(in_channels, out_channels)
             # fnn = nn.Sequential(
             #     QuadraticLayer(in_channels, out_channels),
@@ -81,34 +115,42 @@ class BaseLine(nn.Module):
                 QuadraticLayer(out_channels, out_channels),
             )
             return GINConv(fnn)
-        elif self.backbone == 'gt':
+        elif self.backbone == "gt":
             heads = 4
-            return TransformerConv(in_channels, out_channels, heads=4, dropout=self.dropout, beta=True, concat=False)
-        elif self.backbone == 'phop_gcn':
+            return TransformerConv(
+                in_channels,
+                out_channels,
+                heads=4,
+                dropout=self.dropout,
+                beta=True,
+                concat=False,
+            )
+        elif self.backbone == "phop_gcn":
             return PHopGCNConv(in_channels, out_channels, p=2)
-        elif self.backbone == 'phop_gin':
+        elif self.backbone == "phop_gin":
             return PHopGINConv(in_channels, out_channels, p=2)
-        elif self.backbone == 'phop_linkgcn':
+        elif self.backbone == "phop_linkgcn":
             return PHopLinkGCNConv(in_channels, out_channels, P=2)
         else:
             raise ValueError(f"backbone invalid: {self.backbone}")
-        
+
     def build_norms(self):
         self.norms = nn.ModuleList()
         for i in range(self.num_layers):
             self.norms.append(GraphNorm(self.hidden_channels))
-    
-    def forward(self, x, edge_index, batch):
+
+    def forward(self, x, edge_index, batch, *args, **kwargs):
         if self.embed:
             x = self.embedding(x)
 
         feature_all = []
         for i in range(self.num_layers):
             x = self.convs[i](x, edge_index)
-            x = self.norms[i](x, batch)
+            if self.norm:
+                x = self.norms[i](x)
             x = F.leaky_relu(x)
             feature = global_mean_pool(x, batch)
             feature_all.append(feature)
-        merge_feature = torch.mean(torch.stack(feature_all, dim=0), dim=0)
+        # merge_feature = torch.sum(torch.stack(feature_all, dim=0), dim=0)
 
-        return merge_feature, 0
+        return feature_all[-1], 0

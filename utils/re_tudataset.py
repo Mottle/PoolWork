@@ -9,6 +9,7 @@ from torch_geometric.utils import coalesce, cumsum, one_hot, remove_self_loops
 from torch_geometric.utils import get_laplacian, to_scipy_sparse_matrix
 import scipy.sparse.linalg as sla
 from torch_geometric.data import Data
+from utils.ap_up import compute_Ap_Up_optimized
 
 
 class ReTUDataset(TUDataset):
@@ -350,103 +351,103 @@ def compute_lap_pe(edge_index, num_nodes, k=20, normalization="sym"):
 
     return pe
 
-def compute_Ap_Up(edge_index, num_nodes, P):
-    """
-    计算 A^p 和 U_p = A^p - A^(p-1)
-    返回:
-        A_p_list: 长度 P 每个元素是 {'idx': Tensor[2, nnz], 'wei': Tensor[nnz]}
-        U_p_list: 同上
-    """
-    device = edge_index.device
+# def compute_Ap_Up(edge_index, num_nodes, P):
+#     """
+#     计算 A^p 和 U_p = A^p - A^(p-1)
+#     返回:
+#         A_p_list: 长度 P 每个元素是 {'idx': Tensor[2, nnz], 'wei': Tensor[nnz]}
+#         U_p_list: 同上
+#     """
+#     device = edge_index.device
 
-    # A (sparse adjacency)
-    A_sparse = torch.sparse_coo_tensor(
-        edge_index,
-        torch.ones(edge_index.size(1), device=device),
-        (num_nodes, num_nodes)
-    ).coalesce()
+#     # A (sparse adjacency)
+#     A_sparse = torch.sparse_coo_tensor(
+#         edge_index,
+#         torch.ones(edge_index.size(1), device=device),
+#         (num_nodes, num_nodes)
+#     ).coalesce()
 
-    # A^0 = I
-    idx = torch.arange(num_nodes, device=device)
-    A_prev = torch.sparse_coo_tensor(
-        torch.stack([idx, idx], dim=0),
-        torch.ones(num_nodes, device=device),
-        (num_nodes, num_nodes)
-    ).coalesce()
+#     # A^0 = I
+#     idx = torch.arange(num_nodes, device=device)
+#     A_prev = torch.sparse_coo_tensor(
+#         torch.stack([idx, idx], dim=0),
+#         torch.ones(num_nodes, device=device),
+#         (num_nodes, num_nodes)
+#     ).coalesce()
 
-    Ap = A_sparse
+#     Ap = A_sparse
 
-    A_p_list = []
-    U_p_list = []
+#     A_p_list = []
+#     U_p_list = []
 
-    for _ in range(1, P + 1):
-        # ---- 保存 A^p ----
-        Ap_cpu = {
-            'idx': Ap.indices().cpu(),
-            'wei': Ap.values().cpu()
-        }
-        A_p_list.append(Ap_cpu)
+#     for _ in range(1, P + 1):
+#         # ---- 保存 A^p ----
+#         Ap_cpu = {
+#             'idx': Ap.indices().cpu(),
+#             'wei': Ap.values().cpu()
+#         }
+#         A_p_list.append(Ap_cpu)
 
-        # ---- 计算 U_p = A^p - A^(p-1) ----
-        U_p = (Ap - A_prev).coalesce()
-        U_p_cpu = {
-            'idx': U_p.indices().cpu(),
-            'wei': U_p.values().cpu()
-        }
-        U_p_list.append(U_p_cpu)
+#         # ---- 计算 U_p = A^p - A^(p-1) ----
+#         U_p = (Ap - A_prev).coalesce()
+#         U_p_cpu = {
+#             'idx': U_p.indices().cpu(),
+#             'wei': U_p.values().cpu()
+#         }
+#         U_p_list.append(U_p_cpu)
 
-        # ---- 更新 A^(p-1) 和 A^p ----
-        A_prev = Ap
-        Ap = torch.sparse.mm(Ap, A_sparse).coalesce()
+#         # ---- 更新 A^(p-1) 和 A^p ----
+#         A_prev = Ap
+#         Ap = torch.sparse.mm(Ap, A_sparse).coalesce()
 
-    return A_p_list, U_p_list
+#     return A_p_list, U_p_list
 
-def compute_Ap_Up_optimized(edge_index, num_nodes, P):
-    device = torch.device('cpu') # 预处理建议全程在 CPU，避免显存溢出
-    edge_index = edge_index.to(device)
+# def compute_Ap_Up_optimized(edge_index, num_nodes, P):
+#     device = torch.device('cpu') # 预处理建议全程在 CPU，避免显存溢出
+#     edge_index = edge_index.to(device)
     
-    # 转换为 CSR 格式，矩阵乘法更快且内存更省
-    A_sparse = torch.sparse_coo_tensor(
-        edge_index,
-        torch.ones(edge_index.size(1), dtype=torch.float32, device=device),
-        (num_nodes, num_nodes)
-    ).coalesce()
+#     # 转换为 CSR 格式，矩阵乘法更快且内存更省
+#     A_sparse = torch.sparse_coo_tensor(
+#         edge_index,
+#         torch.ones(edge_index.size(1), dtype=torch.float32, device=device),
+#         (num_nodes, num_nodes)
+#     ).coalesce()
     
-    # 初始化 A_prev (I)
-    idx = torch.arange(num_nodes, device=device)
-    A_prev = torch.sparse_coo_tensor(
-        torch.stack([idx, idx], dim=0),
-        torch.ones(num_nodes, device=device),
-        (num_nodes, num_nodes)
-    ).coalesce()
+#     # 初始化 A_prev (I)
+#     idx = torch.arange(num_nodes, device=device)
+#     A_prev = torch.sparse_coo_tensor(
+#         torch.stack([idx, idx], dim=0),
+#         torch.ones(num_nodes, device=device),
+#         (num_nodes, num_nodes)
+#     ).coalesce()
 
-    Ap = A_sparse
-    A_p_list = []
-    U_p_list = []
+#     Ap = A_sparse
+#     A_p_list = []
+#     U_p_list = []
 
-    for p in range(1, P + 1):
-        # 1. 存储 Ap
-        A_p_list.append({
-            'idx': Ap.indices().clone(),
-            'wei': Ap.values().clone()
-        })
+#     for p in range(1, P + 1):
+#         # 1. 存储 Ap
+#         A_p_list.append({
+#             'idx': Ap.indices().clone(),
+#             'wei': Ap.values().clone()
+#         })
 
-        # 2. 计算 Up = Ap - A_prev
-        # 优化点：手动处理减法逻辑或使用 coalesce 后的值过滤
-        Up = (Ap - A_prev).coalesce()
+#         # 2. 计算 Up = Ap - A_prev
+#         # 优化点：手动处理减法逻辑或使用 coalesce 后的值过滤
+#         Up = (Ap - A_prev).coalesce()
         
-        # 3. 过滤掉值为 0 的元素（即 Ap 和 A_prev 重合的部分）
-        # 这能极大减小 Up 的存储体积
-        mask = Up.values() != 0
-        U_p_list.append({
-            'idx': Up.indices()[:, mask].clone(),
-            'wei': Up.values()[mask].clone()
-        })
+#         # 3. 过滤掉值为 0 的元素（即 Ap 和 A_prev 重合的部分）
+#         # 这能极大减小 Up 的存储体积
+#         mask = Up.values() != 0
+#         U_p_list.append({
+#             'idx': Up.indices()[:, mask].clone(),
+#             'wei': Up.values()[mask].clone()
+#         })
 
-        if p < P:
-            A_prev = Ap
-            # 使用 torch.sparse.mm 前确保矩阵是 coalesce 的
-            # 注意：Ap 的非零元会爆炸增长，这里是内存瓶颈
-            Ap = torch.sparse.mm(Ap, A_sparse).coalesce()
+#         if p < P:
+#             A_prev = Ap
+#             # 使用 torch.sparse.mm 前确保矩阵是 coalesce 的
+#             # 注意：Ap 的非零元会爆炸增长，这里是内存瓶颈
+#             Ap = torch.sparse.mm(Ap, A_sparse).coalesce()
             
-    return A_p_list, U_p_list
+#     return A_p_list, U_p_list

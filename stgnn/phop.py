@@ -127,7 +127,7 @@ class PHopLinkGCNConv(MessagePassing):
             #         edge_index_p, edge_weight_p, fill_value=1, num_nodes=N
             #     )
 
-            edge_index_p, edge_weight_p = symmetric_normalize(
+            edge_index_p, edge_weight_p = signed_symmetric_normalize(
                 edge_index_p, N, edge_weight_p
             )
 
@@ -160,11 +160,11 @@ class PHopLinkRWConv(MessagePassing):
         out_channels: int,
         P: int = 3,
         aggr: str = "add",
-        self_loops: bool = True,
+        # self_loops: bool = True,
     ):
         super(PHopLinkRWConv, self).__init__(aggr=aggr)
         self.P = P
-        self.self_loops = self_loops
+        # self.self_loops = self_loops
         self.d = nn.Parameter(torch.ones(P, out_channels))
         self.hop_bias = nn.Parameter(torch.zeros(P, out_channels))
         self.linear = nn.Linear(in_channels, out_channels)
@@ -226,11 +226,11 @@ class PHopLinkGINRWConv(MessagePassing):
         out_channels: int,
         P: int = 3,
         aggr: str = "add",
-        self_loops: bool = True,
+        # add_self_loops: bool = False,
     ):
         super(PHopLinkGINRWConv, self).__init__(aggr=aggr)
         self.P = P
-        self.self_loops = self_loops
+        # self.add_self_loops = add_self_loops
         self.in_channels = in_channels
         self.out_channels = out_channels
 
@@ -295,11 +295,9 @@ class PHopLinkGINDiffConv(MessagePassing):
         out_channels: int,
         P: int = 3,
         aggr: str = "add",
-        self_loops: bool = True,
     ):
         super(PHopLinkGINDiffConv, self).__init__(aggr=aggr)
         self.P = P
-        self.self_loops = self_loops
         self.in_channels = in_channels
         self.out_channels = out_channels
 
@@ -365,12 +363,11 @@ class PHopLinkGINConv(MessagePassing):
         out_channels: int,
         P: int = 3,
         aggr: str = "add",
-        self_loops: bool = True,
         norm: bool = True
     ):
         super(PHopLinkGINConv, self).__init__(aggr=aggr)
         self.P = P
-        self.self_loops = self_loops
+        # self.self_loops = self_loops
         self.in_channels = in_channels
         self.out_channels = out_channels
 
@@ -405,13 +402,14 @@ class PHopLinkGINConv(MessagePassing):
         for p in range(1, self.P + 1):
             edge_index_p, edge_weight_p = edge_index_l[p - 1], edge_wight_l[p - 1]
 
-            if self.self_loops:
-                edge_index_p, edge_weight_p = add_self_loops(
-                    edge_index_p, num_nodes=N, edge_attr=edge_weight_p
-                )
+            # if self.self_loops:
+            #     edge_index_p, edge_weight_p = add_self_loops(
+            #         edge_index_p, num_nodes=N, edge_attr=edge_weight_p
+            #     )
             
-            if self.norm:
-                edge_index_p, edge_weight_p = diffusion_normalize(edge_index_p, edge_weight_p, num_nodes=N)
+            if self.norm and p != 1:
+                # edge_index_p, edge_weight_p = diffusion_normalize(edge_index_p, edge_weight_p, num_nodes=N)
+                edge_index_p, edge_weight_p = signed_symmetric_normalize(edge_index_p, N, edge_weight_p)
 
             msg = self.propagate(
                 edge_index_p, x=x, edge_weight=edge_weight_p, size=(N, N)
@@ -573,6 +571,33 @@ def symmetric_normalize(edge_index, num_nodes, edge_weight=None):
     return edge_index, norm
 
 
+def signed_symmetric_normalize(edge_index, num_nodes, edge_weight):
+    # 1. 确保 edge_weight 是 tensor 且是 float
+    if edge_weight is None:
+        edge_weight = torch.ones(edge_index.size(1), device=edge_index.device)
+    if isinstance(edge_weight, (int, float)):
+        edge_weight = torch.full((edge_index.size(1),), edge_weight, device=edge_index.device)
+    if not edge_weight.is_floating_point():
+        edge_weight = edge_weight.to(torch.float32)
+
+    # 2. 确保 num_nodes 是 int (防止之前的报错)
+    if isinstance(num_nodes, torch.Tensor):
+        num_nodes = int(num_nodes.item())
+    num_nodes = int(num_nodes) if num_nodes is not None else int(edge_index.max()) + 1
+
+    row, col = edge_index
+    deg = torch.zeros(num_nodes, dtype=edge_weight.dtype, device=edge_weight.device)
+    deg.scatter_add_(0, col, edge_weight.abs()) 
+    
+    # 3. 计算 D^-0.5
+    deg_inv_sqrt = deg.pow(-0.5)
+    deg_inv_sqrt[deg_inv_sqrt == float('inf')] = 0
+
+    norm = deg_inv_sqrt[row] * deg_inv_sqrt[col] * edge_weight
+    
+    return edge_index, norm
+
+
 def diffusion_normalize(powers_index, powers_weight, method='ppr', alpha=0.1, t=2.0, num_nodes=None):
     """
     参数:
@@ -628,15 +653,3 @@ def diffusion_normalize(powers_index, powers_weight, method='ppr', alpha=0.1, t=
     )
 
     return edge_index_diff, edge_weight_diff
-
-# --- 使用示例 ---
-# 假设你已经有了 A^0, A^1, A^2 的稀疏表示
-# A^0 通常是单位矩阵 I (edge_index 是自环, weight 是 1)
-# powers_idx = [edge_index_0, edge_index_1, edge_index_2]
-# powers_w = [edge_weight_0, edge_weight_1, edge_weight_2]
-
-# 计算 PPR 扩散
-# ppr_index, ppr_weight = compute_diffusion(powers_idx, powers_w, method='ppr', alpha=0.15)
-
-# 计算 Heat Kernel 扩散
-# hk_index, hk_weight = compute_diffusion(powers_idx, powers_w, method='heat', t=1.5)
