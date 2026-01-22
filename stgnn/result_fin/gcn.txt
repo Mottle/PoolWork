@@ -102,3 +102,23 @@ FRANKENSTEIN(4337) last  : 55.36% ± 2.03%
 FRANKENSTEIN(4337) last10: 55.36% ± 2.03%
 FRANKENSTEIN(4337) last50: 55.36% ± 2.03%
 总运行时间: 61.61 min
+
+config setting: node_attr
+hid_dim: 128, layers: 3, model: gcn, graph_norm: False, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+FRANKENSTEIN(4337) all   : 60.36% ± 1.70%
+FRANKENSTEIN(4337) last  : 59.72% ± 2.47%
+FRANKENSTEIN(4337) last10: 59.89% ± 2.43%
+FRANKENSTEIN(4337) last50: 60.38% ± 1.92%
+总运行时间: 9.87 min
+
+config setting:
+hid_dim: 128, layers: 3, model: gcn, graph_norm: False, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+FRANKENSTEIN(4337) all   : 60.54% ± 1.78%
+FRANKENSTEIN(4337) last  : 60.48% ± 2.55%
+FRANKENSTEIN(4337) last10: 60.55% ± 2.43%
+FRANKENSTEIN(4337) last50: 60.65% ± 2.05%
+总运行时间: 9.03 min

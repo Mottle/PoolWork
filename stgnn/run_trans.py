@@ -22,6 +22,7 @@ from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR, 
 from classifier import Classifier
 from span_tree_gnn import SpanTreeGNN
 from graph_gps import GraphGPS
+from san import SAN
 
 def compute_loss(loss1, loss2):
     return loss1 + loss2 / (loss1 + loss2 + 1e-6).detach()
@@ -289,6 +290,8 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
     
     if model_type == 'graph_gps':
         model = GraphGPS(input_dim, hidden_dim, hidden_dim, num_layers=num_layers, dropout=dropout, pe_dim=8).to(run_device)
+    elif model_type == 'san':
+        model = SAN(input_dim, hidden_dim, num_layers=num_layers, heads=4, dropout=dropout, pe_dim=8).to(run_device)
     else:
         raise ValueError(f"模型类型无效: {model_type}")
 
@@ -416,11 +419,11 @@ def datasets(sets='common'):
         ]
     elif sets == 'bio&chem':
         datasets = [
-            'DD',
-            'PROTEINS',
-            'NCI1',
-            'NCI109',
-            'COX2',
+            # 'DD',
+            # 'PROTEINS',
+            # 'NCI1',
+            # 'NCI109',
+            # 'COX2',
             'FRANKENSTEIN'
         ]
     for i in range(len(datasets)):
@@ -504,7 +507,7 @@ if __name__ == '__main__':
     # ---------------------------------------
 
     # 将 GraphGPS 加入测试列表
-    models = ['graph_gps']
+    models = ['san']
     # models = ['gcn', 'gin', 'gat', 'mix_hop', 'appnp', 'gcn2']
     
     seeds = [0, 114514, 1919810, 77777]

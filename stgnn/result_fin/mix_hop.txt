@@ -31,3 +31,54 @@ FRANKENSTEIN(4337) last  : 70.99% ± 2.52%
 FRANKENSTEIN(4337) last10: 71.03% ± 2.53%
 FRANKENSTEIN(4337) last50: 71.00% ± 2.41%
 总运行时间: 17.96 min
+config setting:
+hid_dim: 128, layers: 3, model: mix_hop, graph_norm: False, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: TrueDD(1178) all   : 69.39% ± 4.95%
+DD(1178) last  : 71.56% ± 5.22%
+DD(1178) last10: 71.70% ± 5.26%
+DD(1178) last50: 71.58% ± 5.23%
+总运行时间: 12.82 min
+PROTEINS(1113) all   : 70.94% ± 5.45%
+PROTEINS(1113) last  : 71.89% ± 5.65%
+PROTEINS(1113) last10: 72.21% ± 6.04%
+PROTEINS(1113) last50: 72.11% ± 5.95%
+总运行时间: 6.10 min
+NCI1(4110) all   : 71.28% ± 2.07%
+NCI1(4110) last  : 74.16% ± 2.02%
+NCI1(4110) last10: 74.13% ± 1.96%
+NCI1(4110) last50: 74.00% ± 2.02%
+总运行时间: 20.84 min
+NCI109(4127) all   : 69.83% ± 1.65%
+NCI109(4127) last  : 71.70% ± 1.49%
+NCI109(4127) last10: 71.88% ± 1.49%
+NCI109(4127) last50: 71.84% ± 1.50%
+总运行时间: 19.81 min
+COX2(467) all   : 78.19% ± 2.78%
+COX2(467) last  : 78.38% ± 2.59%
+COX2(467) last10: 78.36% ± 2.61%
+COX2(467) last50: 78.23% ± 2.73%
+总运行时间: 7.65 min
+FRANKENSTEIN(4337) all   : 55.36% ± 2.03%
+FRANKENSTEIN(4337) last  : 55.36% ± 2.03%
+FRANKENSTEIN(4337) last10: 55.36% ± 2.03%
+FRANKENSTEIN(4337) last50: 55.36% ± 2.03%
+总运行时间: 61.78 min
+
+config setting:
+hid_dim: 128, layers: 3, model: mix_hop, graph_norm: False, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: TrueFRANKENSTEIN(4337) all   : 62.02% ± 1.68%
+FRANKENSTEIN(4337) last  : 62.02% ± 2.50%
+FRANKENSTEIN(4337) last10: 62.10% ± 2.42%
+FRANKENSTEIN(4337) last50: 62.57% ± 1.89%
+总运行时间: 11.51 min
+config setting:
+hid_dim: 128, layers: 3, model: mix_hop, graph_norm: False, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+FRANKENSTEIN(4337) all   : 61.92% ± 1.81%
+FRANKENSTEIN(4337) last  : 62.23% ± 2.20%
+FRANKENSTEIN(4337) last10: 62.12% ± 2.15%
+FRANKENSTEIN(4337) last50: 62.53% ± 2.15%
+总运行时间: 12.24 min

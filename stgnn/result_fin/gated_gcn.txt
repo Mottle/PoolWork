@@ -1,0 +1,17 @@
+config setting:
+hid_dim: 128, layers: 3, model: gated_gcn, graph_norm: False, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: TrueFRANKENSTEIN(4337) all   : 67.83% ± 1.99%
+FRANKENSTEIN(4337) last  : 68.50% ± 2.22%
+FRANKENSTEIN(4337) last10: 68.44% ± 2.42%
+FRANKENSTEIN(4337) last50: 68.17% ± 2.21%
+总运行时间: 9.55 min
+config setting:
+hid_dim: 128, layers: 3, model: gated_gcn, graph_norm: False, batch_size: 128
+epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+FRANKENSTEIN(4337) all   : 67.80% ± 1.72%
+FRANKENSTEIN(4337) last  : 67.40% ± 1.87%
+FRANKENSTEIN(4337) last10: 67.45% ± 1.76%
+FRANKENSTEIN(4337) last50: 67.91% ± 1.76%
+总运行时间: 9.56 min

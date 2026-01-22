@@ -47,5 +47,5 @@ class BenchmarkConfig:
                f'kfold: {self.kfold}, ' +
                f'seed: {self.seed}, ' +
                f'early_stop: {self.early_stop}\n' + 
-               f'use_amp: {self.amp}'
+               f'use_amp: {self.amp}\n'
                )

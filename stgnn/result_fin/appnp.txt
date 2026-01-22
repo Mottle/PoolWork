@@ -1,0 +1,43 @@
+config setting:
+hid_dim: 128, layers: 3, model: appnp, graph_norm: False, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: TrueDD(1178) all   : 66.84% ± 5.07%
+DD(1178) last  : 68.84% ± 4.92%
+DD(1178) last10: 68.81% ± 4.94%
+DD(1178) last50: 68.82% ± 5.03%
+总运行时间: 15.89 min
+PROTEINS(1113) all   : 69.86% ± 4.93%
+PROTEINS(1113) last  : 71.35% ± 5.06%
+PROTEINS(1113) last10: 71.44% ± 5.08%
+PROTEINS(1113) last50: 71.18% ± 5.25%
+总运行时间: 5.65 min
+NCI1(4110) all   : 57.30% ± 2.31%
+NCI1(4110) last  : 59.37% ± 2.44%
+NCI1(4110) last10: 59.09% ± 2.37%
+NCI1(4110) last50: 58.84% ± 2.70%
+总运行时间: 14.72 min
+NCI109(4127) all   : 53.19% ± 2.47%
+NCI109(4127) last  : 55.05% ± 3.39%
+NCI109(4127) last10: 54.94% ± 3.35%
+NCI109(4127) last50: 54.46% ± 3.30%
+总运行时间: 13.98 min
+COX2(467) all   : 78.16% ± 2.81%
+COX2(467) last  : 78.16% ± 2.81%
+COX2(467) last10: 78.16% ± 2.81%
+COX2(467) last50: 78.16% ± 2.81%
+总运行时间: 8.08 min
+FRANKENSTEIN(4337) all   : 55.36% ± 2.03%
+FRANKENSTEIN(4337) last  : 55.36% ± 2.03%
+FRANKENSTEIN(4337) last10: 55.36% ± 2.03%
+FRANKENSTEIN(4337) last50: 55.36% ± 2.03%
+总运行时间: 58.45 min
+
+config setting:
+hid_dim: 128, layers: 3, model: appnp, graph_norm: False, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+FRANKENSTEIN(4337) all   : 57.71% ± 1.93%
+FRANKENSTEIN(4337) last  : 57.64% ± 3.38%
+FRANKENSTEIN(4337) last10: 57.70% ± 3.35%
+FRANKENSTEIN(4337) last50: 58.10% ± 2.34%
+总运行时间: 10.33 min

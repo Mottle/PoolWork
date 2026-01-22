@@ -4,6 +4,7 @@ from torch_geometric.nn import (
     GCNConv,
     GINConv,
     GATConv,
+    GATv2Conv,
     global_mean_pool,
     TransformerConv,
 )
@@ -131,6 +132,11 @@ class BaseLine(nn.Module):
             return PHopGINConv(in_channels, out_channels, p=2)
         elif self.backbone == "phop_linkgcn":
             return PHopLinkGCNConv(in_channels, out_channels, P=2)
+        elif self.backbone == 'gat_v2':
+            heads = 4
+            return GATv2Conv(
+                in_channels, out_channels // heads, heads=heads, dropout=min(self.dropout * 2, 0.5)
+            )
         else:
             raise ValueError(f"backbone invalid: {self.backbone}")
 

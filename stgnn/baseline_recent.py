@@ -18,6 +18,7 @@ class BaseLineRc(nn.Module):
         dropout=0.5,
         embed: bool = True,
         norm: bool = False,
+        use_pe: bool = False,
     ):
         super(BaseLineRc, self).__init__()
         self.num_layers = num_layers
@@ -28,6 +29,7 @@ class BaseLineRc(nn.Module):
         self.dropout = dropout
         self.embed = embed
         self.norm = norm
+        self.use_pe = use_pe
 
         if self.in_channels < 1:
             self.in_channels = 1
@@ -93,12 +95,11 @@ class BaseLineRc(nn.Module):
             x = self.embedding(x)
             ori_emb_x = x
         
-        if pe is not None:
+        if pe is not None and self.use_pe:
             x = x + pe
 
         feature_all = []
         for i in range(self.num_layers):
-            prev_x = x
 
             if self.backbone == 'graph_gps':
                 x = self.convs[i](x, edge_index, batch)
@@ -112,7 +113,6 @@ class BaseLineRc(nn.Module):
 
             x = F.leaky_relu(x)
             x = F.dropout(x, p=self.dropout, training=self.training)
-            x = x + prev_x
 
             feature = global_mean_pool(x, batch)
             feature_all.append(feature)

@@ -34,6 +34,7 @@ from deeper_gcn import DeeperGCN
 from dgn import DGN
 from stgnn.dvdgn import DVDGN
 from gated_gcn import GatedGCN
+from ordered_gnn import OrderedGNN
 
 def compute_loss(loss1, loss2):
     return loss1 + loss2 / (loss1 + loss2 + 1e-6).detach()
@@ -278,7 +279,7 @@ def run_fold(dataset, loader, current_fold: int, config: BenchmarkConfig):
     return train_acc_res, test_acc_res
 
 def build_models(num_node_features, num_classes, config: BenchmarkConfig):
-    input_dim = num_node_features
+    input_dim = max(num_node_features, 1)
     hidden_dim = config.hidden_channels
     num_layers = config.num_layers
     model_type = config.model
@@ -290,7 +291,7 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
     
     if model_type == 'mst':
         model = SpanTreeGNN(input_dim, hidden_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
-    elif model_type == 'gcn' or model_type == 'gin' or model_type == 'gat':
+    elif model_type == 'gcn' or model_type == 'gin' or model_type == 'gat' or model_type == 'gat_v2':
         model = BaseLine(input_dim, hidden_dim, hidden_dim, backbone=model_type, num_layers=num_layers, dropout=dropout, norm = layer_norm).to(run_device)
     elif model_type == 'mstort':
         model = SpanTreeGNNWithOrt(input_dim, hidden_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
@@ -349,6 +350,8 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
         model = DeeperGCN(input_dim, hidden_dim // 2, hidden_dim, num_layers=num_layers * 4, dropout=dropout).to(run_device)
     elif model_type == 'dgn':
         model = DGN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
+    elif model_type == 'ordered_gnn':
+        model = OrderedGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
 
     classifier = Classifier(hidden_dim, hidden_dim, num_classes).to(run_device)
 
@@ -491,11 +494,11 @@ def datasets(sets='common'):
         ]
     elif sets == 'bio&chem':
         datasets = [
-            'DD',
-            'PROTEINS',
-            'NCI1',
-            'NCI109',
-            'COX2',
+            # 'DD',
+            # 'PROTEINS',
+            # 'NCI1',
+            # 'NCI109',
+            # 'COX2',
             'FRANKENSTEIN'
         ]
     elif sets == 'dense':
@@ -510,7 +513,10 @@ def datasets(sets='common'):
         ]
     for i in range(len(datasets)):
         # eigPE = torch_geometric.transforms.AddLaplacianEigenvectorPE(k=5, attr_name='eig_vecs', is_undirected=True)
-        yield ReTUDataset(root=DATASET_PATH, name=datasets[i])
+        use_node_attr = False
+        if datasets[i] in ['FRANKENSTEIN']:
+            use_node_attr = True
+        yield ReTUDataset(root=DATASET_PATH, name=datasets[i], use_node_attr=use_node_attr)
 
 def set_random_seed(seed):
     import random
@@ -591,16 +597,16 @@ if __name__ == '__main__':
     config.graph_norm = False
     config.batch_size = 128
     config.epochs = 500
-    config.dropout = 0.1
+    config.dropout = 0.5
     # config.use_simple_datasets = False
     config.sets = 'bio&chem'
-    config.catch_error = False
+    config.catch_error = True
     config.early_stop = True
     config.early_stop_epochs = 50
     config.seed = None
     config.kfold = 10
 
-    models = ['gat', 'mix_hop', 'appnp', 'gcn2', 'gated_gcn']
+    models = ['mix_hop', 'ordered_gnn', 'gated_gcn']
     # models = ['topk']
     seeds = [0, 114514, 1919810, 77777]
     for model in models:
