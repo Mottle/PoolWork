@@ -7,6 +7,7 @@ from datetime import datetime
 from constant import DATASET_PATH
 from torch import nn
 # from torch_geometric.datasets import TUDataset
+from utils import pre_trans
 from utils.re_tudataset import ReTUDataset
 from torch_geometric.loader import DataLoader
 from rich.progress import track
@@ -23,6 +24,8 @@ from classifier import Classifier
 from span_tree_gnn import SpanTreeGNN
 from graph_gps import GraphGPS
 from san import SAN
+from utils.pre_trans import pre_transform_all
+from sat import SAT
 
 def compute_loss(loss1, loss2):
     return loss1 + loss2 / (loss1 + loss2 + 1e-6).detach()
@@ -94,7 +97,7 @@ def train_model(pooler, classifier, train_loader, optimizer, criterion, device, 
         with torch.amp.autocast(device_type=device_type, enabled=use_amp):
             pe = data.pe if hasattr(data, 'pe') else None
             # 注意：如果你的模型 forward 接收 pe，确保这里传了
-            pooled = pooler(data.x, data.edge_index, data.batch, pe=pe) 
+            pooled = pooler(data.x, data.edge_index, data.batch, pe=pe, spd = data.spd_attr, rw_pos_enc=data.rw_pos_enc) 
             # 如果 pooler 返回的是 (out, loss)，请自行解包，这里假设 GraphGPS 只返回 logits
             # 根据上文 GraphGPS 代码，它只返回 out。如果你的接口有变化请调整。
             if isinstance(pooled, tuple):
@@ -150,7 +153,7 @@ def test_model(pooler, classifier, test_loader, criterion, device, use_amp=False
             # 在推理阶段也开启 autocast 以保持精度/性能策略与训练一致
             with torch.amp.autocast(device_type=device_type, enabled=use_amp):
                 pe = data.pe if hasattr(data, 'pe') else None
-                pooled, additional_loss = pooler(data.x, data.edge_index, data.batch, pe=pe)
+                pooled, additional_loss = pooler(data.x, data.edge_index, data.batch, pe=pe, spd =  data.spd_attr, rw_pos_enc=data.rw_pos_enc)
                 out = classifier(pooled)
                 loss = compute_loss(criterion(out, data.y), additional_loss)
             
@@ -200,7 +203,7 @@ def run_fold(dataset, loader, current_fold: int, config: BenchmarkConfig):
     stamp_start = get_time_sync()
     
     # 模型参数
-    num_node_features = dataset.num_node_features
+    num_node_features = max(1, dataset.num_node_features)
     num_classes = dataset.num_classes
     
     # 创建模型
@@ -289,9 +292,18 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
     dropout = config.dropout
     
     if model_type == 'graph_gps':
-        model = GraphGPS(input_dim, hidden_dim, hidden_dim, num_layers=num_layers, dropout=dropout, pe_dim=8).to(run_device)
+        model = GraphGPS(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, pe_dim=20).to(run_device)
     elif model_type == 'san':
-        model = SAN(input_dim, hidden_dim, num_layers=num_layers, heads=4, dropout=dropout, pe_dim=8).to(run_device)
+        model = SAN(input_dim, hidden_dim, num_layers=num_layers, heads=4, dropout=dropout, pe_dim=20).to(run_device)
+    elif model_type == 'sat':
+        model = SAT(
+            in_channels=input_dim,
+            hidden_channels=hidden_dim,
+            num_layers=num_layers,
+            num_heads=4,
+            rw_steps=20,
+            dropout=dropout,
+        ).to(run_device)
     else:
         raise ValueError(f"模型类型无效: {model_type}")
 
@@ -419,15 +431,15 @@ def datasets(sets='common'):
         ]
     elif sets == 'bio&chem':
         datasets = [
-            # 'DD',
-            # 'PROTEINS',
-            # 'NCI1',
-            # 'NCI109',
-            # 'COX2',
+            'DD',
+            'PROTEINS',
+            'NCI1',
+            'NCI109',
+            'COX2',
             'FRANKENSTEIN'
         ]
     for i in range(len(datasets)):
-        yield ReTUDataset(root=DATASET_PATH, name=datasets[i])
+        yield ReTUDataset(root=DATASET_PATH, name=datasets[i], pre_transform=pre_transform_all())
 
 def set_random_seed(seed):
     import random
@@ -486,10 +498,10 @@ if __name__ == '__main__':
     run_device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     config = BenchmarkConfig()
-    config.hidden_channels = 128
+    config.hidden_channels = 64
     config.num_layers = 3
     config.graph_norm = False
-    config.batch_size = 128
+    config.batch_size = 16
     config.epochs = 200
     config.dropout = 0.1
     config.sets = 'bio&chem'
@@ -507,7 +519,7 @@ if __name__ == '__main__':
     # ---------------------------------------
 
     # 将 GraphGPS 加入测试列表
-    models = ['san']
+    models = ['graph_gps']
     # models = ['gcn', 'gin', 'gat', 'mix_hop', 'appnp', 'gcn2']
     
     seeds = [0, 114514, 1919810, 77777]

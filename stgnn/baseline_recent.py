@@ -44,6 +44,8 @@ class BaseLineRc(nn.Module):
             self.build_norms()
 
         self.build_pe()
+        if hidden_channels != out_channels:
+            self.final_map = nn.Linear(hidden_channels, out_channels)
 
     def build_convs(self):
         if self.num_layers < 2:
@@ -118,5 +120,7 @@ class BaseLineRc(nn.Module):
             feature_all.append(feature)
         # merge_feature = torch.mean(torch.stack(feature_all, dim=0), dim=0)
         merge_feature = feature_all[-1]
+        if self.hidden_channels != self.out_channels:
+            merge_feature = self.final_map(merge_feature)
 
         return merge_feature, 0

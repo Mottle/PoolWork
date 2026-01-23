@@ -11,9 +11,7 @@ class DeeperGCN(torch.nn.Module):
         super(DeeperGCN, self).__init__()
 
         self.dropout = dropout
-
         self.node_encoder = Linear(in_channels, hidden_channels)
-
         self.layers = torch.nn.ModuleList()
 
         for i in range(num_layers):
@@ -42,8 +40,10 @@ class DeeperGCN(torch.nn.Module):
             )
 
             self.layers.append(layer)
+        self.final_norm = LayerNorm(hidden_channels)
+        self.final_act = LeakyReLU(inplace=True)
+        self.fin_map = Linear(hidden_channels, out_channels)
 
-        self.output_head = Linear(hidden_channels, out_channels)
 
     def forward(self, x, edge_index, batch=None, *args, **kwargs):
         x = self.node_encoder(x)
@@ -53,7 +53,11 @@ class DeeperGCN(torch.nn.Module):
         for layer in self.layers:
             x = layer(x, edge_index)
 
-        x = self.output_head(x)
+        x = self.final_norm(x)
+        x = self.final_act(x)
+        x = F.dropout(x, p=self.dropout, training=self.training)
+
         global_feature = global_mean_pool(x, batch)
+        global_feature = self.fin_map(global_feature)
 
         return global_feature, 0

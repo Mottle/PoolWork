@@ -41,3 +41,72 @@ FRANKENSTEIN(4337) last  : 57.64% ± 3.38%
 FRANKENSTEIN(4337) last10: 57.70% ± 3.35%
 FRANKENSTEIN(4337) last50: 58.10% ± 2.34%
 总运行时间: 10.33 min
+
+config setting:
+hid_dim: 128, layers: 3, model: appnp, graph_norm: False, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+DD(1178) all   : 68.01% ± 4.38%
+DD(1178) last  : 69.78% ± 3.47%
+DD(1178) last10: 70.28% ± 3.73%
+DD(1178) last50: 70.24% ± 3.68%
+总运行时间: 34.11 min
+PROTEINS(1113) all   : 70.29% ± 5.02%
+PROTEINS(1113) last  : 71.44% ± 5.18%
+PROTEINS(1113) last10: 71.33% ± 5.33%
+PROTEINS(1113) last50: 71.29% ± 5.24%
+总运行时间: 9.22 min
+NCI1(4110) all   : 57.73% ± 2.51%
+NCI1(4110) last  : 59.37% ± 2.75%
+NCI1(4110) last10: 59.27% ± 2.66%
+NCI1(4110) last50: 59.17% ± 2.65%
+总运行时间: 28.71 min
+NCI109(4127) all   : 54.28% ± 2.52%
+NCI109(4127) last  : 56.75% ± 3.23%
+NCI109(4127) last10: 56.52% ± 3.10%
+NCI109(4127) last50: 55.74% ± 2.83%
+总运行时间: 24.91 min
+COX2(467) all   : 78.16% ± 2.81%
+COX2(467) last  : 78.16% ± 2.81%
+COX2(467) last10: 78.16% ± 2.81%
+COX2(467) last50: 78.16% ± 2.81%
+总运行时间: 16.84 min
+FRANKENSTEIN(4337) all   : 58.21% ± 1.40%
+FRANKENSTEIN(4337) last  : 58.22% ± 1.86%
+FRANKENSTEIN(4337) last10: 58.24% ± 1.71%
+FRANKENSTEIN(4337) last50: 58.60% ± 1.52%
+总运行时间: 22.55 min
+config setting:
+hid_dim: 128, layers: 3, model: appnp, graph_norm: False, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+DD(1178) all   : 68.44% ± 4.27%
+DD(1178) last  : 71.05% ± 4.31%
+DD(1178) last10: 70.64% ± 3.86%
+DD(1178) last50: 70.44% ± 3.93%
+总运行时间: 23.42 min
+PROTEINS(1113) all   : 70.27% ± 4.87%
+PROTEINS(1113) last  : 71.80% ± 5.32%
+PROTEINS(1113) last10: 71.52% ± 5.21%
+PROTEINS(1113) last50: 71.51% ± 5.27%
+总运行时间: 7.28 min
+NCI1(4110) all   : 58.08% ± 2.67%
+NCI1(4110) last  : 59.42% ± 2.74%
+NCI1(4110) last10: 59.37% ± 2.64%
+NCI1(4110) last50: 59.28% ± 2.72%
+总运行时间: 14.05 min
+NCI109(4127) all   : 55.31% ± 2.77%
+NCI109(4127) last  : 57.69% ± 3.65%
+NCI109(4127) last10: 57.45% ± 3.69%
+NCI109(4127) last50: 56.98% ± 3.37%
+总运行时间: 15.71 min
+COX2(467) all   : 78.16% ± 2.81%
+COX2(467) last  : 78.16% ± 2.81%
+COX2(467) last10: 78.16% ± 2.81%
+COX2(467) last50: 78.16% ± 2.81%
+总运行时间: 9.66 min
+FRANKENSTEIN(4337) all   : 57.76% ± 1.97%
+FRANKENSTEIN(4337) last  : 57.16% ± 2.96%
+FRANKENSTEIN(4337) last10: 57.21% ± 2.79%
+FRANKENSTEIN(4337) last50: 57.96% ± 2.34%
+总运行时间: 13.37 min

@@ -26,7 +26,8 @@ from baseline_recent import BaseLineRc
 from phop_baseline import HybirdPhopGNN
 from st_split_gnn import SpanTreeSplitGNN
 from kan_based_gin import KANBasedGIN
-from graph_gps import GraphGPS
+# from graph_gps import GraphGPS
+from true_gps import GraphGPS
 from sign import StackedSIGN
 from h2gcn import H2GCN
 from appnp import APPNPs
@@ -343,11 +344,11 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
     elif model_type == 'h2gcn':
         model = H2GCN(input_dim, hidden_dim, k = 2, dropout=dropout).to(run_device)
     elif model_type == 'gcn2':
-        model = BaseLineRc(input_dim, hidden_dim, hidden_dim, backbone='gcn2', num_layers=num_layers, dropout=dropout, embed=True, norm = layer_norm).to(run_device)
+        model = BaseLineRc(input_dim, hidden_dim // 2, hidden_dim, backbone='gcn2', num_layers=13 + num_layers, dropout=dropout, embed=True, norm = layer_norm).to(run_device)
     elif model_type == 'gated_gcn':
         model = GatedGCN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
     elif model_type == 'deeper_gcn':
-        model = DeeperGCN(input_dim, hidden_dim // 2, hidden_dim, num_layers=num_layers * 4, dropout=dropout).to(run_device)
+        model = DeeperGCN(input_dim, hidden_dim // 2, out_channels=hidden_dim, num_layers=11 + num_layers, dropout=dropout).to(run_device)
     elif model_type == 'dgn':
         model = DGN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
     elif model_type == 'ordered_gnn':
@@ -494,11 +495,11 @@ def datasets(sets='common'):
         ]
     elif sets == 'bio&chem':
         datasets = [
-            # 'DD',
-            # 'PROTEINS',
-            # 'NCI1',
-            # 'NCI109',
-            # 'COX2',
+            'DD',
+            'PROTEINS',
+            'NCI1',
+            'NCI109',
+            'COX2',
             'FRANKENSTEIN'
         ]
     elif sets == 'dense':
@@ -597,7 +598,7 @@ if __name__ == '__main__':
     config.graph_norm = False
     config.batch_size = 128
     config.epochs = 500
-    config.dropout = 0.5
+    config.dropout = 0.1
     # config.use_simple_datasets = False
     config.sets = 'bio&chem'
     config.catch_error = True
@@ -606,7 +607,7 @@ if __name__ == '__main__':
     config.seed = None
     config.kfold = 10
 
-    models = ['mix_hop', 'ordered_gnn', 'gated_gcn']
+    models = ['dgn', 'appnp', 'gated_gcn', 'mix_hop']
     # models = ['topk']
     seeds = [0, 114514, 1919810, 77777]
     for model in models:

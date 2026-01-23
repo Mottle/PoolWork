@@ -36,10 +36,8 @@ class GatedGCN(nn.Module):
             self.convs.append(ResGatedGraphConv(hidden_channels, hidden_channels))
             self.bns.append(nn.BatchNorm1d(hidden_channels))
 
-        # 3. 输出分类头
-        # self.lin_out = nn.Linear(hidden_channels, out_channels)
 
-    def forward(self, x, edge_index, batch, *args, **kwargs):
+    def forward(self, x, edge_index, batch, edge_attr=None, *args, **kwargs):
         """
         Args:
             x: 节点特征 [Num_Nodes, In_Channels]
@@ -53,7 +51,7 @@ class GatedGCN(nn.Module):
         # --- B. N 层消息传递 ---
         for i in range(self.num_layers):
             x_in = x
-            x = self.convs[i](x, edge_index)
+            x = self.convs[i](x, edge_index, edge_attr)
             x = self.bns[i](x)
             x = F.leaky_relu(x)
             x = F.dropout(x, p=self.dropout_rate, training=self.training)

@@ -6,6 +6,7 @@ from torch_geometric.nn import (
     GATConv,
     GATv2Conv,
     global_mean_pool,
+    global_add_pool,
     TransformerConv,
 )
 from torch_geometric.nn.norm import GraphNorm
@@ -155,8 +156,15 @@ class BaseLine(nn.Module):
             if self.norm:
                 x = self.norms[i](x)
             x = F.leaky_relu(x)
-            feature = global_mean_pool(x, batch)
+            x = F.dropout(x, p=self.dropout, training=self.training)
+            if self.backbone == 'gin':
+                feature = global_add_pool(x, batch)
+            else:
+                feature = global_mean_pool(x, batch)
             feature_all.append(feature)
         # merge_feature = torch.sum(torch.stack(feature_all, dim=0), dim=0)
+
+        # if self.backbone == 'gin':
+        #     return torch.sum(torch.stack(feature_all), dim=0), 0
 
         return feature_all[-1], 0

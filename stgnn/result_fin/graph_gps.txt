@@ -1,7 +1,8 @@
 config setting:
 hid_dim: 128, layers: 3, model: graph_gps, graph_norm: False, batch_size: 128
 epochs: 200, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
-use_amp: TrueDD(1178) all   : 73.86% ± 3.35%
+use_amp: True
+DD(1178) all   : 73.86% ± 3.35%
 DD(1178) last  : 74.27% ± 4.29%
 DD(1178) last10: 75.33% ± 3.45%
 DD(1178) last50: 74.91% ± 3.34%
@@ -30,4 +31,47 @@ FRANKENSTEIN(4337) all   : 67.37% ± 1.28%
 FRANKENSTEIN(4337) last  : 71.64% ± 2.25%
 FRANKENSTEIN(4337) last10: 71.68% ± 2.09%
 FRANKENSTEIN(4337) last50: 71.47% ± 1.86%
-总运行时间: 37.35 min
+总运行时间: 37.35 minconfig setting:
+hid_dim: 128, layers: 3, model: graph_gps, graph_norm: False, batch_size: 128
+epochs: 200, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+DD(1178) all   : 70.16% ± 3.71%
+DD(1178) last  : 70.87% ± 5.11%
+DD(1178) last10: 69.10% ± 4.73%
+DD(1178) last50: 70.70% ± 3.82%
+总运行时间: 39.56 min
+
+config setting:
+hid_dim: 64, layers: 3, model: graph_gps, graph_norm: False, batch_size: 16
+epochs: 200, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+DD(1178) all   : 75.15% ± 3.13%
+DD(1178) last  : 76.74% ± 2.68%
+DD(1178) last10: 76.51% ± 2.80%
+DD(1178) last50: 76.16% ± 2.77%
+总运行时间: 51.30 min
+PROTEINS(1113) all   : 72.31% ± 3.06%
+PROTEINS(1113) last  : 74.75% ± 3.98%
+PROTEINS(1113) last10: 74.95% ± 3.47%
+PROTEINS(1113) last50: 74.20% ± 3.31%
+总运行时间: 29.49 min
+NCI1(4110) all   : 65.91% ± 5.94%
+NCI1(4110) last  : 67.96% ± 10.31%
+NCI1(4110) last10: 67.93% ± 10.28%
+NCI1(4110) last50: 67.75% ± 9.87%
+总运行时间: 155.29 min
+NCI109(4127) all   : 65.50% ± 4.35%
+NCI109(4127) last  : 67.96% ± 5.74%
+NCI109(4127) last10: 67.92% ± 5.70%
+NCI109(4127) last50: 67.57% ± 5.58%
+总运行时间: 108.01 min
+COX2(467) all   : 78.12% ± 2.61%
+COX2(467) last  : 77.74% ± 2.69%
+COX2(467) last10: 77.69% ± 2.65%
+COX2(467) last50: 77.82% ± 2.51%
+总运行时间: 15.88 min
+FRANKENSTEIN(4337) all   : 67.24% ± 0.99%
+FRANKENSTEIN(4337) last  : 71.22% ± 2.02%
+FRANKENSTEIN(4337) last10: 71.38% ± 1.96%
+FRANKENSTEIN(4337) last50: 71.22% ± 1.88%
+总运行时间: 126.55 min
