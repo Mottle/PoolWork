@@ -127,3 +127,17 @@ FRANKENSTEIN(4337) last  : 63.82% ± 3.51%
 FRANKENSTEIN(4337) last10: 63.69% ± 3.51%
 FRANKENSTEIN(4337) last50: 64.46% ± 2.71%
 总运行时间: 11.37 min
+config setting:
+hid_dim: 128, layers: 3, model: gin, graph_norm: False, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+IMDB-BINARY(1000) all   : 51.50% ± 5.29%
+IMDB-BINARY(1000) last  : 51.30% ± 12.30%
+IMDB-BINARY(1000) last10: 50.98% ± 11.65%
+IMDB-BINARY(1000) last50: 53.37% ± 8.62%
+总运行时间: 3.19 min
+IMDB-MULTI(1500) all   : 36.18% ± 3.81%
+IMDB-MULTI(1500) last  : 38.93% ± 5.33%
+IMDB-MULTI(1500) last10: 38.86% ± 5.47%
+IMDB-MULTI(1500) last50: 38.41% ± 5.29%
+总运行时间: 5.04 min

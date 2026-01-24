@@ -7,6 +7,11 @@ import torch_geometric.graphgym.register as register
 import torch_geometric.nn as pygnn
 from torch_geometric.nn import Linear as Linear_pyg
 from torch_geometric.utils import to_dense_batch
+import torch.nn.functional as F
+import torch_geometric as pyg
+import torch_geometric.nn as pyg_nn
+from torch_scatter import scatter
+
 
 
 class DeepSetSignNet(nn.Module):
@@ -42,9 +47,9 @@ class GraphGPS(nn.Module):
         hidden_channels: int,
         num_layers: int = 4,
         dropout: float = 0.1,
-        attn_dropout: float = 0.1, # 新增：区分 Attention 的 dropout
+        attn_dropout: float = 0.1, 
         pe_dim: int = 20,
-        use_edge_attr: bool = True, # GINE 必须需要 edge_attr
+        use_edge_attr: bool = True, 
         heads: int = 4,
     ):
         super().__init__()
@@ -54,38 +59,33 @@ class GraphGPS(nn.Module):
         self.use_edge_attr = use_edge_attr
         self.pe_dim = pe_dim
 
-        # ---- Node Embedding ----
+
         if self.in_channels != hidden_channels:
             self.node_emb = nn.Linear(self.in_channels, hidden_channels)
         else:
             self.node_emb = nn.Identity()
 
-        # ---- PE Encoder (保留你的 DeepSetSignNet) ----
         self.pe_encoder = DeepSetSignNet(pe_dim, hidden_channels) 
 
-        # ---- Layers (替换为官方 GPSLayer) ----
         self.layers = nn.ModuleList()
         for _ in range(num_layers):
-            # 实例化官方 GPSLayer
             layer = GPSLayer(
                 dim_h=hidden_channels,
-                local_gnn_type='GINE',         # <--- 指定 Backbone 为 GINE
+                # local_gnn_type='GINE',
+                local_gnn_type='CustomGatedGCN',
                 global_model_type='Transformer', 
                 num_heads=heads,
-                act='relu',                    # 官方默认常用 ReLU
+                act='relu',
                 dropout=dropout,
                 attn_dropout=attn_dropout,
-                layer_norm=False,              # 官方代码如果不改，通常二选一
-                batch_norm=True,               # GraphGPS 常用 BatchNorm
-                equivstable_pe=False           # 我们在外部处理 PE，这里设为 False
+                layer_norm=False,
+                batch_norm=True,
+                equivstable_pe=False
             )
             self.layers.append(layer)
 
         # ---- Readout ----
         self.readout = global_mean_pool
-        
-        # 官方代码通常在最后 Pooling 前不做额外的 Norm，
-        # 但有些实现会加一个，这里保持简洁，与官方对齐。
         
         self._init_weights()
 
@@ -97,32 +97,18 @@ class GraphGPS(nn.Module):
                     nn.init.constant_(m.bias, 0)
 
     def forward(self, x, edge_index, batch, edge_attr=None, pe=None, *args, **kwargs):
-        """
-        输入输出签名保持不变。
-        """
-        # 1. 节点特征嵌入
         x = self.node_emb(x)
 
-        # 2. PE 嵌入与叠加 (你的逻辑)
         if pe is not None:
             pe_proj = self.pe_encoder(pe)
             x = x + pe_proj # Add PE to features
         else:
-            # 如果没有 PE，建议打印警告或报错，因为 GraphGPS 严重依赖 PE
             pass
 
-        # -------------------------------------------------------------
-        # 3. 构造伪 Batch 对象 (关键步骤)
-        # 官方 GPSLayer 输入需要是 batch 对象，因为它要访问 batch.batch, batch.edge_index 等
-        # -------------------------------------------------------------
         
-        # 如果 Backbone 是 GINE，必须有 edge_attr。
-        # 如果输入为 None，我们需要构造一个占位符或报错。
         if self.use_edge_attr and edge_attr is None:
             raise ValueError("GINE backbone requires edge_attr, but None provided.")
             
-        # 构造临时的 PyG Batch 对象
-        # 注意：这里的 x 已经是包含 PE 的 hidden_channels 维度向量
         batch_data = Batch(
             x=x, 
             edge_index=edge_index, 
@@ -130,22 +116,17 @@ class GraphGPS(nn.Module):
             batch=batch
         )
 
-        # 4. 通过官方 GPSLayers
         for layer in self.layers:
-            # GPSLayer 输入输出都是 Batch 对象
             batch_data = layer(batch_data)
 
-        # 5. 提取特征进行 Readout
-        # 更新后的 x 存储在 batch_data.x 中
         final_x = batch_data.x
         
         g = self.readout(final_x, batch) 
         
-        # 保持你的返回格式
         return g, 0
 
 
-
+# https://github.com/rampasek/GraphGPS/blob/main/graphgps/layer/gps_layer.py
 class GPSLayer(nn.Module):
     """Local MPNN + full graph attention x-former layer.
     """
@@ -395,3 +376,131 @@ class GPSLayer(nn.Module):
             f'global_model_type={self.global_model_type}, ' \
             f'heads={self.num_heads}'
         return s
+
+
+class GatedGCNLayer(pyg_nn.conv.MessagePassing):
+    """
+        GatedGCN layer
+        Residual Gated Graph ConvNets
+        https://arxiv.org/pdf/1711.07553.pdf
+    """
+    def __init__(self, in_dim, out_dim, dropout, residual, act='relu',
+                 equivstable_pe=False, **kwargs):
+        super().__init__(**kwargs)
+        self.activation = register.act_dict[act]
+        self.A = pyg_nn.Linear(in_dim, out_dim, bias=True)
+        self.B = pyg_nn.Linear(in_dim, out_dim, bias=True)
+        self.C = pyg_nn.Linear(in_dim, out_dim, bias=True)
+        self.D = pyg_nn.Linear(in_dim, out_dim, bias=True)
+        self.E = pyg_nn.Linear(in_dim, out_dim, bias=True)
+
+        # Handling for Equivariant and Stable PE using LapPE
+        # ICLR 2022 https://openreview.net/pdf?id=e95i1IHcWj
+        self.EquivStablePE = equivstable_pe
+        if self.EquivStablePE:
+            self.mlp_r_ij = nn.Sequential(
+                nn.Linear(1, out_dim),
+                self.activation(),
+                nn.Linear(out_dim, 1),
+                nn.Sigmoid())
+
+        self.bn_node_x = nn.BatchNorm1d(out_dim)
+        self.bn_edge_e = nn.BatchNorm1d(out_dim)
+        self.act_fn_x = self.activation()
+        self.act_fn_e = self.activation()
+        self.dropout = dropout
+        self.residual = residual
+        self.e = None
+
+    def forward(self, batch):
+        x, e, edge_index = batch.x, batch.edge_attr, batch.edge_index
+
+        """
+        x               : [n_nodes, in_dim]
+        e               : [n_edges, in_dim]
+        edge_index      : [2, n_edges]
+        """
+        if self.residual:
+            x_in = x
+            e_in = e
+
+        Ax = self.A(x)
+        Bx = self.B(x)
+        Ce = self.C(e)
+        Dx = self.D(x)
+        Ex = self.E(x)
+
+        # Handling for Equivariant and Stable PE using LapPE
+        # ICLR 2022 https://openreview.net/pdf?id=e95i1IHcWj
+        pe_LapPE = batch.pe_EquivStableLapPE if self.EquivStablePE else None
+
+        x, e = self.propagate(edge_index,
+                              Bx=Bx, Dx=Dx, Ex=Ex, Ce=Ce,
+                              e=e, Ax=Ax,
+                              PE=pe_LapPE)
+
+        x = self.bn_node_x(x)
+        e = self.bn_edge_e(e)
+
+        x = self.act_fn_x(x)
+        e = self.act_fn_e(e)
+
+        x = F.dropout(x, self.dropout, training=self.training)
+        e = F.dropout(e, self.dropout, training=self.training)
+
+        if self.residual:
+            x = x_in + x
+            e = e_in + e
+
+        batch.x = x
+        batch.edge_attr = e
+
+        return batch
+
+    def message(self, Dx_i, Ex_j, PE_i, PE_j, Ce):
+        """
+        {}x_i           : [n_edges, out_dim]
+        {}x_j           : [n_edges, out_dim]
+        {}e             : [n_edges, out_dim]
+        """
+        e_ij = Dx_i + Ex_j + Ce
+        sigma_ij = torch.sigmoid(e_ij)
+
+        # Handling for Equivariant and Stable PE using LapPE
+        # ICLR 2022 https://openreview.net/pdf?id=e95i1IHcWj
+        if self.EquivStablePE:
+            r_ij = ((PE_i - PE_j) ** 2).sum(dim=-1, keepdim=True)
+            r_ij = self.mlp_r_ij(r_ij)  # the MLP is 1 dim --> hidden_dim --> 1 dim
+            sigma_ij = sigma_ij * r_ij
+
+        self.e = e_ij
+        return sigma_ij
+
+    def aggregate(self, sigma_ij, index, Bx_j, Bx):
+        """
+        sigma_ij        : [n_edges, out_dim]  ; is the output from message() function
+        index           : [n_edges]
+        {}x_j           : [n_edges, out_dim]
+        """
+        dim_size = Bx.shape[0]  # or None ??   <--- Double check this
+
+        sum_sigma_x = sigma_ij * Bx_j
+        numerator_eta_xj = scatter(sum_sigma_x, index, 0, None, dim_size,
+                                   reduce='sum')
+
+        sum_sigma = sigma_ij
+        denominator_eta_xj = scatter(sum_sigma, index, 0, None, dim_size,
+                                     reduce='sum')
+
+        out = numerator_eta_xj / (denominator_eta_xj + 1e-6)
+        return out
+
+    def update(self, aggr_out, Ax):
+        """
+        aggr_out        : [n_nodes, out_dim] ; is the output from aggregate() function after the aggregation
+        {}x             : [n_nodes, out_dim]
+        """
+        x = Ax + aggr_out
+        e_out = self.e
+        del self.e
+        return x, e_out

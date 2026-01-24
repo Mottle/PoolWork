@@ -1,0 +1,35 @@
+config setting:
+hid_dim: 128, layers: 3, model: hpd_gated_gcn, graph_norm: False, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+DD(1178) all   : 74.99% ± 3.56%
+DD(1178) last  : 75.89% ± 4.34%
+DD(1178) last10: 76.01% ± 4.55%
+DD(1178) last50: 75.76% ± 3.99%
+总运行时间: 26.40 min
+PROTEINS(1113) all   : 74.40% ± 3.39%
+PROTEINS(1113) last  : 73.59% ± 3.54%
+PROTEINS(1113) last10: 73.86% ± 3.66%
+PROTEINS(1113) last50: 74.40% ± 3.84%
+总运行时间: 12.27 min
+
+symmetric_normalize
+config setting:
+hid_dim: 128, layers: 3, model: hpd_gated_gcn, graph_norm: False, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+DD(1178) all   : 76.28% ± 3.41%
+DD(1178) last  : 76.57% ± 4.08%
+DD(1178) last10: 76.95% ± 3.78%
+DD(1178) last50: 76.78% ± 3.58%
+总运行时间: 24.15 min
+PROTEINS(1113) all   : 73.09% ± 2.36%
+PROTEINS(1113) last  : 72.23% ± 4.23%
+PROTEINS(1113) last10: 71.90% ± 3.55%
+PROTEINS(1113) last50: 73.10% ± 2.63%
+总运行时间: 10.18 min
+NCI1(4110) all   : 80.78% ± 1.22%
+NCI1(4110) last  : 81.95% ± 2.01%
+NCI1(4110) last10: 81.85% ± 1.84%
+NCI1(4110) last50: 81.86% ± 1.72%
+总运行时间: 43.18 min

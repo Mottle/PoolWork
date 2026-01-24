@@ -26,3 +26,4 @@ torch_spline_conv = { url = "https://data.pyg.org/whl/torch-2.6.0%2Bcu124/torch_
 cyaron = {}
 triton-windows = { version = "==3.2.0.post17"}
 ogb = {  }
+opt_einsum = {  }

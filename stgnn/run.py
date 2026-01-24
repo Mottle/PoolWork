@@ -326,13 +326,15 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
         model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3, backbone='rw').to(run_device)
     elif model_type == 'hybird_gin':
         model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3, backbone='gin').to(run_device)
+    elif model_type == 'hpd_gated_gcn':
+        model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3, backbone='dmmp_gatedgcn').to(run_device)
     elif model_type == 'dvdgn':
         model = DVDGN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3, dirs=1, add_self_loops=False).to(run_device)
     elif model_type == 'mix_hop':
         model = BaseLineRc(input_dim, hidden_dim, hidden_dim, backbone='mix_hop', num_layers=num_layers, dropout=dropout, embed=True, norm = layer_norm).to(run_device)
     elif model_type == 'appnp':
         # model = BaseLineRc(input_dim, hidden_dim, hidden_dim, backbone='appnp', num_layers=num_layers, dropout=dropout, embed=True).to(run_device)
-        model = APPNPs(input_dim, hidden_dim, hidden_dim, mlp_layers=3, K=10, alpha=0.1, dropout=dropout).to(run_device)
+        model = APPNPs(input_dim, hidden_dim, hidden_dim, mlp_layers=3, K=10, alpha=0.5, dropout=dropout).to(run_device)
     # elif model_type == 'sign':
     #     model = BaseLineRc(input_dim, hidden_dim, hidden_dim, backbone='sign', num_layers=num_layers, dropout=dropout, embed=True).to(run_device)
     # elif model_type == 'graph_gps':
@@ -493,6 +495,13 @@ def datasets(sets='common'):
             # 'MSRC_9',
             # 'MSRC_21',
         ]
+    elif sets == 'com':
+        datasets = [
+            'IMDB-BINARY',
+            'IMDB-MULTI',
+            # 'REDDIT-BINARY',
+            'COLLAB',
+        ]
     elif sets == 'bio&chem':
         datasets = [
             'DD',
@@ -601,13 +610,23 @@ if __name__ == '__main__':
     config.dropout = 0.1
     # config.use_simple_datasets = False
     config.sets = 'bio&chem'
-    config.catch_error = True
+    config.catch_error = False
     config.early_stop = True
     config.early_stop_epochs = 50
     config.seed = None
     config.kfold = 10
 
-    models = ['dgn', 'appnp', 'gated_gcn', 'mix_hop']
+    models = [
+        # 'gcn',
+        # 'gin',
+        # 'gat_v2',
+        # 'gated_gcn',
+        # 'mix_hop',
+        # 'appnp',
+        # 'ordered_gnn',
+        # 'dgn',
+        'hpd_gated_gcn',
+    ]
     # models = ['topk']
     seeds = [0, 114514, 1919810, 77777]
     for model in models:

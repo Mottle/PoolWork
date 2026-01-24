@@ -75,6 +75,7 @@ FRANKENSTEIN(4337) last  : 62.02% ± 2.50%
 FRANKENSTEIN(4337) last10: 62.10% ± 2.42%
 FRANKENSTEIN(4337) last50: 62.57% ± 1.89%
 总运行时间: 11.51 min
+
 config setting:
 hid_dim: 128, layers: 3, model: mix_hop, graph_norm: False, batch_size: 128
 epochs: 500, dropout: 0.5, kfold: 10, seed: 0, early_stop: True
@@ -84,6 +85,7 @@ FRANKENSTEIN(4337) last  : 62.23% ± 2.20%
 FRANKENSTEIN(4337) last10: 62.12% ± 2.15%
 FRANKENSTEIN(4337) last50: 62.53% ± 2.15%
 总运行时间: 12.24 min
+
 config setting:
 hid_dim: 128, layers: 3, model: mix_hop, graph_norm: False, batch_size: 128
 epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
@@ -118,3 +120,17 @@ FRANKENSTEIN(4337) last  : 62.00% ± 2.36%
 FRANKENSTEIN(4337) last10: 62.06% ± 2.22%
 FRANKENSTEIN(4337) last50: 62.03% ± 2.12%
 总运行时间: 15.34 min
+config setting:
+hid_dim: 128, layers: 3, model: mix_hop, graph_norm: False, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+IMDB-BINARY(1000) all   : 47.01% ± 4.39%
+IMDB-BINARY(1000) last  : 47.40% ± 4.90%
+IMDB-BINARY(1000) last10: 47.40% ± 4.90%
+IMDB-BINARY(1000) last50: 47.22% ± 4.73%
+总运行时间: 11.65 min
+IMDB-MULTI(1500) all   : 32.70% ± 2.36%
+IMDB-MULTI(1500) last  : 33.20% ± 2.83%
+IMDB-MULTI(1500) last10: 33.11% ± 2.79%
+IMDB-MULTI(1500) last50: 33.01% ± 2.72%
+总运行时间: 9.44 min

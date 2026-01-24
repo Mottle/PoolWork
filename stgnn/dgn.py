@@ -138,8 +138,7 @@ from torch_geometric.nn import MessagePassing, global_mean_pool
 from torch_scatter import scatter
 from torch_geometric.utils import degree
 
-# --- 1. 辅助模块: MLP 和 Scalers ---
-
+#https://github.com/Saro00/DGN/blob/master/models/pytorch/dgn_layer.py
 class FCLayer(nn.Module):
     """简单的全连接层封装，保持与原版一致"""
     def __init__(self, in_size, out_size, activation='LeakyReLU', dropout=0.0):
@@ -152,7 +151,6 @@ class FCLayer(nn.Module):
         return self.dropout(self.act(self.fc(x)))
 
 class MLP(nn.Module):
-    """多层感知机"""
     def __init__(self, in_size, hidden_size, out_size, layers, mid_activation='ReLU', last_activation='none', dropout=0.0):
         super().__init__()
         self.layers = nn.ModuleList()

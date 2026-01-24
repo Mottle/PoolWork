@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import torch_geometric as pyg
 from torch_geometric.utils.num_nodes import maybe_num_nodes
 from torch_scatter import scatter, scatter_max, scatter_add
-# import opt_einsum as oe
+import opt_einsum as oe
 from torch_geometric.data import Batch
 from torch_geometric.nn import global_mean_pool
 from graph_gps import DeepSetSignNet

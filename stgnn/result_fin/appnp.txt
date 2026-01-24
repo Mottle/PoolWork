@@ -42,6 +42,8 @@ FRANKENSTEIN(4337) last10: 57.70% ± 3.35%
 FRANKENSTEIN(4337) last50: 58.10% ± 2.34%
 总运行时间: 10.33 min
 
+alpha = 0.1
+
 config setting:
 hid_dim: 128, layers: 3, model: appnp, graph_norm: False, batch_size: 128
 epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
@@ -76,6 +78,7 @@ FRANKENSTEIN(4337) last  : 58.22% ± 1.86%
 FRANKENSTEIN(4337) last10: 58.24% ± 1.71%
 FRANKENSTEIN(4337) last50: 58.60% ± 1.52%
 总运行时间: 22.55 min
+
 config setting:
 hid_dim: 128, layers: 3, model: appnp, graph_norm: False, batch_size: 128
 epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
@@ -110,3 +113,19 @@ FRANKENSTEIN(4337) last  : 57.16% ± 2.96%
 FRANKENSTEIN(4337) last10: 57.21% ± 2.79%
 FRANKENSTEIN(4337) last50: 57.96% ± 2.34%
 总运行时间: 13.37 min
+
+alpha = 0.5
+config setting:
+hid_dim: 128, layers: 3, model: appnp, graph_norm: False, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+NCI1(4110) all   : 61.66% ± 1.64%
+NCI1(4110) last  : 63.58% ± 2.06%
+NCI1(4110) last10: 63.38% ± 2.08%
+NCI1(4110) last50: 63.21% ± 2.09%
+总运行时间: 16.90 min
+NCI109(4127) all   : 59.49% ± 1.88%
+NCI109(4127) last  : 61.08% ± 2.03%
+NCI109(4127) last10: 61.33% ± 2.11%
+NCI109(4127) last50: 61.14% ± 2.02%
+总运行时间: 17.55 min
