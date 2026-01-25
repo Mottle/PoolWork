@@ -55,7 +55,7 @@ class GatedGCN(nn.Module):
             x = self.bns[i](x)
             x = F.leaky_relu(x)
             x = F.dropout(x, p=self.dropout_rate, training=self.training)
-            x = x + x_in
+            # x = x + x_in
 
         global_feature = global_mean_pool(x, batch)
         

@@ -9,7 +9,7 @@ from torch_geometric.utils import coalesce, cumsum, one_hot, remove_self_loops
 from torch_geometric.utils import get_laplacian, to_scipy_sparse_matrix
 import scipy.sparse.linalg as sla
 from torch_geometric.data import Data
-from utils.ap_up import compute_Ap_Up_optimized
+from utils.ap_up import compute_Ap_Up_optimized, compute_Ap_Up_REDDIT_B
 
 
 class ReTUDataset(TUDataset):
@@ -45,6 +45,12 @@ class ReTUDataset(TUDataset):
                 data.num_nodes,
                 P=self.P
             )
+
+            # A_p_list, U_p_list = compute_Ap_Up_REDDIT_B(
+            #     data.edge_index,
+            #     data.num_nodes,
+            #     P=self.P
+            # )           
 
             for p in range(self.P):
                 A_p = A_p_list[p]

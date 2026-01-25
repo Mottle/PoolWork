@@ -162,7 +162,7 @@ class BaseLine(nn.Module):
             else:
                 feature = global_mean_pool(x, batch)
             feature_all.append(feature)
-        # merge_feature = torch.sum(torch.stack(feature_all, dim=0), dim=0)
+        merge_feature = torch.sum(torch.stack(feature_all, dim=0), dim=0)
 
         # if self.backbone == 'gin':
         #     return torch.sum(torch.stack(feature_all), dim=0), 0

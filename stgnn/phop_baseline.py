@@ -13,7 +13,7 @@ from phop import (
 from torch_geometric.nn import GINConv, GCNConv, GATConv
 from dual_road_gnn import k_farthest_graph
 from torch_geometric.utils import add_self_loops, degree, dense_to_sparse, to_dense_adj
-from dmmp import DMGatedGCNConv
+from dmmp import DMGGNNConv, DMGatedGCNConv
 
 class PHopBaseLine(nn.Module):
     def __init__(
@@ -68,7 +68,7 @@ class PHopBaseLine(nn.Module):
         elif self.backbone == "phop_gin":
             return PHopGINConv(in_channels, out_channels, p=2)
         elif self.backbone == "dmmp_gatedgcn":
-            return DMGatedGCNConv(out_channels, P=3)
+            return DMGGNNConv(out_channels, P=3)
         else:
             raise ValueError(f"backbone invalid: {self.backbone}")
 
@@ -155,6 +155,10 @@ class HybirdPhopGNN(nn.Module):
                         self.hidden_channels, self.hidden_channels, P=self.p
                     )
                 )
+            elif self.backbone == "dmmp_ggnn":
+                convs.append(
+                    DMGGNNConv(self.hidden_channels, P=self.p)
+                )
             elif self.backbone == "dmmp_gatedgcn":
                 convs.append(
                     DMGatedGCNConv(self.hidden_channels, P=self.p)
@@ -181,6 +185,10 @@ class HybirdPhopGNN(nn.Module):
                     PHopLinkGINConv(
                         self.hidden_channels, self.hidden_channels, P=self.p
                     )
+                )
+            elif self.backbone == "dmmp_ggnn":
+                convs.append(
+                    DMGGNNConv(self.hidden_channels, P=self.p)
                 )
             elif self.backbone == "dmmp_gatedgcn":
                 convs.append(

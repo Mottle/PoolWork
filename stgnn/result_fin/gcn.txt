@@ -140,4 +140,22 @@ COLLAB(5000) all   : 68.47% ± 2.16%
 COLLAB(5000) last  : 71.70% ± 1.55%
 COLLAB(5000) last10: 71.67% ± 1.42%
 COLLAB(5000) last50: 71.32% ± 1.66%
-总运行时间: 152.73 min
+总运行时间: 152.73 minconfig setting:
+hid_dim: 64, layers: 3, model: gcn, graph_norm: True, batch_size: 64
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+IMDB-BINARY(1000) all   : 63.58% ± 4.26%
+IMDB-BINARY(1000) last  : 63.60% ± 5.26%
+IMDB-BINARY(1000) last10: 63.95% ± 5.05%
+IMDB-BINARY(1000) last50: 63.96% ± 4.81%
+总运行时间: 4.67 min
+IMDB-MULTI(1500) all   : 40.84% ± 2.59%
+IMDB-MULTI(1500) last  : 41.87% ± 2.40%
+IMDB-MULTI(1500) last10: 41.02% ± 2.79%
+IMDB-MULTI(1500) last50: 40.98% ± 2.82%
+总运行时间: 6.93 min
+COLLAB(5000) all   : 73.06% ± 1.79%
+COLLAB(5000) last  : 74.20% ± 2.16%
+COLLAB(5000) last10: 74.25% ± 1.91%
+COLLAB(5000) last50: 74.04% ± 1.94%
+总运行时间: 98.88 min

@@ -68,3 +68,22 @@ COLLAB(5000) last  : 74.20% ± 3.31%
 COLLAB(5000) last10: 74.82% ± 2.09%
 COLLAB(5000) last50: 73.35% ± 3.32%
 总运行时间: 93.10 min
+config setting:
+hid_dim: 64, layers: 3, model: gated_gcn, graph_norm: False, batch_size: 64
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 71.91% ± 4.11%
+PROTEINS(1113) last  : 71.71% ± 4.87%
+PROTEINS(1113) last10: 71.63% ± 4.48%
+PROTEINS(1113) last50: 72.07% ± 4.25%
+总运行时间: 7.57 min
+NCI1(4110) all   : 79.60% ± 1.24%
+NCI1(4110) last  : 81.73% ± 1.55%
+NCI1(4110) last10: 81.63% ± 1.61%
+NCI1(4110) last50: 81.66% ± 1.36%
+总运行时间: 23.14 min
+NCI109(4127) all   : 78.69% ± 1.87%
+NCI109(4127) last  : 80.64% ± 2.29%
+NCI109(4127) last10: 80.55% ± 2.34%
+NCI109(4127) last50: 80.46% ± 2.32%
+总运行时间: 31.45 min

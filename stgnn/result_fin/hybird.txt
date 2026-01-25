@@ -1,7 +1,8 @@
 config setting:
 hid_dim: 128, layers: 3, model: hybird, graph_norm: False, batch_size: 128
 epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
-use_amp: TrueDD(1178) all   : 73.52% ± 3.13%
+use_amp: True
+DD(1178) all   : 73.52% ± 3.13%
 DD(1178) last  : 74.19% ± 3.39%
 DD(1178) last10: 73.96% ± 3.31%
 DD(1178) last50: 73.69% ± 3.38%

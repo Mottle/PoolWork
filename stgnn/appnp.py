@@ -6,9 +6,10 @@ from torch import nn
 
 class APPNPs(torch.nn.Module):
     def __init__(self, in_channels, hidden_channels, out_channels,
-                 mlp_layers=3, K=10, alpha=0.1, dropout=0.5):
+                 mlp_layers=3, K=10, alpha=0.1, dropout=0.5, norm=False):
         super().__init__()
 
+        self.norm = norm
         # ----- 3-layer MLP -----
         mlp = []
         last_dim = in_channels
@@ -16,7 +17,10 @@ class APPNPs(torch.nn.Module):
             mlp.append(nn.Linear(last_dim, hidden_channels))
             mlp.append(nn.LeakyReLU())
             mlp.append(nn.Dropout(dropout))
+            if self.norm:
+                mlp.append(nn.BatchNorm1d(hidden_channels))
             last_dim = hidden_channels
+
         self.mlp = nn.Sequential(*mlp)
 
         # ----- APPNP propagation -----

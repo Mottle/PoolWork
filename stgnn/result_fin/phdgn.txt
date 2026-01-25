@@ -1,0 +1,49 @@
+config setting:
+hid_dim: 128, layers: 3, model: phdgn, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+DD(1178) all   : 72.23% ± 4.85%
+DD(1178) last  : 74.95% ± 6.16%
+DD(1178) last10: 74.64% ± 5.77%
+DD(1178) last50: 74.19% ± 5.60%
+总运行时间: 14.33 min
+PROTEINS(1113) all   : 72.67% ± 3.87%
+PROTEINS(1113) last  : 72.33% ± 4.50%
+PROTEINS(1113) last10: 72.41% ± 4.36%
+PROTEINS(1113) last50: 72.72% ± 3.95%
+总运行时间: 4.82 min
+NCI1(4110) all   : 76.53% ± 0.73%
+NCI1(4110) last  : 79.88% ± 1.48%
+NCI1(4110) last10: 79.81% ± 1.37%
+NCI1(4110) last50: 79.58% ± 1.22%
+总运行时间: 21.52 min
+NCI109(4127) all   : 75.62% ± 2.10%
+NCI109(4127) last  : 78.82% ± 2.03%
+NCI109(4127) last10: 78.77% ± 2.17%
+NCI109(4127) last50: 78.80% ± 2.17%
+总运行时间: 24.01 min
+COX2(467) all   : 78.61% ± 2.06%
+COX2(467) last  : 79.24% ± 2.45%
+COX2(467) last10: 78.73% ± 2.37%
+COX2(467) last50: 78.65% ± 2.09%
+总运行时间: 7.94 min
+FRANKENSTEIN(4337) all   : 67.71% ± 0.70%
+FRANKENSTEIN(4337) last  : 66.84% ± 1.00%
+FRANKENSTEIN(4337) last10: 66.95% ± 1.01%
+FRANKENSTEIN(4337) last50: 67.55% ± 1.08%
+总运行时间: 11.97 min
+config setting:
+hid_dim: 128, layers: 3, model: phdgn, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+IMDB-BINARY(1000) all   : 67.94% ± 4.38%
+IMDB-BINARY(1000) last  : 71.60% ± 5.35%
+IMDB-BINARY(1000) last10: 71.06% ± 5.24%
+IMDB-BINARY(1000) last50: 70.75% ± 5.04%
+总运行时间: 4.93 min
+IMDB-MULTI(1500) all   : 45.69% ± 4.32%
+IMDB-MULTI(1500) last  : 47.27% ± 5.09%
+IMDB-MULTI(1500) last10: 47.41% ± 4.89%
+IMDB-MULTI(1500) last50: 46.76% ± 4.92%
+总运行时间: 5.33 min
+for COLLAB use graph norm

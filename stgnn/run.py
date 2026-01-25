@@ -36,6 +36,7 @@ from dgn import DGN
 from stgnn.dvdgn import DVDGN
 from gated_gcn import GatedGCN
 from ordered_gnn import OrderedGNN
+from phdgn_graphprop import PHDGN
 
 def compute_loss(loss1, loss2):
     return loss1 + loss2 / (loss1 + loss2 + 1e-6).detach()
@@ -111,6 +112,7 @@ def train_model(pooler, classifier, train_loader, optimizer, criterion, device, 
         with torch.amp.autocast(device_type=device_type, enabled=use_amp):
             pe = data.pe if hasattr(data, 'pe') else None
             pooled, additional_loss = pooler(data.x, data.edge_index, data.batch, pe=pe)
+            pooled = torch.nan_to_num(pooled, nan=0.0, posinf=0.0, neginf=0.0)
             out = classifier(pooled)
             loss = compute_loss(criterion(out, data.y), additional_loss)
 
@@ -127,6 +129,10 @@ def train_model(pooler, classifier, train_loader, optimizer, criterion, device, 
             optimizer.step()
         
         # 统计逻辑保持不变
+        # print(f'x: {data.x}')
+        # print(f'pooled: {pooled}')
+        # print(f'out: {out}')
+        # print(f'loss: {loss.item()}')
         total_loss += loss.item()
         pred = out.argmax(dim=1)
         correct += (pred == data.y).sum().item()
@@ -190,6 +196,7 @@ def test_model(pooler, classifier, test_loader, criterion, device, use_amp=False
             with torch.amp.autocast(device_type=device_type, enabled=use_amp):
                 pe = data.pe if hasattr(data, 'pe') else None
                 pooled, additional_loss = pooler(data.x, data.edge_index, data.batch, pe=pe)
+                pooled = torch.nan_to_num(pooled, nan=0.0, posinf=0.0, neginf=0.0)
                 out = classifier(pooled)
                 loss = compute_loss(criterion(out, data.y), additional_loss)
             
@@ -326,7 +333,9 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
         model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3, backbone='rw').to(run_device)
     elif model_type == 'hybird_gin':
         model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3, backbone='gin').to(run_device)
-    elif model_type == 'hpd_gated_gcn':
+    elif model_type == 'hpd_ggnn':
+        model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3, backbone='dmmp_ggnn').to(run_device)
+    elif model_type == 'hpd_gatedgcn':
         model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3, backbone='dmmp_gatedgcn').to(run_device)
     elif model_type == 'dvdgn':
         model = DVDGN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3, dirs=1, add_self_loops=False).to(run_device)
@@ -334,7 +343,7 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
         model = BaseLineRc(input_dim, hidden_dim, hidden_dim, backbone='mix_hop', num_layers=num_layers, dropout=dropout, embed=True, norm = layer_norm).to(run_device)
     elif model_type == 'appnp':
         # model = BaseLineRc(input_dim, hidden_dim, hidden_dim, backbone='appnp', num_layers=num_layers, dropout=dropout, embed=True).to(run_device)
-        model = APPNPs(input_dim, hidden_dim, hidden_dim, mlp_layers=3, K=10, alpha=0.5, dropout=dropout).to(run_device)
+        model = APPNPs(input_dim, hidden_dim, hidden_dim, mlp_layers=3, K=10, alpha=0.5, dropout=dropout, norm=True).to(run_device)
     # elif model_type == 'sign':
     #     model = BaseLineRc(input_dim, hidden_dim, hidden_dim, backbone='sign', num_layers=num_layers, dropout=dropout, embed=True).to(run_device)
     # elif model_type == 'graph_gps':
@@ -355,6 +364,8 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
         model = DGN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
     elif model_type == 'ordered_gnn':
         model = OrderedGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
+    elif model_type == 'phdgn':
+        model = PHDGN(input_dim=input_dim, hidden_dim=hidden_dim, num_layers=num_layers, epsilon=0.3, dropout=dropout, use_graph_norm=False).to(run_device)
 
     classifier = Classifier(hidden_dim, hidden_dim, num_classes).to(run_device)
 
@@ -497,8 +508,8 @@ def datasets(sets='common'):
         ]
     elif sets == 'com':
         datasets = [
-            'IMDB-BINARY',
-            'IMDB-MULTI',
+            # 'IMDB-BINARY',
+            # 'IMDB-MULTI',
             # 'REDDIT-BINARY',
             'COLLAB',
         ]
@@ -604,12 +615,13 @@ if __name__ == '__main__':
     config = BenchmarkConfig()
     config.hidden_channels = 128
     config.num_layers = 3
-    config.graph_norm = False
+    config.graph_norm = True
     config.batch_size = 128
     config.epochs = 500
     config.dropout = 0.1
     # config.use_simple_datasets = False
-    config.sets = 'bio&chem'
+    # config.sets = 'bio&chem'
+    config.sets = 'com'
     config.catch_error = False
     config.early_stop = True
     config.early_stop_epochs = 50
@@ -620,12 +632,14 @@ if __name__ == '__main__':
         # 'gcn',
         # 'gin',
         # 'gat_v2',
+        # 'gat'
         # 'gated_gcn',
         # 'mix_hop',
         # 'appnp',
         # 'ordered_gnn',
         # 'dgn',
-        'hpd_gated_gcn',
+        # 'hpd_gatedgcn',
+        'phdgn',
     ]
     # models = ['topk']
     seeds = [0, 114514, 1919810, 77777]

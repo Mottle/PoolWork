@@ -141,3 +141,17 @@ IMDB-MULTI(1500) last  : 38.93% ± 5.33%
 IMDB-MULTI(1500) last10: 38.86% ± 5.47%
 IMDB-MULTI(1500) last50: 38.41% ± 5.29%
 总运行时间: 5.04 min
+config setting:
+hid_dim: 64, layers: 3, model: gin, graph_norm: True, batch_size: 64
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+IMDB-BINARY(1000) all   : 68.32% ± 4.01%
+IMDB-BINARY(1000) last  : 70.00% ± 4.07%
+IMDB-BINARY(1000) last10: 68.95% ± 4.11%
+IMDB-BINARY(1000) last50: 68.90% ± 4.24%
+总运行时间: 5.45 min
+IMDB-MULTI(1500) all   : 45.67% ± 2.80%
+IMDB-MULTI(1500) last  : 46.33% ± 4.30%
+IMDB-MULTI(1500) last10: 46.83% ± 3.80%
+IMDB-MULTI(1500) last50: 46.38% ± 3.18%
+总运行时间: 9.05 min

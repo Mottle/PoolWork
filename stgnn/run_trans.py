@@ -429,6 +429,13 @@ def datasets(sets='common'):
             'IMDB-MULTI',
             'FRANKENSTEIN',
         ]
+    elif sets == 'com':
+        datasets = [
+            # 'IMDB-BINARY',
+            # 'IMDB-MULTI',
+            'REDDIT-BINARY',
+            # 'COLLAB',
+        ]
     elif sets == 'bio&chem':
         datasets = [
             'DD',
@@ -504,7 +511,7 @@ if __name__ == '__main__':
     config.batch_size = 16
     config.epochs = 200
     config.dropout = 0.1
-    config.sets = 'bio&chem'
+    config.sets = 'com'
     config.catch_error = False
     config.early_stop = True
     config.early_stop_epochs = 50

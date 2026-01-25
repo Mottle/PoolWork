@@ -129,3 +129,21 @@ NCI109(4127) last  : 61.08% ± 2.03%
 NCI109(4127) last10: 61.33% ± 2.11%
 NCI109(4127) last50: 61.14% ± 2.02%
 总运行时间: 17.55 min
+config setting:
+hid_dim: 64, layers: 3, model: appnp, graph_norm: True, batch_size: 64
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+IMDB-BINARY(1000) all   : 47.07% ± 4.53%
+IMDB-BINARY(1000) last  : 47.20% ± 4.71%
+IMDB-BINARY(1000) last10: 47.35% ± 4.85%
+IMDB-BINARY(1000) last50: 46.99% ± 4.55%
+总运行时间: 12.36 min
+config setting:
+hid_dim: 64, layers: 3, model: appnp, graph_norm: True, batch_size: 64
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+IMDB-BINARY(1000) all   : 49.88% ± 5.28%
+IMDB-BINARY(1000) last  : 50.00% ± 5.55%
+IMDB-BINARY(1000) last10: 50.00% ± 5.55%
+IMDB-BINARY(1000) last50: 50.00% ± 5.55%
+总运行时间: 18.41 min
