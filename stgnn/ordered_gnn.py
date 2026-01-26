@@ -251,7 +251,7 @@ class ONGNNConv(MessagePassing):
         
 #         return encode_values
 
-class OrderedGNNEncoder(Module):
+class OrderedGNN(Module):
     def __init__(self, 
                  in_channels, 
                  hidden_channels, 
@@ -259,7 +259,10 @@ class OrderedGNNEncoder(Module):
                  chunk_size=32, 
                  num_layers_input=1,
                  dropout=0.5, 
-                 global_gating=False):
+                 global_gating=True,
+                 add_self_loops=True,
+                 simple_gating=False, # 默认为 False 以启用 Ordered 逻辑
+                 diff_or=True):
         """
         OrderedGNN 编码器 (Adapted for PyG Graph Classification)
         
@@ -272,7 +275,7 @@ class OrderedGNNEncoder(Module):
             dropout (float): Dropout 比率
             global_gating (bool): 是否使用全局门控
         """
-        super(OrderedGNNEncoder, self).__init__()
+        super(OrderedGNN, self).__init__()
 
         # 1. 保存参数供 forward 使用
         self.dropout = dropout
@@ -283,8 +286,11 @@ class OrderedGNNEncoder(Module):
             'hidden_channel': hidden_channels,
             'chunk_size': chunk_size,
             'dropout_rate': dropout,
-            'dropout_rate2': None, # 或者你可以设为 specific value
-            'model': 'ONGNN' # 强制指定
+            'add_self_loops': add_self_loops,
+            'tm': True,              # 既然叫 OrderedGNN，默认开启 TM 机制
+            'simple_gating': simple_gating,
+            'diff_or': diff_or,
+            'model': 'ONGNN'
         }
 
         self.linear_trans_in = ModuleList()
@@ -345,4 +351,4 @@ class OrderedGNNEncoder(Module):
 
         out = global_mean_pool(x, batch)
         
-        return out
+        return out, 0

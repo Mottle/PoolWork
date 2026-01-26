@@ -1,0 +1,14 @@
+config setting:
+hid_dim: 128, layers: 3, model: hybird_gin, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+DD(1178) all   : 76.54% ± 3.12%
+DD(1178) last  : 77.41% ± 4.39%
+DD(1178) last10: 77.11% ± 4.08%
+DD(1178) last50: 77.16% ± 3.54%
+总运行时间: 23.88 min
+PROTEINS(1113) all   : 72.79% ± 3.12%
+PROTEINS(1113) last  : 70.80% ± 3.39%
+PROTEINS(1113) last10: 71.44% ± 3.78%
+PROTEINS(1113) last50: 72.55% ± 3.25%
+总运行时间: 7.97 min

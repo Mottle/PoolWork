@@ -34,3 +34,19 @@ FRANKENSTEIN(4337) last  : 62.51% ± 2.01%
 FRANKENSTEIN(4337) last10: 62.59% ± 2.10%
 FRANKENSTEIN(4337) last50: 62.42% ± 2.13%
 总运行时间: 20.19 min
+
+Tr
+config setting:
+hid_dim: 64, layers: 3, model: san, graph_norm: False, batch_size: 64
+epochs: 200, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 68.81% ± 3.32%
+PROTEINS(1113) last  : 68.37% ± 2.53%
+PROTEINS(1113) last10: 68.55% ± 3.15%
+PROTEINS(1113) last50: 69.62% ± 3.36%
+总运行时间: 24.36 min
+NCI1(4110) all   : 66.09% ± 1.85%
+NCI1(4110) last  : 65.64% ± 2.62%
+NCI1(4110) last10: 66.17% ± 1.83%
+NCI1(4110) last50: 66.72% ± 2.07%
+总运行时间: 84.93 min

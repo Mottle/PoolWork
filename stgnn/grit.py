@@ -9,9 +9,7 @@ from torch_geometric.data import Batch
 from torch_geometric.nn import global_mean_pool
 from graph_gps import DeepSetSignNet
 
-# =========================================================================
-# 1. 基础辅助函数与定义
-# =========================================================================
+# https://github.com/LiamMa/GRIT/blob/6c988ea600a606fbb49a2246c64a2d37396b3ab5/grit/layer/grit_layer.py#L144
 
 # 激活函数映射
 act_dict = {
@@ -47,9 +45,6 @@ def get_log_deg(batch):
     log_deg = torch.log(deg + 1).unsqueeze(-1)
     return log_deg.view(batch.num_nodes, 1)
 
-# =========================================================================
-# 3. GRIT 核心 Attention 模块
-# =========================================================================
 
 class MultiHeadAttentionLayerGritSparse(nn.Module):
     def __init__(self, in_dim, out_dim, num_heads, 
@@ -87,6 +82,9 @@ class MultiHeadAttentionLayerGritSparse(nn.Module):
             nn.init.xavier_normal_(self.VeRow)
 
     def propagate_attention(self, batch):
+        #Modified
+        num_nodes = batch.x.size(0)
+
         src = batch.K_h[batch.edge_index[0]]      # (E) x H x D
         dest = batch.Q_h[batch.edge_index[1]]     # (E) x H x D
         score = src + dest                        # Element-wise Sum
@@ -122,12 +120,13 @@ class MultiHeadAttentionLayerGritSparse(nn.Module):
         
         # 聚合 Value
         msg = batch.V_h[batch.edge_index[0]] * score  # (E) x H x D
-        batch.wV = torch.zeros_like(batch.V_h)        # (N) x H x D
+        batch.wV = torch.zeros_like(batch.V_h, dtype=msg.dtype)        # (N) x H x D
         scatter(msg, batch.edge_index[1], dim=0, out=batch.wV, reduce='add')
 
         # 边特征增强聚合 (Edge Enhancement)
         if self.edge_enhance and hasattr(batch, "E") and batch.E is not None:
-            rowV = scatter(e_t * score, batch.edge_index[1], dim=0, reduce="add")
+            # rowV = scatter(e_t * score, batch.edge_index[1], dim=0, reduce="add")
+            rowV = scatter(e_t * score, batch.edge_index[1], dim=0, dim_size=num_nodes, reduce="add")
             rowV = oe.contract("nhd, dhc -> nhc", rowV, self.VeRow, backend="torch")
             batch.wV = batch.wV + rowV
 
@@ -152,9 +151,7 @@ class MultiHeadAttentionLayerGritSparse(nn.Module):
 
         return h_out, e_out
 
-# =========================================================================
-# 4. GRIT Transformer Layer
-# =========================================================================
+
 
 class GritTransformerLayer(nn.Module):
     def __init__(self, in_dim, out_dim, num_heads,
@@ -283,21 +280,19 @@ class GritTransformerLayer(nn.Module):
 
         return batch
 
-# =========================================================================
-# 5. GRIT 主模型封装 (适配 NCI1 / TUDataset)
-# =========================================================================
+
 
 class GRIT(nn.Module):
     def __init__(
         self,
-        in_channels: int,        # NCI1 = Atom Type 数量 (num_node_labels)
+        in_channels: int,
         hidden_channels: int,
         num_layers: int = 4,
         heads: int = 4,
         dropout: float = 0.0,
         attn_dropout: float = 0.2,
         pe_dim: int = 20,
-        num_edge_labels: int = 4 # NCI1 = Bond Type 数量
+        num_edge_labels: int = 4
     ):
         super().__init__()
         
@@ -306,9 +301,9 @@ class GRIT(nn.Module):
         
         # 1. Embedding
         # NCI1 节点是离散 label
-        self.node_emb = nn.Embedding(in_channels, hidden_channels)
+        self.node_emb = nn.Linear(in_channels, hidden_channels)
         # NCI1 边也是离散 label (GRIT 必须有 Edge Emb)
-        self.edge_emb = nn.Embedding(num_edge_labels, hidden_channels)
+        self.edge_emb = nn.Linear(num_edge_labels, hidden_channels)
         
         # 2. Positional Encoding
         self.pe_encoder = DeepSetSignNet(pe_dim, hidden_channels)
@@ -344,16 +339,17 @@ class GRIT(nn.Module):
             elif isinstance(m, nn.Embedding):
                 nn.init.xavier_uniform_(m.weight)
 
-    def forward(self, x, edge_index, batch, edge_attr=None, pe=None):
+    def forward(self, x, edge_index, batch, edge_attr=None, pe=None, *args, **kwargs):
         # 1. Embeddings
         # 确保输入是 LongTensor (index)
-        if x.dtype != torch.long: x = x.long()
-        x = self.node_emb(x.squeeze())
+        # if x.dtype != torch.long: x = x.long()
+        # x = self.node_emb(x.squeeze())
+        x = self.node_emb(x)
         
         if edge_attr is None:
              # 如果没有边特征，造一个全0的
-            edge_attr = torch.zeros(edge_index.size(1), dtype=torch.long, device=x.device)
-        if edge_attr.dtype != torch.long: edge_attr = edge_attr.long()
+            edge_attr = torch.zeros(edge_index.size(1), device=x.device).view(-1, 1).expand(-1, self.edge_emb.in_features)
+        # if edge_attr.dtype != torch.long: edge_attr = edge_attr.long()
         edge_attr = self.edge_emb(edge_attr.squeeze())
 
         # 2. Add PE

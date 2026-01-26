@@ -1,3 +1,4 @@
+signed_sym
 config setting:
 hid_dim: 128, layers: 3, model: hybird_gin, graph_norm: False, batch_size: 128
 epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
@@ -31,3 +32,35 @@ FRANKENSTEIN(4337) last  : 72.33% ± 2.12%
 FRANKENSTEIN(4337) last10: 72.36% ± 2.00%
 FRANKENSTEIN(4337) last50: 72.54% ± 1.99%
 总运行时间: 49.27 min
+
+signed_sym
+config setting:
+hid_dim: 128, layers: 3, model: hybird_gin, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+IMDB-BINARY(1000) all   : 68.42% ± 4.06%
+IMDB-BINARY(1000) last  : 70.00% ± 5.33%
+IMDB-BINARY(1000) last10: 70.03% ± 5.33%
+IMDB-BINARY(1000) last50: 70.04% ± 4.66%
+总运行时间: 21.39 min
+IMDB-MULTI(1500) all   : 44.48% ± 2.05%
+IMDB-MULTI(1500) last  : 46.60% ± 3.19%
+IMDB-MULTI(1500) last10: 46.35% ± 2.97%
+IMDB-MULTI(1500) last50: 46.04% ± 2.57%
+总运行时间: 28.50 min
+
+sym
+config setting:
+hid_dim: 128, layers: 3, model: hybird_gin, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+IMDB-BINARY(1000) all   : 67.50% ± 4.00%
+IMDB-BINARY(1000) last  : 70.90% ± 3.53%
+IMDB-BINARY(1000) last10: 71.12% ± 4.17%
+IMDB-BINARY(1000) last50: 70.09% ± 4.28%
+总运行时间: 15.56 min
+IMDB-MULTI(1500) all   : 43.90% ± 2.70%
+IMDB-MULTI(1500) last  : 46.93% ± 3.12%
+IMDB-MULTI(1500) last10: 47.11% ± 3.22%
+IMDB-MULTI(1500) last50: 46.71% ± 3.29%
+总运行时间: 20.47 min

@@ -13,75 +13,33 @@ from rich.progress import track
 from perf_counter import get_time_sync, measure_time
 from sklearn.model_selection import KFold
 from torch.utils.data import SubsetRandomSampler
-from benchmark_config import BenchmarkConfig
+from stgnn.benchmark_config import BenchmarkConfig
 from utils.benchmark_result import BenchmarkResult
 from torch.optim import Adam
-from classifier import Classifier
-from span_tree_gnn import SpanTreeGNN
-from span_tree_gnn_with_loss import SpanTreeGNNWithOrt
-from dual_road_gnn import DualRoadGNN, KFNDualRoadGNN, KRNDualRoadGNN, KFNDualRoadSTSplitGNN
-from dual_road_rev_attn_gnn import DualRoadRevAttnGNN
-from baseline import BaseLine
-from baseline_recent import BaseLineRc
-from phop_baseline import HybirdPhopGNN
-from st_split_gnn import SpanTreeSplitGNN
-from kan_based_gin import KANBasedGIN
+from stgnn.classifier import Classifier
+# from span_tree_gnn import SpanTreeGNN
+# from span_tree_gnn_with_loss import SpanTreeGNNWithOrt
+# from dual_road_gnn import DualRoadGNN, KFNDualRoadGNN, KRNDualRoadGNN, KFNDualRoadSTSplitGNN
+# from dual_road_rev_attn_gnn import DualRoadRevAttnGNN
+# from baseline import BaseLine
+# from baseline_recent import BaseLineRc
+from ablation.hpdgnn import HybirdPhopGNN
+# from st_split_gnn import SpanTreeSplitGNN
+# from kan_based_gin import KANBasedGIN
 # from graph_gps import GraphGPS
-from true_gps import GraphGPS
-from sign import StackedSIGN
-from h2gcn import H2GCN
-from appnp import APPNPs
-from deeper_gcn import DeeperGCN
-from dgn import DGN
-from stgnn.dvdgn import DVDGN
-from gated_gcn import GatedGCN
-from ordered_gnn import OrderedGNN
-from phdgn_graphprop import PHDGN
+# from true_gps import GraphGPS
+# from sign import StackedSIGN
+# from h2gcn import H2GCN
+# from appnp import APPNPs
+# from deeper_gcn import DeeperGCN
+# from dgn import DGN
+# from stgnn.dvdgn import DVDGN
+# from gated_gcn import GatedGCN
+# from ordered_gnn import OrderedGNN
+# from phdgn_graphprop import PHDGN
 
 def compute_loss(loss1, loss2):
     return loss1 + loss2 / (loss1 + loss2 + 1e-6).detach()
-
-# def train_model(pooler, classifier, train_loader, optimizer, criterion, device, use_amp = False):
-#     pooler.train()
-#     classifier.train()
-
-#     total_loss = 0
-#     correct = 0
-#     total = 0
-    
-#     # all = len(train_loader)
-#     if use_amp:
-#         scaler = torch.amp.GradScaler()
-    
-#     cnt = 0
-#     for data in track(train_loader, description=f"Run train", disable=True):
-#         # if not data.is_undirected():
-#         #     print('WARNING: dataset is NOT undirected!!!')
-#         cnt += 1
-#         optimizer.zero_grad()
-#         if data.x == None or data.x.size(1) <= 0:
-#             data.x = torch.ones((data.num_nodes, 1))
-#         data = data.to(device)
-
-#         #pe
-#         if pooler.push_pe is not None:
-#             pe = data.pe.to(device)
-#             pooler.push_pe(pe)
-
-#         pooled, additional_loss = pooler(data.x, data.edge_index, data.batch, data)
-#         out = classifier(pooled)
-#         loss = compute_loss(criterion(out, data.y), additional_loss)
-#         loss.backward()
-#         optimizer.step()
-
-#         # alrs.step(loss)
-        
-#         total_loss += loss.item()
-#         pred = out.argmax(dim=1)
-#         correct += (pred == data.y).sum().item()
-#         total += data.y.size(0)
-    
-#     return total_loss / len(train_loader), correct / total
 
 def train_model(pooler, classifier, train_loader, optimizer, criterion, device, use_amp=False):
     pooler.train()
@@ -102,11 +60,6 @@ def train_model(pooler, classifier, train_loader, optimizer, criterion, device, 
         if data.x is None or data.x.size(1) <= 0:
             data.x = torch.ones((data.num_nodes, 1))
         data = data.to(device)
-
-        # PE 处理逻辑保持不变
-        # if pooler.push_pe is not None:
-        #     pe = data.pe.to(device)
-        #     pooler.push_pe(pe)
 
         # 2. 前向传播使用 autocast 上下文
         with torch.amp.autocast(device_type=device_type, enabled=use_amp):
@@ -140,35 +93,6 @@ def train_model(pooler, classifier, train_loader, optimizer, criterion, device, 
     
     return total_loss / len(train_loader), correct / total
 
-# def test_model(pooler, classifier, test_loader, criterion, device):
-#     pooler.eval()
-#     classifier.eval()
-
-#     total_loss = 0
-#     correct = 0
-#     total = 0
-    
-#     all = len(test_loader)
-#     with torch.no_grad():
-#         for data in track(test_loader,  description=f"Run test batch: {all}", disable=True):
-#             if data.x == None or data.x.size(1) <= 0:
-#                 data.x = torch.ones((data.num_nodes, 1))
-#             data = data.to(device)
-
-#             if pooler.push_pe is not None:
-#                 pe = data.pe.to(device)
-#                 pooler.push_pe(pe)
-
-#             pooled, additional_loss = pooler(data.x, data.edge_index, data.batch, data)
-#             out = classifier(pooled)
-#             loss = compute_loss(criterion(out, data.y), additional_loss)
-            
-#             total_loss += loss.item()
-#             pred = out.argmax(dim=1)
-#             correct += (pred == data.y).sum().item()
-#             total += data.y.size(0)
-    
-#     return total_loss / len(test_loader), correct / total
 
 def test_model(pooler, classifier, test_loader, criterion, device, use_amp=False):
     pooler.eval()
@@ -297,75 +221,10 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
     # 创建模型####
     # pooler = Pooler(input_dim, hidden_dim, num_layers=num_layers, pool_type=pooler_type, gnn_type=gnn_type, layer_norm=layer_norm).to(run_device)
     
-    if model_type == 'mst':
-        model = SpanTreeGNN(input_dim, hidden_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
-    elif model_type == 'gcn' or model_type == 'gin' or model_type == 'gat' or model_type == 'gat_v2':
-        model = BaseLine(input_dim, hidden_dim, hidden_dim, backbone=model_type, num_layers=num_layers, dropout=dropout, norm = layer_norm).to(run_device)
-    elif model_type == 'mstort':
-        model = SpanTreeGNNWithOrt(input_dim, hidden_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
-    elif model_type == 'dualroad':
-        model = DualRoadGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, k = 3).to(run_device)
-    elif model_type == 'dualroad_kf':
-        model = KFNDualRoadGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, k = 3, backbone='gin').to(run_device)
-    elif model_type == 'dualroad_kr':
-        model = KRNDualRoadGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, k = 3).to(run_device)
-    elif model_type == 'dualroad_rev_attn':
-        model = DualRoadRevAttnGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
-    elif model_type == 'dualroad_kf_sts':
-        model = KFNDualRoadSTSplitGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, k = 3).to(run_device)
-    elif model_type == 'st_split':
-        model = SpanTreeSplitGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, num_splits=4).to(run_device)
-    elif model_type == 'kan_gin':
-        model = KANBasedGIN(input_dim, hidden_dim, num_layers=num_layers).to(run_device)
-    elif model_type == 'quad_gin':
-        model = BaseLine(input_dim, hidden_dim, hidden_dim, backbone='quad', num_layers=num_layers, dropout=dropout, norm = layer_norm).to(run_device)
-    # elif model_type == 'gt':
-    #     model = BaseLine(input_dim, hidden_dim, hidden_dim, backbone='gt', num_layers=num_layers, dropout=dropout).to(run_device)
-    elif model_type == 'phop_gcn':
-        model = BaseLine(input_dim, hidden_dim, hidden_dim, backbone='phop_gcn', num_layers=num_layers, dropout=dropout, embed=True, norm = layer_norm).to(run_device)
-    elif model_type == 'phop_gin':
-        model = BaseLine(input_dim, hidden_dim, hidden_dim, backbone='phop_gin', num_layers=num_layers, dropout=dropout, embed=True, norm = layer_norm).to(run_device)
-    elif model_type == 'phop_linkgcn':
-        model = BaseLine(input_dim, hidden_dim, hidden_dim, backbone='phop_linkgcn', num_layers=num_layers, dropout=dropout, embed=True, norm = layer_norm).to(run_device)
-    elif model_type == 'hybird':
-        model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 2, k = 3).to(run_device)
-    elif model_type == 'hybird_rw':
-        model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3, backbone='rw').to(run_device)
+    if model_type == 'hybird':
+        model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3, feature_view=True, dmmp=True).to(run_device)
     elif model_type == 'hybird_gin':
-        model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3, backbone='gin').to(run_device)
-    elif model_type == 'hpd_ggnn':
-        model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3, backbone='dmmp_ggnn').to(run_device)
-    elif model_type == 'hpd_gatedgcn':
-        model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3, backbone='dmmp_gatedgcn').to(run_device)
-    elif model_type == 'dvdgn':
-        model = DVDGN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3, dirs=1, add_self_loops=False).to(run_device)
-    elif model_type == 'mix_hop':
-        model = BaseLineRc(input_dim, hidden_dim, hidden_dim, backbone='mix_hop', num_layers=num_layers, dropout=dropout, embed=True, norm = layer_norm).to(run_device)
-    elif model_type == 'appnp':
-        # model = BaseLineRc(input_dim, hidden_dim, hidden_dim, backbone='appnp', num_layers=num_layers, dropout=dropout, embed=True).to(run_device)
-        model = APPNPs(input_dim, hidden_dim, hidden_dim, mlp_layers=3, K=10, alpha=0.5, dropout=dropout, norm=True).to(run_device)
-    # elif model_type == 'sign':
-    #     model = BaseLineRc(input_dim, hidden_dim, hidden_dim, backbone='sign', num_layers=num_layers, dropout=dropout, embed=True).to(run_device)
-    # elif model_type == 'graph_gps':
-    #     model = BaseLineRc(input_dim, hidden_dim, hidden_dim, backbone='graph_gps', num_layers=num_layers, dropout=dropout, embed=True, pos_emb=True).to(run_device)
-    elif model_type == 'graph_gps':
-        model = GraphGPS(input_dim, hidden_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
-    elif model_type == 'sign':
-        model = StackedSIGN(input_dim, hidden_dim, hidden_dim, num_layers=num_layers, num_hops=3, dropout=dropout).to(run_device)
-    elif model_type == 'h2gcn':
-        model = H2GCN(input_dim, hidden_dim, k = 2, dropout=dropout).to(run_device)
-    elif model_type == 'gcn2':
-        model = BaseLineRc(input_dim, hidden_dim // 2, hidden_dim, backbone='gcn2', num_layers=13 + num_layers, dropout=dropout, embed=True, norm = layer_norm).to(run_device)
-    elif model_type == 'gated_gcn':
-        model = GatedGCN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
-    elif model_type == 'deeper_gcn':
-        model = DeeperGCN(input_dim, hidden_dim // 2, out_channels=hidden_dim, num_layers=11 + num_layers, dropout=dropout).to(run_device)
-    elif model_type == 'dgn':
-        model = DGN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
-    elif model_type == 'ordered_gnn':
-        model = OrderedGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
-    elif model_type == 'phdgn':
-        model = PHDGN(input_dim=input_dim, hidden_dim=hidden_dim, num_layers=num_layers, epsilon=0.3, dropout=dropout, use_graph_norm=False).to(run_device)
+        model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3, backbone='gin', feature_view=True, dmmp=True).to(run_device)
 
     classifier = Classifier(hidden_dim, hidden_dim, num_classes).to(run_device)
 
@@ -494,11 +353,11 @@ def datasets(sets='common'):
             'DD',
             'PROTEINS',
             'NCI1',
-            'NCI109',
-            'COX2',
-            'IMDB-BINARY',
-            'IMDB-MULTI',
-            'FRANKENSTEIN',
+            # 'NCI109',
+            # 'COX2',
+            # 'IMDB-BINARY',
+            # 'IMDB-MULTI',
+            # 'FRANKENSTEIN',
             # 'COLLAB',
             # 'REDDIT-BINARY',
             # 'Synthie',
@@ -506,32 +365,32 @@ def datasets(sets='common'):
             # 'MSRC_9',
             # 'MSRC_21',
         ]
-    elif sets == 'com':
-        datasets = [
-            'IMDB-BINARY',
-            'IMDB-MULTI',
-            # 'REDDIT-BINARY',
-            'COLLAB',
-        ]
-    elif sets == 'bio&chem':
-        datasets = [
-            'DD',
-            'PROTEINS',
-            'NCI1',
-            'NCI109',
-            'COX2',
-            'FRANKENSTEIN'
-        ]
-    elif sets == 'dense':
-        datasets = [
-            'mit_ct1', #d≈146.92
-            'mit_ct2',
-            # 'COLLAB', #d≈66
-            'highschool_ct1', #d≈20.8
-            'highschool_ct2',
-            'infectious_ct1', #d≈18.39
-            'infectious_ct2',
-        ]
+    # elif sets == 'com':
+    #     datasets = [
+    #         'IMDB-BINARY',
+    #         'IMDB-MULTI',
+    #         # 'REDDIT-BINARY',
+    #         'COLLAB',
+    #     ]
+    # elif sets == 'bio&chem':
+    #     datasets = [
+    #         'DD',
+    #         'PROTEINS',
+    #         'NCI1',
+    #         'NCI109',
+    #         'COX2',
+    #         'FRANKENSTEIN'
+    #     ]
+    # elif sets == 'dense':
+    #     datasets = [
+    #         'mit_ct1', #d≈146.92
+    #         'mit_ct2',
+    #         # 'COLLAB', #d≈66
+    #         'highschool_ct1', #d≈20.8
+    #         'highschool_ct2',
+    #         'infectious_ct1', #d≈18.39
+    #         'infectious_ct2',
+    #     ]
     for i in range(len(datasets)):
         # eigPE = torch_geometric.transforms.AddLaplacianEigenvectorPE(k=5, attr_name='eig_vecs', is_undirected=True)
         use_node_attr = False
@@ -596,7 +455,7 @@ def run(config: BenchmarkConfig):
         # if config.use_simple_datasets:
         #     save_result([(f'{dataset}', all, last, last10, last50)], f'./stgnn/result_simple/{config.model}.txt', dataset_end - dataset_start, config, id == 0)
         # else:
-        save_result([(f'{dataset}', all, last, last10, last50)], f'./stgnn/result_fin/{config.model}.txt', dataset_end - dataset_start, config, id == 0)
+        save_result([(f'{dataset}', all, last, last10, last50)], f'./ablation/result/{config.model}.txt', dataset_end - dataset_start, config, id == 0)
     all_end = get_time_sync()
 
     print(f'{config.format()}\n')
@@ -621,7 +480,7 @@ if __name__ == '__main__':
     config.dropout = 0.1
     # config.use_simple_datasets = False
     # config.sets = 'bio&chem'
-    config.sets = 'com'
+    config.sets = 'common'
     config.catch_error = False
     config.early_stop = True
     config.early_stop_epochs = 50
@@ -641,7 +500,8 @@ if __name__ == '__main__':
         # 'hpd_gatedgcn',
         # 'phdgn',
         # 'hybird_gin',
-        'hybird'
+        'hybird',
+        'hybird_gin'
     ]
     # models = ['topk']
     seeds = [0, 114514, 1919810, 77777]

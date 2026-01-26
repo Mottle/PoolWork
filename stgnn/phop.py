@@ -1,3 +1,4 @@
+from typing import Optional
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -127,9 +128,13 @@ class PHopLinkGCNConv(MessagePassing):
             #         edge_index_p, edge_weight_p, fill_value=1, num_nodes=N
             #     )
 
-            edge_index_p, edge_weight_p = signed_symmetric_normalize(
+            # edge_index_p, edge_weight_p = signed_symmetric_normalize(
+            #     edge_index_p, N, edge_weight_p
+            # )
+            edge_index_p, edge_weight_p = symmetric_normalize(
                 edge_index_p, N, edge_weight_p
             )
+
 
             # xp = self.linear(x)  # [N, out_channels]
             msg = self.propagate(
@@ -363,7 +368,7 @@ class PHopLinkGINConv(MessagePassing):
         out_channels: int,
         P: int = 3,
         aggr: str = "add",
-        norm: bool = True
+        norm: Optional[str] = 'signed_sym'
     ):
         super(PHopLinkGINConv, self).__init__(aggr=aggr)
         self.P = P
@@ -407,9 +412,12 @@ class PHopLinkGINConv(MessagePassing):
             #         edge_index_p, num_nodes=N, edge_attr=edge_weight_p
             #     )
             
-            if self.norm and p != 1:
+            if self.norm is not None and p != 1:
                 # edge_index_p, edge_weight_p = diffusion_normalize(edge_index_p, edge_weight_p, num_nodes=N)
-                edge_index_p, edge_weight_p = signed_symmetric_normalize(edge_index_p, N, edge_weight_p)
+                if self.norm == 'signed_sym':
+                    edge_index_p, edge_weight_p = signed_symmetric_normalize(edge_index_p, N, edge_weight_p)
+                elif self.norm == 'sym':
+                    edge_index_p, edge_weight_p = symmetric_normalize(edge_index_p, N, edge_weight_p)
 
             msg = self.propagate(
                 edge_index_p, x=x, edge_weight=edge_weight_p, size=(N, N)

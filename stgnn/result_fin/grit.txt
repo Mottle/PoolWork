@@ -1,0 +1,57 @@
+config setting:
+hid_dim: 64, layers: 3, model: grit, graph_norm: False, batch_size: 64
+epochs: 200, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+DD(1178) all   : 66.15% ± 3.53%
+DD(1178) last  : 73.60% ± 5.98%
+DD(1178) last10: 72.89% ± 4.85%
+DD(1178) last50: 70.42% ± 5.83%
+总运行时间: 27.74 min
+PROTEINS(1113) all   : 73.21% ± 3.21%
+PROTEINS(1113) last  : 75.30% ± 3.67%
+PROTEINS(1113) last10: 74.69% ± 3.43%
+PROTEINS(1113) last50: 74.60% ± 3.44%
+总运行时间: 12.40 min
+NCI1(4110) all   : 73.71% ± 1.36%
+NCI1(4110) last  : 80.41% ± 1.44%
+NCI1(4110) last10: 79.92% ± 1.50%
+NCI1(4110) last50: 79.35% ± 1.87%
+总运行时间: 64.87 min
+NCI109(4127) all   : 72.08% ± 1.40%
+NCI109(4127) last  : 76.76% ± 2.26%
+NCI109(4127) last10: 76.95% ± 1.70%
+NCI109(4127) last50: 76.65% ± 1.65%
+总运行时间: 62.91 min
+COX2(467) all   : 74.82% ± 3.14%
+COX2(467) last  : 81.38% ± 4.05%
+COX2(467) last10: 80.42% ± 5.01%
+COX2(467) last50: 79.34% ± 4.24%
+总运行时间: 6.63 min
+config setting:
+hid_dim: 64, layers: 3, model: grit, graph_norm: False, batch_size: 64
+epochs: 200, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+FRANKENSTEIN(4337) all   : 68.79% ± 1.58%
+FRANKENSTEIN(4337) last  : 71.64% ± 2.47%
+FRANKENSTEIN(4337) last10: 71.70% ± 2.54%
+FRANKENSTEIN(4337) last50: 71.44% ± 2.41%
+总运行时间: 65.95 min
+config setting:
+hid_dim: 64, layers: 3, model: grit, graph_norm: False, batch_size: 64
+epochs: 200, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+IMDB-BINARY(1000) all   : 67.68% ± 3.44%
+IMDB-BINARY(1000) last  : 69.10% ± 4.28%
+IMDB-BINARY(1000) last10: 69.30% ± 4.33%
+IMDB-BINARY(1000) last50: 69.18% ± 3.49%
+总运行时间: 13.20 min
+IMDB-MULTI(1500) all   : 45.89% ± 3.25%
+IMDB-MULTI(1500) last  : 48.47% ± 5.70%
+IMDB-MULTI(1500) last10: 47.86% ± 4.28%
+IMDB-MULTI(1500) last50: 47.54% ± 4.16%
+总运行时间: 15.00 min
+COLLAB(5000) all   : 76.23% ± 1.19%
+COLLAB(5000) last  : 78.60% ± 1.20%
+COLLAB(5000) last10: 78.83% ± 1.41%
+COLLAB(5000) last50: 78.70% ± 1.41%
+总运行时间: 196.08 min

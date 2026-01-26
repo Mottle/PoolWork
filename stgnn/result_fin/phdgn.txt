@@ -46,4 +46,12 @@ IMDB-MULTI(1500) last  : 47.27% ± 5.09%
 IMDB-MULTI(1500) last10: 47.41% ± 4.89%
 IMDB-MULTI(1500) last50: 46.76% ± 4.92%
 总运行时间: 5.33 min
-for COLLAB use graph norm
+for COLLAB use graph normconfig setting:
+hid_dim: 128, layers: 3, model: phdgn, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+COLLAB(5000) all   : 67.63% ± 1.37%
+COLLAB(5000) last  : 69.22% ± 1.66%
+COLLAB(5000) last10: 69.39% ± 1.48%
+COLLAB(5000) last50: 68.91% ± 1.92%
+总运行时间: 97.41 min
