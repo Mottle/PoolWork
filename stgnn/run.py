@@ -367,6 +367,7 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
     elif model_type == 'phdgn':
         model = PHDGN(input_dim=input_dim, hidden_dim=hidden_dim, num_layers=num_layers, epsilon=0.3, dropout=dropout, use_graph_norm=False).to(run_device)
 
+
     classifier = Classifier(hidden_dim, hidden_dim, num_classes).to(run_device)
 
     return model, classifier
@@ -620,8 +621,8 @@ if __name__ == '__main__':
     config.epochs = 500
     config.dropout = 0.1
     # config.use_simple_datasets = False
-    # config.sets = 'bio&chem'
-    config.sets = 'com'
+    config.sets = 'bio&chem'
+    # config.sets = 'com'
     config.catch_error = False
     config.early_stop = True
     config.early_stop_epochs = 50

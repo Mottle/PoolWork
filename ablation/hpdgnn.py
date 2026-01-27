@@ -1,3 +1,4 @@
+from io import UnsupportedOperation
 import torch
 from torch import nn
 from torch_geometric.nn import global_mean_pool, GCNConv, GINConv
@@ -31,6 +32,7 @@ class HybirdPhopGNN(nn.Module):
         residual: bool = False,
         feature_view: bool = True,
         dmmp: bool = True,
+        mode: str = 'U'
     ):
         super(HybirdPhopGNN, self).__init__()
         self.in_channels = max(in_channels, 1)
@@ -45,6 +47,7 @@ class HybirdPhopGNN(nn.Module):
         self.residual = residual
         self.feature_view = feature_view
         self.dmmp = dmmp
+        self.mode = mode
         if num_layers < 2:
             raise ValueError("Number of layers should be greater than 1.")
 
@@ -149,8 +152,10 @@ class HybirdPhopGNN(nn.Module):
         if source is not None:
             if mode == "A":
                 prefix = "a"
-            else:
+            elif mode == 'U':
                 prefix = "u"
+            else:
+                raise UnsupportedOperation
             edge_index_l = []
             edge_weight_l = []
             for p in range(self.p):
@@ -173,22 +178,31 @@ class HybirdPhopGNN(nn.Module):
         originl_x = x
         x = self.embedding(x)
 
-        feature_graph_edge_index = self._build_auxiliary_graph(x, batch)
-        SMp = self.process_phop(x, edge_index, source, mode="U")
-        FMp = self.process_phop(x, feature_graph_edge_index, mode="U")
+        if self.feature_view:
+            feature_graph_edge_index = self._build_auxiliary_graph(x, batch)
+            FMp = self.process_phop(x, feature_graph_edge_index, mode=self.mode)
+
+        SMp = self.process_phop(x, edge_index, source, mode=self.mode)
+        
 
         all_x = []
 
         for i in range(self.num_layers):
             prev_x = x
 
-            x = self.convs[i](x, edge_index, A_phop=SMp)
+            if self.dmmp:
+                x = self.convs[i](x, edge_index, A_phop=SMp)
+            else:
+                x = self.convs[i](x, edge_index)
             x = self.norms[i](x, batch)
             x = F.leaky_relu(x)
             x = F.dropout(x, p=self.dropout, training=self.training)
 
             if self.feature_view:
-                feature_x = self.feature_convs[i](x, feature_graph_edge_index, A_phop=FMp)
+                if self.dmmp:
+                    feature_x = self.feature_convs[i](x, feature_graph_edge_index, A_phop=FMp)
+                else:
+                    feature_x = self.feature_convs[i](x, feature_graph_edge_index)
                 feature_x = self.feature_norms[i](feature_x, batch)
                 feature_x = F.leaky_relu(feature_x)
                 feature_x = F.dropout(feature_x, p=self.dropout, training=self.training)

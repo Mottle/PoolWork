@@ -1,372 +1,885 @@
-# import torch
-# import torch.nn as nn
-# import torch.nn.functional as F
-# from torch_geometric.nn import GINConv, global_mean_pool
-# from torch_geometric.utils import to_dense_batch, to_dense_adj
-
-
-# class StructureExtractor(nn.Module):
-#     """
-#     Structure Extractor module as described in the SAT paper.
-#     Using GIN as the backbone to extract local structural information.
-#     """
-
-#     def __init__(self, hidden_dim, num_layers=3):
-#         super().__init__()
-#         self.convs = nn.ModuleList()
-#         for _ in range(num_layers):
-#             mlp = nn.Sequential(
-#                 nn.Linear(hidden_dim, hidden_dim * 2),
-#                 nn.ReLU(),
-#                 nn.Linear(hidden_dim * 2, hidden_dim),
-#             )
-#             self.convs.append(GINConv(mlp, train_eps=True))
-
-#     def forward(self, x, edge_index, batch):
-#         # Extract structure features
-#         struct_feats = []
-#         h = x
-#         for conv in self.convs:
-#             h = conv(h, edge_index)
-#             h = F.relu(h)
-#             struct_feats.append(h)
-
-#         # In SAT, the structure representation is often the output of the GNN
-#         # We take the final layer output as the structure representation H_str
-#         return h
-
-
-# class StructureAwareAttention(nn.Module):
-#     """
-#     Implements the Structure-Aware Self-Attention mechanism.
-#     Attention(Q, K, V) = Softmax((QK^T / sqrt(d)) + StructureBias) V
-#     """
-
-#     def __init__(self, d_model, num_heads, dropout=0.1):
-#         super().__init__()
-#         assert d_model % num_heads == 0
-
-#         self.d_model = d_model
-#         self.d_k = d_model // num_heads
-#         self.num_heads = num_heads
-
-#         # Projections for Content
-#         self.W_Q = nn.Linear(d_model, d_model)
-#         self.W_K = nn.Linear(d_model, d_model)
-#         self.W_V = nn.Linear(d_model, d_model)
-
-#         # Projections for Structure (generating the bias)
-#         # We project structure features to heads to create structure-aware bias
-#         self.W_S_Q = nn.Linear(d_model, d_model)
-#         self.W_S_K = nn.Linear(d_model, d_model)
-
-#         self.dropout = nn.Dropout(dropout)
-#         self.out_proj = nn.Linear(d_model, d_model)
-
-#     def forward(self, x_content, x_struct, mask=None):
-#         """
-#         x_content: [Batch, N, D] - Content features (Transformer flow)
-#         x_struct:  [Batch, N, D] - Structure features (from GNN)
-#         mask:      [Batch, N]    - Padding mask
-#         """
-#         B, N, _ = x_content.size()
-
-#         # 1. Calculate Content Attention Scores
-#         Q = (
-#             self.W_Q(x_content).view(B, N, self.num_heads, self.d_k).transpose(1, 2)
-#         )  # [B, H, N, d_k]
-#         K = self.W_K(x_content).view(B, N, self.num_heads, self.d_k).transpose(1, 2)
-#         V = self.W_V(x_content).view(B, N, self.num_heads, self.d_k).transpose(1, 2)
-
-#         content_scores = torch.matmul(Q, K.transpose(-2, -1)) / (
-#             self.d_k**0.5
-#         )  # [B, H, N, N]
-
-#         # 2. Calculate Structure Bias
-#         # The paper suggests measuring similarity between structural representations
-#         Q_s = self.W_S_Q(x_struct).view(B, N, self.num_heads, self.d_k).transpose(1, 2)
-#         K_s = self.W_S_K(x_struct).view(B, N, self.num_heads, self.d_k).transpose(1, 2)
-
-#         # This term acts as psi(u, v) in the paper
-#         structure_bias = torch.matmul(Q_s, K_s.transpose(-2, -1)) / (
-#             self.d_k**0.5
-#         )  # [B, H, N, N]
-
-#         # 3. Combine and Softmax
-#         attn_scores = content_scores + structure_bias
-
-#         if mask is not None:
-#             # mask is [B, N], expand to [B, 1, 1, N] for broadcasting
-#             # We want to mask out positions where mask is False (padding)
-#             mask_expanded = mask.unsqueeze(1).unsqueeze(2)  # [B, 1, 1, N]
-#             attn_scores = attn_scores.masked_fill(~mask_expanded, float("-inf"))
-
-#         attn_probs = F.softmax(attn_scores, dim=-1)
-#         attn_probs = self.dropout(attn_probs)
-
-#         output = torch.matmul(attn_probs, V)  # [B, H, N, d_k]
-#         output = output.transpose(1, 2).contiguous().view(B, N, self.d_model)
-
-#         return self.out_proj(output)
-
-
-# class SATLayer(nn.Module):
-#     def __init__(self, d_model, num_heads, dropout=0.1):
-#         super().__init__()
-#         self.attention = StructureAwareAttention(d_model, num_heads, dropout)
-#         self.norm1 = nn.LayerNorm(d_model)
-#         self.norm2 = nn.LayerNorm(d_model)
-#         self.ffn = nn.Sequential(
-#             nn.Linear(d_model, d_model * 4),
-#             nn.ReLU(),
-#             nn.Dropout(dropout),
-#             nn.Linear(d_model * 4, d_model),
-#         )
-#         self.dropout = nn.Dropout(dropout)
-
-#     def forward(self, x, x_struct, mask=None):
-#         # Pre-Norm or Post-Norm (Standard Transformer is usually Post-Norm, but Pre-Norm is stable for Deep GNNs)
-#         # Here we use Post-Norm standard implementation
-#         attn_out = self.attention(x, x_struct, mask)
-#         x = self.norm1(x + self.dropout(attn_out))
-
-#         ffn_out = self.ffn(x)
-#         x = self.norm2(x + self.dropout(ffn_out))
-#         return x
-
-
-# class SAT(nn.Module):
-#     def __init__(
-#         self,
-#         in_channels,
-#         hidden_channels=64,
-#         num_layers=3,
-#         num_heads=4,
-#         rw_steps=20,
-#         dropout=0.1,
-#     ):
-#         super().__init__()
-
-#         # 1. Embeddings
-#         self.node_emb = nn.Linear(in_channels, hidden_channels)
-
-#         # Random Walk Positional Encoding (Crucial for SAT)
-#         # Assuming input includes pre-computed RWPE features or we project raw RWPE if provided
-#         # For this baseline, we assume raw features are concatenated with RWPE or processed separately.
-#         # Here we implement a simple learnable embedding for RWPE if provided in x,
-#         # otherwise we assume x already contains PE.
-#         # To be safe and explicit:
-#         self.rwpe_proj = nn.Linear(rw_steps, hidden_channels)
-
-#         # 2. Structure Extractor (GIN)
-#         self.structure_extractor = StructureExtractor(hidden_channels, num_layers=3)
-
-#         # 3. Transformer Layers
-#         self.layers = nn.ModuleList(
-#             [SATLayer(hidden_channels, num_heads, dropout) for _ in range(num_layers)]
-#         )
-
-#     def forward(self, x, edge_index, batch, rw_pos_enc=None, *args, **kwargs):
-#         """
-#         x: [Num_Nodes, Feature_Dim]
-#         edge_index: [2, Num_Edges]
-#         batch: [Num_Nodes]
-#         rw_pos_enc: [Num_Nodes, RW_Steps] (Random Walk PE stats)
-#         """
-
-#         # Initial Embedding
-#         h = self.node_emb(x)
-
-#         # Add Positional Encoding (Paper Requirement)
-#         if rw_pos_enc is not None:
-#             pe = self.rwpe_proj(rw_pos_enc)
-#             h = h + pe
-
-#         # Extract Structure Features (The "k-subtree" representation)
-#         # We pass the full graph to the GNN extractor
-#         h_struct = self.structure_extractor(h, edge_index, batch)
-
-#         # Convert to Dense Batch for Transformer
-#         # Transformer calculates attention between ALL nodes in a graph
-#         # [Batch_Size, Max_Nodes, Hidden_Dim]
-#         h_dense, mask = to_dense_batch(h, batch)
-#         h_struct_dense, _ = to_dense_batch(h_struct, batch)
-
-#         # Transformer Pass
-#         for layer in self.layers:
-#             # We pass both content (h_dense) and structure (h_struct_dense)
-#             h_dense = layer(h_dense, h_struct_dense, mask=mask)
-
-#         # Mask out padding nodes before pooling to avoid zeros affecting mean
-#         # h_dense is [B, N_max, D], mask is [B, N_max]
-#         # We need to reconstruct the flat batch for global_mean_pool or pool manually
-
-#         # Method A: Convert back to sparse for standard PyG pooling (Safest)
-#         h_flat = h_dense[mask]  # Select valid nodes
-#         batch_reconstructed = batch  # Original batch vector is aligned with x
-
-#         # Global Mean Pooling (Direct Output as requested)
-#         graph_emb = global_mean_pool(h_flat, batch_reconstructed)
-
-#         return graph_emb
-
 import torch
-import torch.nn as nn
+import numpy as np
+from torch import nn
+from torch_scatter import scatter_add, scatter_mean, scatter_max
+import torch_geometric.nn as gnn
+import torch_geometric.utils as utils
+from einops import rearrange, repeat
+# from .utils import pad_batch, unpad_batch
+# from .gnn_layers import get_simple_gnn_layer, EDGE_GNN_TYPES
 import torch.nn.functional as F
-from torch_geometric.nn import GINConv, global_mean_pool
-from torch_geometric.utils import to_dense_batch
+
+#https://github.com/BorgwardtLab/SAT
+
+GNN_TYPES = [
+    'graph', 'graphsage', 'gcn',
+    'gin', 'gine',
+    'pna', 'pna2', 'pna3', 'mpnn', 'pna4',
+    'rwgnn', 'khopgnn'
+]
+
+EDGE_GNN_TYPES = [
+    'gine', 'gcn',
+    'pna', 'pna2', 'pna3', 'mpnn', 'pna4'
+]
+
+
+def get_simple_gnn_layer(gnn_type, embed_dim, **kwargs):
+    edge_dim = kwargs.get('edge_dim', None)
+    if gnn_type == "graph":
+        return gnn.GraphConv(embed_dim, embed_dim)
+    elif gnn_type == "graphsage":
+        return gnn.SAGEConv(embed_dim, embed_dim)
+    elif gnn_type == "gcn":
+        if edge_dim is None:
+            return gnn.GCNConv(embed_dim, embed_dim)
+        else:
+            return GCNConv(embed_dim, edge_dim)
+    elif gnn_type == "gin":
+        mlp = mlp = nn.Sequential(
+            nn.Linear(embed_dim, embed_dim),
+            nn.ReLU(True),
+            nn.Linear(embed_dim, embed_dim),
+        )
+        return gnn.GINConv(mlp, train_eps=True)
+    elif gnn_type == "gine":
+        mlp = mlp = nn.Sequential(
+            nn.Linear(embed_dim, embed_dim),
+            nn.ReLU(True),
+            nn.Linear(embed_dim, embed_dim),
+        )
+        return gnn.GINEConv(mlp, train_eps=True, edge_dim=edge_dim)
+    elif gnn_type == "pna":
+        aggregators = ['mean', 'min', 'max', 'std']
+        scalers = ['identity', 'amplification', 'attenuation']
+        deg = kwargs.get('deg', None)
+        layer = gnn.PNAConv(embed_dim, embed_dim,
+                            aggregators=aggregators, scalers=scalers,
+                            deg=deg, towers=4, pre_layers=1, post_layers=1,
+                            divide_input=True, edge_dim=edge_dim)
+        return layer
+    elif gnn_type == "pna2":
+        aggregators = ['mean', 'sum', 'max']
+        scalers = ['identity']
+        deg = kwargs.get('deg', None)
+        layer = gnn.PNAConv(embed_dim, embed_dim,
+                           aggregators=aggregators, scalers=scalers,
+                           deg=deg, towers=4, pre_layers=1, post_layers=1,
+                           divide_input=True, edge_dim=edge_dim)
+        return layer
+    elif gnn_type == "pna2_ram":
+        aggregators = ['mean', 'sum', 'max']
+        scalers = ['identity']
+        deg = kwargs.get('deg', None)
+        layer = PNAConv_towers(embed_dim, embed_dim,
+                    aggregators=aggregators, scalers=scalers,
+                    deg=deg, towers=4, divide_input=True, edge_dim=edge_dim)
+        return layer
+    elif gnn_type == "pna3":
+        aggregators = ['mean', 'sum', 'max']
+        scalers = ['identity']
+        deg = kwargs.get('deg', None)
+        layer = gnn.PNAConv(embed_dim, embed_dim,
+                            aggregators=aggregators, scalers=scalers,
+                            deg=deg, towers=1, pre_layers=1, post_layers=1,
+                            divide_input=False, edge_dim=edge_dim)
+        return layer
+    elif gnn_type == "pna4":
+        aggregators = ['mean', 'sum', 'max']
+        scalers = ['identity']
+        deg = kwargs.get('deg', None)
+        layer = gnn.PNAConv(embed_dim, embed_dim,
+                            aggregators=aggregators, scalers=scalers,
+                            deg=deg, towers=8, pre_layers=1, post_layers=1,
+                            divide_input=True, edge_dim=edge_dim)
+        return layer
+
+
+    elif gnn_type == "mpnn":
+        aggregators = ['sum']
+        scalers = ['identity']
+        deg = kwargs.get('deg', None)
+        layer = gnn.PNAConv(embed_dim, embed_dim,
+                            aggregators=aggregators, scalers=scalers,
+                            deg=deg, towers=4, pre_layers=1, post_layers=1,
+                            divide_input=True, edge_dim=edge_dim)
+        return layer
+    else:
+        raise ValueError("Not implemented!")
+
+
+class GCNConv(gnn.MessagePassing):
+    def __init__(self, embed_dim, edge_dim):
+        super(GCNConv, self).__init__(aggr='add')
+
+        self.linear = nn.Linear(embed_dim, embed_dim)
+        self.root_emb = nn.Embedding(1, embed_dim)
+
+        # edge_attr is two dimensional after augment_edge transformation
+        self.edge_encoder = nn.Linear(edge_dim, embed_dim)
+
+    def forward(self, x, edge_index, edge_attr):
+        x = self.linear(x)
+        edge_embedding = self.edge_encoder(edge_attr)
+
+        row, col = edge_index
+
+        #edge_weight = torch.ones((edge_index.size(1), ), device=edge_index.device)
+        deg = utils.degree(row, x.size(0), dtype = x.dtype) + 1
+        deg_inv_sqrt = deg.pow(-0.5)
+        deg_inv_sqrt[deg_inv_sqrt == float('inf')] = 0
+
+        norm = deg_inv_sqrt[row] * deg_inv_sqrt[col]
+
+        return self.propagate(
+            edge_index, x=x, edge_attr = edge_embedding, norm=norm) + F.relu(
+            x + self.root_emb.weight) * 1./deg.view(-1,1)
+
+    def message(self, x_j, edge_attr, norm):
+        return norm.view(-1, 1) * F.relu(x_j + edge_attr)
+
+    def update(self, aggr_out):
+        return aggr_out
+
+
+def pad_batch(x, ptr, return_mask=False):
+    bsz = len(ptr) - 1
+    # num_nodes = torch.diff(ptr)
+    max_num_nodes = torch.diff(ptr).max().item()
+
+    all_num_nodes = ptr[-1].item()
+    cls_tokens = False
+    x_size = len(x[0]) if isinstance(x, (list, tuple)) else len(x)
+    if x_size > all_num_nodes:
+        cls_tokens = True
+        max_num_nodes += 1
+    if isinstance(x, (list, tuple)):
+        new_x = [xi.new_zeros(bsz, max_num_nodes, xi.shape[-1]) for xi in x]
+        if return_mask:
+            padding_mask = x[0].new_zeros(bsz, max_num_nodes).bool()
+    else:
+        new_x = x.new_zeros(bsz, max_num_nodes, x.shape[-1])
+        if return_mask:
+            padding_mask = x.new_zeros(bsz, max_num_nodes).bool()
+
+    for i in range(bsz):
+        num_node = ptr[i + 1] - ptr[i]
+        if isinstance(x, (list, tuple)):
+            for j in range(len(x)):
+                new_x[j][i][:num_node] = x[j][ptr[i]:ptr[i + 1]]
+                if cls_tokens:
+                    new_x[j][i][-1] = x[j][all_num_nodes + i]
+        else:
+            new_x[i][:num_node] = x[ptr[i]:ptr[i + 1]]
+            if cls_tokens:
+                new_x[i][-1] = x[all_num_nodes + i]
+        if return_mask:
+            padding_mask[i][num_node:] = True
+            if cls_tokens:
+                padding_mask[i][-1] = False
+    if return_mask:
+        return new_x, padding_mask
+    return new_x
+
+def unpad_batch(x, ptr):
+    bsz, n, d = x.shape
+    max_num_nodes = torch.diff(ptr).max().item()
+    num_nodes = ptr[-1].item()
+    all_num_nodes = num_nodes
+    cls_tokens = False
+    if n > max_num_nodes:
+        cls_tokens = True
+        all_num_nodes += bsz
+    new_x = x.new_zeros(all_num_nodes, d)
+    for i in range(bsz):
+        new_x[ptr[i]:ptr[i + 1]] = x[i][:ptr[i + 1] - ptr[i]]
+        if cls_tokens:
+            new_x[num_nodes + i] = x[i][-1]
+    return new_x
+
+class Attention(gnn.MessagePassing):
+    """Multi-head Structure-Aware attention using PyG interface
+    accept Batch data given by PyG
+
+    Args:
+    ----------
+    embed_dim (int):        the embeding dimension
+    num_heads (int):        number of attention heads (default: 8)
+    dropout (float):        dropout value (default: 0.0)
+    bias (bool):            whether layers have an additive bias (default: False)
+    symmetric (bool):       whether K=Q in dot-product attention (default: False)
+    gnn_type (str):         GNN type to use in structure extractor. (see gnn_layers.py for options)
+    se (str):               type of structure extractor ("gnn", "khopgnn")
+    k_hop (int):            number of base GNN layers or the K hop size for khopgnn structure extractor (default=2).
+    """
+
+    def __init__(self, embed_dim, num_heads=8, dropout=0., bias=False,
+        symmetric=False, gnn_type="gcn", se="gnn", k_hop=2, **kwargs):
+
+        super().__init__(node_dim=0, aggr='add')
+        self.embed_dim = embed_dim
+        self.bias = bias
+        head_dim = embed_dim // num_heads
+        assert head_dim * num_heads == embed_dim, "embed_dim must be divisible by num_heads"
+
+        self.num_heads = num_heads
+        self.scale = head_dim ** -0.5
+
+        self.se = se
+
+        self.gnn_type = gnn_type
+        if self.se == "khopgnn":
+            self.khop_structure_extractor = KHopStructureExtractor(embed_dim, gnn_type=gnn_type,
+                                                          num_layers=k_hop, **kwargs)
+        else:
+            self.structure_extractor = StructureExtractor(embed_dim, gnn_type=gnn_type,
+                                                          num_layers=k_hop, **kwargs)
+        self.attend = nn.Softmax(dim=-1)
+
+        self.symmetric = symmetric
+        if symmetric:
+            self.to_qk = nn.Linear(embed_dim, embed_dim, bias=bias)
+        else:
+            self.to_qk = nn.Linear(embed_dim, embed_dim * 2, bias=bias)
+        self.to_v = nn.Linear(embed_dim, embed_dim, bias=bias)
+
+        self.attn_dropout = nn.Dropout(dropout)
+
+        self.out_proj = nn.Linear(embed_dim, embed_dim)
+
+        self._reset_parameters()
+
+        self.attn_sum = None
+
+    def _reset_parameters(self):
+        nn.init.xavier_uniform_(self.to_qk.weight)
+        nn.init.xavier_uniform_(self.to_v.weight)
+
+        if self.bias:
+            nn.init.constant_(self.to_qk.bias, 0.)
+            nn.init.constant_(self.to_v.bias, 0.)
+
+    def forward(self,
+            x,
+            edge_index,
+            complete_edge_index,
+            subgraph_node_index=None,
+            subgraph_edge_index=None,
+            subgraph_indicator_index=None,
+            subgraph_edge_attr=None,
+            edge_attr=None,
+            ptr=None,
+            return_attn=False):
+        """
+        Compute attention layer. 
+
+        Args:
+        ----------
+        x:                          input node features
+        edge_index:                 edge index from the graph
+        complete_edge_index:        edge index from fully connected graph
+        subgraph_node_index:        documents the node index in the k-hop subgraphs
+        subgraph_edge_index:        edge index of the extracted subgraphs 
+        subgraph_indicator_index:   indices to indicate to which subgraph corresponds to which node
+        subgraph_edge_attr:         edge attributes of the extracted k-hop subgraphs
+        edge_attr:                  edge attributes
+        return_attn:                return attention (default: False)
+
+        """
+        # Compute value matrix
+
+        v = self.to_v(x)
+
+        # Compute structure-aware node embeddings 
+        if self.se == 'khopgnn': # k-subgraph SAT
+            x_struct = self.khop_structure_extractor(
+                x=x,
+                edge_index=edge_index,
+                subgraph_edge_index=subgraph_edge_index,
+                subgraph_indicator_index=subgraph_indicator_index,
+                subgraph_node_index=subgraph_node_index,
+                subgraph_edge_attr=subgraph_edge_attr,
+            )
+        else: # k-subtree SAT
+            x_struct = self.structure_extractor(x, edge_index, edge_attr)
+
+
+        # Compute query and key matrices
+        if self.symmetric:
+            qk = self.to_qk(x_struct)
+            qk = (qk, qk)
+        else:
+            qk = self.to_qk(x_struct).chunk(2, dim=-1)
+        
+        # Compute complete self-attention
+        attn = None
+
+        if complete_edge_index is not None:
+            out = self.propagate(complete_edge_index, v=v, qk=qk, edge_attr=None, size=None,
+                                 return_attn=return_attn)
+            if return_attn:
+                attn = self._attn
+                self._attn = None
+                attn = torch.sparse_coo_tensor(
+                    complete_edge_index,
+                    attn,
+                ).to_dense().transpose(0, 1)
+
+            out = rearrange(out, 'n h d -> n (h d)')
+        else:
+            out, attn = self.self_attn(qk, v, ptr, return_attn=return_attn)
+        return self.out_proj(out), attn
+
+    def message(self, v_j, qk_j, qk_i, edge_attr, index, ptr, size_i, return_attn):
+        """Self-attention operation compute the dot-product attention """
+
+        qk_i = rearrange(qk_i, 'n (h d) -> n h d', h=self.num_heads)
+        qk_j = rearrange(qk_j, 'n (h d) -> n h d', h=self.num_heads)
+        v_j = rearrange(v_j, 'n (h d) -> n h d', h=self.num_heads)
+        attn = (qk_i * qk_j).sum(-1) * self.scale
+        if edge_attr is not None:
+            attn = attn + edge_attr
+        attn = utils.softmax(attn, index, ptr, size_i)
+        if return_attn:
+            self._attn = attn
+        attn = self.attn_dropout(attn)
+
+        return v_j * attn.unsqueeze(-1)
+
+    def self_attn(self, qk, v, ptr, return_attn=False):
+        """ Self attention which can return the attn """ 
+
+        qk, mask = pad_batch(qk, ptr, return_mask=True)
+        k, q = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h=self.num_heads), qk)
+        dots = torch.matmul(q, k.transpose(-1, -2)) * self.scale
+
+        dots = dots.masked_fill(
+            mask.unsqueeze(1).unsqueeze(2),
+            float('-inf'),
+        )
+
+        dots = self.attend(dots)
+        dots = self.attn_dropout(dots)
+
+        v = pad_batch(v, ptr)
+        v = rearrange(v, 'b n (h d) -> b h n d', h=self.num_heads)
+        out = torch.matmul(dots, v)
+        out = rearrange(out, 'b h n d -> b n (h d)')
+        out = unpad_batch(out, ptr)
+
+        if return_attn:
+            return out, dots
+        return out, None
+
 
 class StructureExtractor(nn.Module):
-    # ... (保持不变，这部分显存占用很小)
-    def __init__(self, hidden_dim, num_layers=3):
+    r""" K-subtree structure extractor. Computes the structure-aware node embeddings using the
+    k-hop subtree centered around each node.
+
+    Args:
+    ----------
+    embed_dim (int):        the embeding dimension
+    gnn_type (str):         GNN type to use in structure extractor. (gcn, gin, pna, etc)
+    num_layers (int):       number of GNN layers
+    batch_norm (bool):      apply batch normalization or not
+    concat (bool):          whether to concatenate the initial edge features
+    khopgnn (bool):         whether to use the subgraph instead of subtree
+    """
+
+    def __init__(self, embed_dim, gnn_type="gcn", num_layers=3,
+                 batch_norm=True, concat=True, khopgnn=False, **kwargs):
         super().__init__()
-        self.convs = nn.ModuleList()
+        self.num_layers = num_layers
+        self.khopgnn = khopgnn
+        self.concat = concat
+        self.gnn_type = gnn_type
+        layers = []
         for _ in range(num_layers):
-            mlp = nn.Sequential(
-                nn.Linear(hidden_dim, hidden_dim * 2),
-                nn.ReLU(),
-                nn.Linear(hidden_dim * 2, hidden_dim)
-            )
-            self.convs.append(GINConv(mlp, train_eps=True))
-        
-    def forward(self, x, edge_index, batch):
-        h = x
-        for conv in self.convs:
-            h = F.relu(conv(h, edge_index))
-        return h
+            layers.append(get_simple_gnn_layer(gnn_type, embed_dim, **kwargs))
+        self.gcn = nn.ModuleList(layers)
 
-class OptimizedSATAttention(nn.Module):
-    def __init__(self, d_model, num_heads, dropout=0.1):
-        super().__init__()
-        assert d_model % num_heads == 0
-        self.num_heads = num_heads
-        self.d_k = d_model // num_heads
-        
-        # Content Projections
-        self.W_Q = nn.Linear(d_model, d_model)
-        self.W_K = nn.Linear(d_model, d_model)
-        self.W_V = nn.Linear(d_model, d_model)
-        
-        # Structure Projections
-        self.W_S_Q = nn.Linear(d_model, d_model)
-        self.W_S_K = nn.Linear(d_model, d_model)
+        self.relu = nn.ReLU()
+        self.batch_norm = batch_norm
+        inner_dim = (num_layers + 1) * embed_dim if concat else embed_dim
 
-        self.out_proj = nn.Linear(d_model, d_model)
-        self.dropout_p = dropout
+        if batch_norm:
+            self.bn = nn.BatchNorm1d(inner_dim)
 
-    def forward(self, x_content, x_struct, mask=None):
-        B, N, _ = x_content.size()
-        
-        # 1. 投影
-        # [B, N, H, D_k]
-        q_c = self.W_Q(x_content).view(B, N, self.num_heads, self.d_k).transpose(1, 2)
-        k_c = self.W_K(x_content).view(B, N, self.num_heads, self.d_k).transpose(1, 2)
-        v_c = self.W_V(x_content).view(B, N, self.num_heads, self.d_k).transpose(1, 2)
-        
-        q_s = self.W_S_Q(x_struct).view(B, N, self.num_heads, self.d_k).transpose(1, 2)
-        k_s = self.W_S_K(x_struct).view(B, N, self.num_heads, self.d_k).transpose(1, 2)
+        self.out_proj = nn.Linear(inner_dim, embed_dim)
 
-        # 2. 优化核心：拼接 (Concatenation) 代替 加法
-        # 数学等价转换：Qc*Kc + Qs*Ks = [Qc, Qs] * [Kc, Ks]
-        # 我们在特征维度拼接：新的 d_k 变为 2 * d_k
-        q_all = torch.cat([q_c, q_s], dim=-1) # [B, H, N, 2*d_k]
-        k_all = torch.cat([k_c, k_s], dim=-1) # [B, H, N, 2*d_k]
-        
-        # 3. 缩放修正 (Scale Correction)
-        # SAT 原文公式除以 sqrt(d_k)。
-        # F.scaled_dot_product_attention 默认除以 sqrt(dim)，这里 dim 是 2*d_k。
-        # 为了保持数学一致性：我们需要手动把输入放大 sqrt(2)，这样 sqrt(2)/sqrt(2*dk) = 1/sqrt(dk)
-        q_all = q_all * (2.0 ** 0.5) 
+    def forward(self, x, edge_index, edge_attr=None,
+            subgraph_indicator_index=None, agg="sum"):
+        x_cat = [x]
+        for gcn_layer in self.gcn:
+            # if self.gnn_type == "attn":
+            #     x = gcn_layer(x, edge_index, None, edge_attr=edge_attr)
+            if self.gnn_type in EDGE_GNN_TYPES:
+                if edge_attr is None:
+                    x = self.relu(gcn_layer(x, edge_index))
+                else:
+                    x = self.relu(gcn_layer(x, edge_index, edge_attr=edge_attr))
+            else:
+                x = self.relu(gcn_layer(x, edge_index))
 
-        # 4. 使用 PyTorch 2.0+ 的 FlashAttention
-        # 这会自动处理显存优化，避免生成 [B, H, N, N] 的中间矩阵
-        if mask is not None:
-            # mask 是 [B, N]，True表示有效节点。
-            # SDPA 需要 mask 形状广播匹配。
-            # 注意：SDPA 的 attn_mask 语义：True 的位置保留，False 的位置变为 -inf (如果是 Bool)
-            # 或者 0 处加 0， -inf 处加 -inf (如果是 Float)
-            # PyTorch SDPA 推荐使用 attn_mask=None 并用 is_causal=False 来获得最大加速，
-            # 但对于 Padding Mask，我们必须传。
-            
-            # [B, 1, 1, N] -> 扩展到 [B, H, N, N] 的广播
-            attn_mask = mask.view(B, 1, 1, N).expand(B, self.num_heads, N, N)
-            
-            # 使用 PyTorch 优化的 SDPA
-            output = F.scaled_dot_product_attention(
-                q_all, k_all, v_c, 
-                attn_mask=attn_mask, 
-                dropout_p=self.dropout_p if self.training else 0.0
-            )
-        else:
-             output = F.scaled_dot_product_attention(
-                q_all, k_all, v_c, 
-                dropout_p=self.dropout_p if self.training else 0.0
-            )
+            if self.concat:
+                x_cat.append(x)
 
-        output = output.transpose(1, 2).contiguous().view(B, N, -1)
-        return self.out_proj(output)
+        if self.concat:
+            x = torch.cat(x_cat, dim=-1)
 
-class SATLayer(nn.Module):
-    def __init__(self, d_model, num_heads, dropout=0.1):
-        super().__init__()
-        self.attention = OptimizedSATAttention(d_model, num_heads, dropout)
-        self.norm1 = nn.LayerNorm(d_model)
-        self.norm2 = nn.LayerNorm(d_model)
-        self.ffn = nn.Sequential(
-            nn.Linear(d_model, d_model * 4),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(d_model * 4, d_model)
-        )
-        self.dropout = nn.Dropout(dropout)
+        if self.khopgnn:
+            if agg == "sum":
+                x = scatter_add(x, subgraph_indicator_index, dim=0)
+            elif agg == "mean":
+                x = scatter_mean(x, subgraph_indicator_index, dim=0)
+            return x
 
-    def forward(self, x, x_struct, mask=None):
-        # 这里的 x 和 x_struct 都是 Dense Batch [B, N, D]
-        attn_out = self.attention(x, x_struct, mask)
-        x = self.norm1(x + self.dropout(attn_out))
-        ffn_out = self.ffn(x)
-        x = self.norm2(x + self.dropout(ffn_out))
+        if self.num_layers > 0 and self.batch_norm:
+            x = self.bn(x)
+
+        x = self.out_proj(x)
         return x
 
-class SAT(nn.Module):
-    def __init__(self, in_channels, hidden_channels=64, num_layers=3, num_heads=4, rw_steps=20, dropout=0.1, use_checkpointing=False):
+
+class KHopStructureExtractor(nn.Module):
+    r""" K-subgraph structure extractor. Extracts a k-hop subgraph centered around
+    each node and uses a GNN on each subgraph to compute updated structure-aware
+    embeddings.
+
+    Args:
+    ----------
+    embed_dim (int):        the embeding dimension
+    gnn_type (str):         GNN type to use in structure extractor. (gcn, gin, pna, etc)
+    num_layers (int):       number of GNN layers
+    concat (bool):          whether to concatenate the initial edge features
+    khopgnn (bool):         whether to use the subgraph instead of subtree (True)
+    """
+    def __init__(self, embed_dim, gnn_type="gcn", num_layers=3, batch_norm=True,
+            concat=True, khopgnn=True, **kwargs):
         super().__init__()
-        self.use_checkpointing = use_checkpointing # 开关
-        
-        self.node_emb = nn.Linear(in_channels, hidden_channels)
-        self.rwpe_proj = nn.Linear(rw_steps, hidden_channels)
-        self.structure_extractor = StructureExtractor(hidden_channels, num_layers=3)
-        
-        self.layers = nn.ModuleList([
-            SATLayer(hidden_channels, num_heads, dropout) for _ in range(num_layers)
-        ])
-        
-        self.classifier = nn.Linear(hidden_channels, hidden_channels) # 示例分类头
+        self.num_layers = num_layers
+        self.khopgnn = khopgnn
 
-    def forward(self, x, edge_index, batch, rw_pos_enc=None, *args, **kwargs):
-        h = self.node_emb(x)
-        if rw_pos_enc is not None:
-            h = h + self.rwpe_proj(rw_pos_enc)
+        self.batch_norm = batch_norm
+
+        self.structure_extractor = StructureExtractor(
+            embed_dim,
+            gnn_type=gnn_type,
+            num_layers=num_layers,
+            concat=False,
+            khopgnn=True,
+            **kwargs
+        )
+
+        if batch_norm:
+            self.bn = nn.BatchNorm1d(2 * embed_dim)
+
+        self.out_proj = nn.Linear(2 * embed_dim, embed_dim)
+
+    def forward(self, x, edge_index, subgraph_edge_index, edge_attr=None,
+            subgraph_indicator_index=None, subgraph_node_index=None,
+            subgraph_edge_attr=None):
+
+        x_struct = self.structure_extractor(
+            x=x[subgraph_node_index],
+            edge_index=subgraph_edge_index,
+            edge_attr=subgraph_edge_attr,
+            subgraph_indicator_index=subgraph_indicator_index,
+            agg="sum",
+        )
+        x_struct = torch.cat([x, x_struct], dim=-1)
+        if self.batch_norm:
+            x_struct = self.bn(x_struct)
+        x_struct = self.out_proj(x_struct)
+
+        return x_struct
+
+
+class TransformerEncoderLayer(nn.TransformerEncoderLayer):
+    r"""Structure-Aware Transformer layer, made up of structure-aware self-attention and feed-forward network.
+
+    Args:
+    ----------
+        d_model (int):      the number of expected features in the input (required).
+        nhead (int):        the number of heads in the multiheadattention models (default=8).
+        dim_feedforward (int): the dimension of the feedforward network model (default=512).
+        dropout:            the dropout value (default=0.1).
+        activation:         the activation function of the intermediate layer, can be a string
+            ("relu" or "gelu") or a unary callable (default: relu).
+        batch_norm:         use batch normalization instead of layer normalization (default: True).
+        pre_norm:           pre-normalization or post-normalization (default=False).
+        gnn_type:           base GNN model to extract subgraph representations.
+                            One can implememnt customized GNN in gnn_layers.py (default: gcn).
+        se:                 structure extractor to use, either gnn or khopgnn (default: gnn).
+        k_hop:              the number of base GNN layers or the K hop size for khopgnn structure extractor (default=2).
+    """
+    def __init__(self, d_model, nhead=8, dim_feedforward=512, dropout=0.1,
+                activation="relu", batch_norm=True, pre_norm=False,
+                gnn_type="gcn", se="gnn", k_hop=2, **kwargs):
+        super().__init__(d_model, nhead, dim_feedforward, dropout, activation)
+
+        self.self_attn = Attention(d_model, nhead, dropout=dropout,
+            bias=False, gnn_type=gnn_type, se=se, k_hop=k_hop, **kwargs)
+        self.batch_norm = batch_norm
+        self.pre_norm = pre_norm
+        if batch_norm:
+            self.norm1 = nn.BatchNorm1d(d_model)
+            self.norm2 = nn.BatchNorm1d(d_model)
+
+    def forward(self, x, edge_index, complete_edge_index,
+            subgraph_node_index=None, subgraph_edge_index=None,
+            subgraph_edge_attr=None,
+            subgraph_indicator_index=None,
+            edge_attr=None, degree=None, ptr=None,
+            return_attn=False,
+        ):
+
+        if self.pre_norm:
+            x = self.norm1(x)
+
+        x2, attn = self.self_attn(
+            x,
+            edge_index,
+            complete_edge_index,
+            edge_attr=edge_attr,
+            subgraph_node_index=subgraph_node_index,
+            subgraph_edge_index=subgraph_edge_index,
+            subgraph_indicator_index=subgraph_indicator_index,
+            subgraph_edge_attr=subgraph_edge_attr,
+            ptr=ptr,
+            return_attn=return_attn
+        )
+
+        if degree is not None:
+            x2 = degree.unsqueeze(-1) * x2
+        x = x + self.dropout1(x2)
+        if self.pre_norm:
+            x = self.norm2(x)
+        else:
+            x = self.norm1(x)
+        x2 = self.linear2(self.dropout(self.activation(self.linear1(x))))
+        x = x + self.dropout2(x2)
+
+        if not self.pre_norm:
+            x = self.norm2(x)
+        return x
+
+class GraphTransformerEncoder(nn.TransformerEncoder):
+    def forward(self, x, edge_index, complete_edge_index,
+            subgraph_node_index=None, subgraph_edge_index=None,
+            subgraph_edge_attr=None, subgraph_indicator_index=None, edge_attr=None, degree=None,
+            ptr=None, return_attn=False):
+        output = x
+
+        for mod in self.layers:
+            output = mod(output, edge_index, complete_edge_index,
+                edge_attr=edge_attr, degree=degree,
+                subgraph_node_index=subgraph_node_index,
+                subgraph_edge_index=subgraph_edge_index,
+                subgraph_indicator_index=subgraph_indicator_index, 
+                subgraph_edge_attr=subgraph_edge_attr,
+                ptr=ptr,
+                return_attn=return_attn
+            )
+        if self.norm is not None:
+            output = self.norm(output)
+        return output
+
+#rename GraphTransformer -> SAT
+# class SAT(nn.Module):
+#     def __init__(self, in_size, num_class, d_model, num_heads=8,
+#                  dim_feedforward=512, dropout=0.0, num_layers=4,
+#                  batch_norm=False, abs_pe=False, abs_pe_dim=0,
+#                  gnn_type="graph", se="gnn", use_edge_attr=False, num_edge_features=4,
+#                  in_embed=True, edge_embed=True, use_global_pool=True, max_seq_len=None,
+#                  global_pool='mean', **kwargs):
+#         super().__init__()
+
+#         self.abs_pe = abs_pe
+#         self.abs_pe_dim = abs_pe_dim
+#         if abs_pe and abs_pe_dim > 0:
+#             self.embedding_abs_pe = nn.Linear(abs_pe_dim, d_model)
+#         if in_embed:
+#             if isinstance(in_size, int):
+#                 self.embedding = nn.Embedding(in_size, d_model) 
+#             elif isinstance(in_size, nn.Module):
+#                 self.embedding = in_size
+#             else:
+#                 raise ValueError("Not implemented!")
+#         else:
+#             self.embedding = nn.Linear(in_features=in_size,
+#                                        out_features=d_model,
+#                                        bias=False)
+        
+#         self.use_edge_attr = use_edge_attr
+#         if use_edge_attr:
+#             edge_dim = kwargs.get('edge_dim', 32)
+#             if edge_embed:
+#                 if isinstance(num_edge_features, int):
+#                     self.embedding_edge = nn.Embedding(num_edge_features, edge_dim)
+#                 else:
+#                     raise ValueError("Not implemented!")
+#             else:
+#                 self.embedding_edge = nn.Linear(in_features=num_edge_features,
+#                     out_features=edge_dim, bias=False)
+#         else:
+#             kwargs['edge_dim'] = None
+
+#         self.gnn_type = gnn_type
+#         self.se = se
+#         encoder_layer = TransformerEncoderLayer(
+#             d_model, num_heads, dim_feedforward, dropout, batch_norm=batch_norm,
+#             gnn_type=gnn_type, se=se, **kwargs)
+#         self.encoder = GraphTransformerEncoder(encoder_layer, num_layers)
+#         self.global_pool = global_pool
+#         if global_pool == 'mean':
+#             self.pooling = gnn.global_mean_pool
+#         elif global_pool == 'add':
+#             self.pooling = gnn.global_add_pool
+#         elif global_pool == 'cls':
+#             self.cls_token = nn.Parameter(torch.randn(1, d_model))
+#             self.pooling = None
+#         self.use_global_pool = use_global_pool
+
+#         self.max_seq_len = max_seq_len
+#         if max_seq_len is None:
+#             self.classifier = nn.Sequential(
+#                 nn.Linear(d_model, d_model),
+#                 nn.ReLU(True),
+#                 nn.Linear(d_model, num_class)
+#             )
+#         else:
+#             self.classifier = nn.ModuleList()
+#             for i in range(max_seq_len):
+#                 self.classifier.append(nn.Linear(d_model, num_class))
+
+#     def forward(self, data, return_attn=False):
+#         x, edge_index, edge_attr = data.x, data.edge_index, data.edge_attr
+
+#         node_depth = data.node_depth if hasattr(data, "node_depth") else None
+        
+#         if self.se == "khopgnn":
+#             subgraph_node_index = data.subgraph_node_idx
+#             subgraph_edge_index = data.subgraph_edge_index
+#             subgraph_indicator_index = data.subgraph_indicator 
+#             subgraph_edge_attr = data.subgraph_edge_attr if hasattr(data, "subgraph_edge_attr") \
+#                                     else None
+#         else:
+#             subgraph_node_index = None
+#             subgraph_edge_index = None
+#             subgraph_indicator_index = None
+#             subgraph_edge_attr = None
+
+#         complete_edge_index = data.complete_edge_index if hasattr(data, 'complete_edge_index') else None
+#         abs_pe = data.abs_pe if hasattr(data, 'abs_pe') else None
+#         degree = data.degree if hasattr(data, 'degree') else None
+#         output = self.embedding(x) if node_depth is None else self.embedding(x, node_depth.view(-1,))
             
-        h_struct = self.structure_extractor(h, edge_index, batch)
-        
-        # 依然使用 Dense Batch，但后续计算优化了
-        h_dense, mask = to_dense_batch(h, batch)
-        h_struct_dense, _ = to_dense_batch(h_struct, batch)
-        
-        for layer in self.layers:
-            if self.use_checkpointing:
-                # 显存救星：以计算换显存
-                # 只在反向传播时重算中间激活值，能节省约 50%-70% 的显存
-                h_dense = torch.utils.checkpoint.checkpoint(
-                    layer, h_dense, h_struct_dense, mask,
-                    use_reentrant=False 
-                )
-            else:
-                h_dense = layer(h_dense, h_struct_dense, mask)
+#         if self.abs_pe and abs_pe is not None:
+#             abs_pe = self.embedding_abs_pe(abs_pe)
+#             output = output + abs_pe
+#         if self.use_edge_attr and edge_attr is not None:
+#             edge_attr = self.embedding_edge(edge_attr)
+#             if subgraph_edge_attr is not None:
+#                 subgraph_edge_attr = self.embedding_edge(subgraph_edge_attr)
+#         else:
+#             edge_attr = None
+#             subgraph_edge_attr = None
 
-        # 还原回 Sparse 做 Pooling (避免计算无效节点的 mean)
-        h_flat = h_dense[mask]
-        out = global_mean_pool(h_flat, batch)
+#         if self.global_pool == 'cls' and self.use_global_pool:
+#             bsz = len(data.ptr) - 1
+#             if complete_edge_index is not None:
+#                 new_index = torch.vstack((torch.arange(data.num_nodes).to(data.batch), data.batch + data.num_nodes))
+#                 new_index2 = torch.vstack((new_index[1], new_index[0]))
+#                 idx_tmp = torch.arange(data.num_nodes, data.num_nodes + bsz).to(data.batch)
+#                 new_index3 = torch.vstack((idx_tmp, idx_tmp))
+#                 complete_edge_index = torch.cat((
+#                     complete_edge_index, new_index, new_index2, new_index3), dim=-1)
+#             if subgraph_node_index is not None:
+#                 idx_tmp = torch.arange(data.num_nodes, data.num_nodes + bsz).to(data.batch)
+#                 subgraph_node_index = torch.hstack((subgraph_node_index, idx_tmp))
+#                 subgraph_indicator_index = torch.hstack((subgraph_indicator_index, idx_tmp))
+#             degree = None
+#             cls_tokens = repeat(self.cls_token, '() d -> b d', b=bsz)
+#             output = torch.cat((output, cls_tokens))
+
+#         output = self.encoder(
+#             output, 
+#             edge_index, 
+#             complete_edge_index,
+#             edge_attr=edge_attr, 
+#             degree=degree,
+#             subgraph_node_index=subgraph_node_index,
+#             subgraph_edge_index=subgraph_edge_index,
+#             subgraph_indicator_index=subgraph_indicator_index, 
+#             subgraph_edge_attr=subgraph_edge_attr,
+#             ptr=data.ptr,
+#             return_attn=return_attn
+#         )
+#         # readout step
+#         if self.use_global_pool:
+#             if self.global_pool == 'cls':
+#                 output = output[-bsz:]
+#             else:
+#                 output = self.pooling(output, data.batch)
+#         if self.max_seq_len is not None:
+#             pred_list = []
+#             for i in range(self.max_seq_len):
+#                 pred_list.append(self.classifier[i](output))
+#             return pred_list
+#         return self.classifier(output)
+
+
+class SAT(nn.Module):
+    def __init__(self, in_size, d_model, 
+                 # 移除 num_class, max_seq_len
+                 pe_dim, # 将 abs_pe_dim 改名为 pe_dim 或者直接用 abs_pe_dim
+                 num_heads=8,
+                 dim_feedforward=512, dropout=0.0, num_layers=4,
+                 batch_norm=False, abs_pe=True, # 默认开启 PE
+                 gnn_type="graph", se="gnn", use_edge_attr=False, num_edge_features=4,
+                 in_embed=False, # 默认改为 False，适应连续特征
+                 edge_embed=True, use_global_pool=True,
+                 global_pool='mean', **kwargs):
+        super().__init__()
+
+        self.abs_pe = abs_pe
+        self.abs_pe_dim = pe_dim # 使用传入的维度
         
-        return out, 0
+        # --- 修改 1: 确保 PE Embedding 总是初始化 (如果 abs_pe=True) ---
+        if abs_pe and pe_dim > 0:
+            self.embedding_abs_pe = nn.Linear(pe_dim, d_model)
+            
+        # --- 保持原有的 Embedding 逻辑 ---
+        if in_embed:
+            if isinstance(in_size, int):
+                self.embedding = nn.Embedding(in_size, d_model) 
+            elif isinstance(in_size, nn.Module):
+                self.embedding = in_size
+            else:
+                raise ValueError("Not implemented!")
+        else:
+            self.embedding = nn.Linear(in_features=in_size,
+                                       out_features=d_model,
+                                       bias=False)
+        
+        self.use_edge_attr = use_edge_attr
+        if use_edge_attr:
+            edge_dim = kwargs.get('edge_dim', 32)
+            if edge_embed:
+                if isinstance(num_edge_features, int):
+                    self.embedding_edge = nn.Embedding(num_edge_features, edge_dim)
+                else:
+                    raise ValueError("Not implemented!")
+            else:
+                self.embedding_edge = nn.Linear(in_features=num_edge_features,
+                    out_features=edge_dim, bias=False)
+        else:
+            kwargs['edge_dim'] = None
+
+        self.gnn_type = gnn_type
+        self.se = se
+        
+        # --- 这里假设 TransformerEncoderLayer 和 GraphTransformerEncoder 已导入 ---
+        encoder_layer = TransformerEncoderLayer(
+            d_model, num_heads, dim_feedforward, dropout, batch_norm=batch_norm,
+            gnn_type=gnn_type, se=se, **kwargs)
+        if hasattr(encoder_layer, 'self_attn'):
+            encoder_layer.self_attn.batch_first = False
+        self.encoder = GraphTransformerEncoder(encoder_layer, num_layers)
+        
+        self.global_pool = global_pool
+        if global_pool == 'mean':
+            self.pooling = gnn.global_mean_pool
+        elif global_pool == 'add':
+            self.pooling = gnn.global_add_pool
+        elif global_pool == 'cls':
+            self.cls_token = nn.Parameter(torch.randn(1, d_model))
+            self.pooling = None
+        self.use_global_pool = use_global_pool
+
+        # --- 修改 2: 移除了 self.classifier 和 max_seq_len ---
+
+    def forward(self, x, edge_index, batch, pe, edge_attr=None, ptr = None, *args, **kwargs):
+
+        if ptr is None:
+            if batch.numel() > 0:
+                batch_size = batch[-1].item() + 1
+                # 统计每个图有多少个节点
+                node_counts = torch.bincount(batch, minlength=batch_size)
+                # 累加得到 ptr: [0, count0, count0+count1, ...]
+                # batch.new_zeros(1) 确保设备和类型一致
+                ptr = torch.cat([batch.new_zeros(1), torch.cumsum(node_counts, dim=0)])
+            else:
+                # 处理空 batch 的极端情况
+                ptr = batch.new_zeros(1)
+
+        # --- 修改 3: 参数解耦 ---
+        # 从 kwargs 获取 SAT 特有的参数，如果没有则为 None
+        node_depth = kwargs.get('node_depth', None)
+        subgraph_node_index = kwargs.get('subgraph_node_idx', None)
+        subgraph_edge_index = kwargs.get('subgraph_edge_index', None)
+        subgraph_indicator_index = kwargs.get('subgraph_indicator', None)
+        subgraph_edge_attr = kwargs.get('subgraph_edge_attr', None)
+        complete_edge_index = kwargs.get('complete_edge_index', None)
+        degree = kwargs.get('degree', None)
+        
+        # 这里的 abs_pe 直接使用函数参数传入的 pe
+        abs_pe = pe 
+
+        output = self.embedding(x) if node_depth is None else self.embedding(x, node_depth.view(-1,))
+            
+        if self.abs_pe and abs_pe is not None:
+            abs_pe = self.embedding_abs_pe(abs_pe)
+            output = output + abs_pe
+            
+        if self.use_edge_attr and edge_attr is not None:
+            edge_attr = self.embedding_edge(edge_attr)
+            if subgraph_edge_attr is not None:
+                subgraph_edge_attr = self.embedding_edge(subgraph_edge_attr)
+        else:
+            edge_attr = None
+            subgraph_edge_attr = None
+
+        if self.global_pool == 'cls' and self.use_global_pool:
+            # --- 修改 4: 计算 bsz (因为没有 data.ptr) ---
+            bsz = batch.max().item() + 1
+            num_nodes = x.size(0) # 获取 num_nodes
+            
+            if complete_edge_index is not None:
+                new_index = torch.vstack((torch.arange(num_nodes).to(batch), batch + num_nodes))
+                new_index2 = torch.vstack((new_index[1], new_index[0]))
+                idx_tmp = torch.arange(num_nodes, num_nodes + bsz).to(batch)
+                new_index3 = torch.vstack((idx_tmp, idx_tmp))
+                complete_edge_index = torch.cat((
+                    complete_edge_index, new_index, new_index2, new_index3), dim=-1)
+            if subgraph_node_index is not None:
+                idx_tmp = torch.arange(num_nodes, num_nodes + bsz).to(batch)
+                subgraph_node_index = torch.hstack((subgraph_node_index, idx_tmp))
+                subgraph_indicator_index = torch.hstack((subgraph_indicator_index, idx_tmp))
+            degree = None
+            cls_tokens = repeat(self.cls_token, '() d -> b d', b=bsz)
+            output = torch.cat((output, cls_tokens))
+
+        output = self.encoder(
+            output, 
+            edge_index, 
+            complete_edge_index,
+            edge_attr=edge_attr, 
+            degree=degree,
+            subgraph_node_index=subgraph_node_index,
+            subgraph_edge_index=subgraph_edge_index,
+            subgraph_indicator_index=subgraph_indicator_index, 
+            subgraph_edge_attr=subgraph_edge_attr,
+            ptr=ptr,
+            return_attn=False
+        )
+        
+        # readout step
+        if self.use_global_pool:
+            if self.global_pool == 'cls':
+                bsz = batch.max().item() + 1
+                output = output[-bsz:]
+            else:
+                output = self.pooling(output, batch)
+        return output, 0

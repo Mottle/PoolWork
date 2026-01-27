@@ -12,14 +12,6 @@ class GatedGCN(nn.Module):
         num_layers: int, 
         dropout: float = 0.5
     ):
-        """
-        Args:
-            in_channels: 节点输入特征维度
-            hidden_channels: 隐藏层维度
-            out_channels: 输出维度 (例如分类数)
-            num_layers: GatedGCN 层数 (n层)
-            dropout: Dropout 概率
-        """
         super(GatedGCN, self).__init__()
         self.dropout_rate = dropout
         self.num_layers = num_layers

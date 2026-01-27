@@ -291,20 +291,13 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
     model_type = config.model
     layer_norm = config.graph_norm
     dropout = config.dropout
-    
+        
     if model_type == 'graph_gps':
         model = GraphGPS(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, pe_dim=20).to(run_device)
     elif model_type == 'san':
         model = SAN(in_dim=input_dim,edge_dim=4, hidden_dim=hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
     elif model_type == 'sat':
-        model = SAT(
-            in_channels=input_dim,
-            hidden_channels=hidden_dim,
-            num_layers=num_layers,
-            num_heads=4,
-            rw_steps=20,
-            dropout=dropout,
-        ).to(run_device)
+        model = SAT(in_size=input_dim, d_model=hidden_dim, pe_dim=20, abs_pe=True, global_pool='cls').to(run_device)
     elif model_type == 'grit':
         model = GRIT(
             in_channels=input_dim,
@@ -448,10 +441,10 @@ def datasets(sets='common'):
     elif sets == 'bio&chem':
         datasets = [
             # 'DD',
-            # 'PROTEINS',
-            # 'NCI1',
-            # 'NCI109',
-            # 'COX2',
+            'PROTEINS',
+            'NCI1',
+            'NCI109',
+            'COX2',
             'FRANKENSTEIN'
         ]
     for i in range(len(datasets)):
@@ -520,8 +513,8 @@ if __name__ == '__main__':
     config.batch_size = 64
     config.epochs = 200
     config.dropout = 0.1
-    config.sets = 'com'
-    # config.sets = 'bio&chem'
+    # config.sets = 'com'
+    config.sets = 'bio&chem'
     config.catch_error = False
     config.early_stop = True
     config.early_stop_epochs = 50
@@ -536,7 +529,7 @@ if __name__ == '__main__':
     # ---------------------------------------
 
     # 将 GraphGPS 加入测试列表
-    models = ['grit']
+    models = ['sat']
     # models = ['gcn', 'gin', 'gat', 'mix_hop', 'appnp', 'gcn2']
     
     seeds = [0, 114514, 1919810, 77777]

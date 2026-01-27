@@ -222,9 +222,9 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
     # pooler = Pooler(input_dim, hidden_dim, num_layers=num_layers, pool_type=pooler_type, gnn_type=gnn_type, layer_norm=layer_norm).to(run_device)
     
     if model_type == 'hybird':
-        model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3, feature_view=True, dmmp=True).to(run_device)
+        model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 2, k = 3, feature_view=False, dmmp=True).to(run_device)
     elif model_type == 'hybird_gin':
-        model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3, backbone='gin', feature_view=True, dmmp=True).to(run_device)
+        model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3, backbone='gin', feature_view=False, dmmp=True).to(run_device)
 
     classifier = Classifier(hidden_dim, hidden_dim, num_classes).to(run_device)
 
@@ -501,7 +501,7 @@ if __name__ == '__main__':
         # 'phdgn',
         # 'hybird_gin',
         'hybird',
-        'hybird_gin'
+        # 'hybird_gin'
     ]
     # models = ['topk']
     seeds = [0, 114514, 1919810, 77777]
