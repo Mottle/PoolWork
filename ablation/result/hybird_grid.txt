@@ -1,0 +1,443 @@
+
+p = 2, k = 2
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 73.63% ± 2.58%
+PROTEINS(1113) last  : 72.78% ± 3.66%
+PROTEINS(1113) last10: 73.10% ± 3.37%
+PROTEINS(1113) last50: 73.55% ± 2.83%
+总运行时间: 24.83 min
+
+p = 2, k = 3
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 73.48% ± 2.56%
+PROTEINS(1113) last  : 72.96% ± 2.62%
+PROTEINS(1113) last10: 73.09% ± 2.50%
+PROTEINS(1113) last50: 73.40% ± 2.56%
+总运行时间: 10.06 min
+
+p = 2, k = 4
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 73.00% ± 2.66%
+PROTEINS(1113) last  : 72.42% ± 4.32%
+PROTEINS(1113) last10: 72.34% ± 3.31%
+PROTEINS(1113) last50: 72.99% ± 2.99%
+总运行时间: 8.23 min
+
+p = 2, k = 5
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 73.36% ± 2.82%
+PROTEINS(1113) last  : 72.78% ± 3.57%
+PROTEINS(1113) last10: 72.83% ± 3.33%
+PROTEINS(1113) last50: 73.38% ± 3.01%
+总运行时间: 8.71 min
+
+p = 3, k = 2
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 73.14% ± 3.05%
+PROTEINS(1113) last  : 73.05% ± 3.42%
+PROTEINS(1113) last10: 73.30% ± 3.64%
+PROTEINS(1113) last50: 73.49% ± 3.26%
+总运行时间: 10.52 min
+
+p = 3, k = 3
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 72.64% ± 3.52%
+PROTEINS(1113) last  : 71.53% ± 3.78%
+PROTEINS(1113) last10: 71.77% ± 4.01%
+PROTEINS(1113) last50: 72.29% ± 3.97%
+总运行时间: 14.53 min
+
+p = 3, k = 4
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 72.32% ± 3.48%
+PROTEINS(1113) last  : 71.88% ± 4.44%
+PROTEINS(1113) last10: 71.95% ± 4.42%
+PROTEINS(1113) last50: 72.43% ± 4.02%
+总运行时间: 10.03 min
+
+p = 3, k = 5
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 73.89% ± 3.56%
+PROTEINS(1113) last  : 73.77% ± 4.22%
+PROTEINS(1113) last10: 73.96% ± 4.07%
+PROTEINS(1113) last50: 74.50% ± 3.97%
+总运行时间: 10.11 min
+
+p = 4, k = 2
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 72.23% ± 4.28%
+PROTEINS(1113) last  : 71.62% ± 4.76%
+PROTEINS(1113) last10: 71.98% ± 4.68%
+PROTEINS(1113) last50: 72.17% ± 5.12%
+总运行时间: 15.04 min
+
+p = 4, k = 3
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 73.14% ± 3.72%
+PROTEINS(1113) last  : 73.60% ± 4.96%
+PROTEINS(1113) last10: 73.45% ± 4.82%
+PROTEINS(1113) last50: 73.72% ± 4.55%
+总运行时间: 11.33 min
+
+p = 4, k = 4
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 72.96% ± 3.27%
+PROTEINS(1113) last  : 72.78% ± 5.42%
+PROTEINS(1113) last10: 72.98% ± 4.34%
+PROTEINS(1113) last50: 73.66% ± 3.84%
+总运行时间: 10.88 min
+
+p = 4, k = 5
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 72.89% ± 3.58%
+PROTEINS(1113) last  : 72.69% ± 5.75%
+PROTEINS(1113) last10: 72.89% ± 5.39%
+PROTEINS(1113) last50: 73.21% ± 4.22%
+总运行时间: 12.46 min
+
+p = 5, k = 2
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 71.95% ± 2.94%
+PROTEINS(1113) last  : 71.61% ± 4.45%
+PROTEINS(1113) last10: 71.69% ± 4.18%
+PROTEINS(1113) last50: 72.16% ± 3.32%
+总运行时间: 16.38 min
+
+p = 5, k = 3
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 71.56% ± 3.11%
+PROTEINS(1113) last  : 71.07% ± 4.28%
+PROTEINS(1113) last10: 71.40% ± 4.43%
+PROTEINS(1113) last50: 71.84% ± 3.93%
+总运行时间: 13.84 min
+
+p = 5, k = 4
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 72.59% ± 2.28%
+PROTEINS(1113) last  : 73.14% ± 2.87%
+PROTEINS(1113) last10: 73.06% ± 2.67%
+PROTEINS(1113) last50: 73.31% ± 2.53%
+总运行时间: 18.97 min
+
+p = 5, k = 5config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 72.73% ± 3.39%
+PROTEINS(1113) last  : 73.05% ± 4.34%
+PROTEINS(1113) last10: 73.59% ± 4.25%
+PROTEINS(1113) last50: 73.67% ± 4.20%
+总运行时间: 19.49 min
+
+config setting:
+hid_dim: 128, layers: 2, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 74.07% ± 3.94%
+PROTEINS(1113) last  : 74.13% ± 5.48%
+PROTEINS(1113) last10: 74.20% ± 5.32%
+PROTEINS(1113) last50: 74.37% ± 4.54%
+总运行时间: 14.08 min
+config setting:
+hid_dim: 128, layers: 5, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 71.55% ± 2.91%
+PROTEINS(1113) last  : 71.07% ± 3.07%
+PROTEINS(1113) last10: 70.86% ± 2.76%
+PROTEINS(1113) last50: 71.75% ± 2.87%
+总运行时间: 13.83 min
+config setting:
+hid_dim: 128, layers: 4, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 71.84% ± 4.00%
+PROTEINS(1113) last  : 71.52% ± 4.70%
+PROTEINS(1113) last10: 71.68% ± 4.76%
+PROTEINS(1113) last50: 71.85% ± 4.64%
+总运行时间: 14.80 min
+
+config setting:
+hid_dim: 128, layers: 4, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+IMDB-BINARY(1000) all   : 64.28% ± 3.87%
+IMDB-BINARY(1000) last  : 68.70% ± 3.63%
+IMDB-BINARY(1000) last10: 68.82% ± 4.01%
+IMDB-BINARY(1000) last50: 68.62% ± 4.30%
+总运行时间: 29.65 min
+config setting:
+hid_dim: 128, layers: 5, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+IMDB-BINARY(1000) all   : 63.67% ± 3.77%
+IMDB-BINARY(1000) last  : 68.40% ± 3.75%
+IMDB-BINARY(1000) last10: 68.24% ± 4.67%
+IMDB-BINARY(1000) last50: 68.27% ± 4.43%
+总运行时间: 37.71 min
+config setting:
+hid_dim: 128, layers: 2, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+IMDB-BINARY(1000) all   : 66.32% ± 3.78%
+IMDB-BINARY(1000) last  : 70.00% ± 4.63%
+IMDB-BINARY(1000) last10: 70.05% ± 4.81%
+IMDB-BINARY(1000) last50: 69.76% ± 4.58%
+总运行时间: 38.10 min
+config setting:
+hid_dim: 128, layers: 6, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+IMDB-BINARY(1000) all   : 62.89% ± 3.77%
+IMDB-BINARY(1000) last  : 68.60% ± 3.88%
+IMDB-BINARY(1000) last10: 68.71% ± 3.46%
+IMDB-BINARY(1000) last50: 67.62% ± 4.38%
+总运行时间: 37.78 min
+
+U
+config setting:
+hid_dim: 128, layers: 2, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 74.60% ± 2.81%
+PROTEINS(1113) last  : 74.94% ± 2.98%
+PROTEINS(1113) last10: 75.15% ± 2.87%
+PROTEINS(1113) last50: 75.13% ± 2.94%
+总运行时间: 17.99 min
+config setting:
+hid_dim: 128, layers: 4, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 72.62% ± 2.97%
+PROTEINS(1113) last  : 71.61% ± 3.33%
+PROTEINS(1113) last10: 71.91% ± 3.61%
+PROTEINS(1113) last50: 72.69% ± 2.94%
+总运行时间: 18.48 min
+config setting:
+hid_dim: 128, layers: 5, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 72.85% ± 2.97%
+PROTEINS(1113) last  : 72.33% ± 3.52%
+PROTEINS(1113) last10: 72.39% ± 3.32%
+PROTEINS(1113) last50: 73.02% ± 3.17%
+总运行时间: 20.58 min
+config setting:
+hid_dim: 128, layers: 6, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 71.63% ± 2.56%
+PROTEINS(1113) last  : 71.97% ± 2.67%
+PROTEINS(1113) last10: 71.66% ± 2.35%
+PROTEINS(1113) last50: 72.01% ± 2.42%
+总运行时间: 22.76 min
+
+========================================================================================
+
+p = 2, k = 2
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 72.49% ± 2.72%
+PROTEINS(1113) last  : 71.61% ± 4.34%
+PROTEINS(1113) last10: 71.30% ± 3.85%
+PROTEINS(1113) last50: 72.24% ± 3.18%
+总运行时间: 9.71 min
+p = 2, k = 3
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 73.15% ± 3.06%
+PROTEINS(1113) last  : 72.60% ± 3.13%
+PROTEINS(1113) last10: 72.42% ± 4.02%
+PROTEINS(1113) last50: 73.22% ± 3.43%
+总运行时间: 8.36 min
+p = 2, k = 4
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 72.98% ± 3.16%
+PROTEINS(1113) last  : 72.42% ± 3.89%
+PROTEINS(1113) last10: 72.39% ± 3.73%
+PROTEINS(1113) last50: 72.82% ± 3.43%
+总运行时间: 9.42 min
+p = 2, k = 5
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 72.54% ± 3.28%
+PROTEINS(1113) last  : 70.81% ± 4.71%
+PROTEINS(1113) last10: 71.10% ± 4.39%
+PROTEINS(1113) last50: 71.97% ± 3.88%
+总运行时间: 16.38 min
+p = 3, k = 2
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 73.26% ± 2.73%
+PROTEINS(1113) last  : 72.96% ± 3.62%
+PROTEINS(1113) last10: 73.12% ± 3.40%
+PROTEINS(1113) last50: 73.51% ± 2.93%
+总运行时间: 12.66 min
+p = 3, k = 3
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 72.70% ± 3.20%
+PROTEINS(1113) last  : 71.34% ± 3.82%
+PROTEINS(1113) last10: 72.02% ± 4.00%
+PROTEINS(1113) last50: 72.72% ± 3.36%
+总运行时间: 11.63 min
+p = 3, k = 4
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 73.29% ± 3.65%
+PROTEINS(1113) last  : 73.94% ± 3.45%
+PROTEINS(1113) last10: 73.52% ± 3.73%
+PROTEINS(1113) last50: 73.42% ± 4.03%
+总运行时间: 10.44 min
+p = 3, k = 5
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 73.46% ± 3.16%
+PROTEINS(1113) last  : 73.32% ± 3.67%
+PROTEINS(1113) last10: 73.38% ± 3.28%
+PROTEINS(1113) last50: 73.78% ± 3.36%
+总运行时间: 9.98 min
+p = 4, k = 2
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 72.87% ± 3.91%
+PROTEINS(1113) last  : 71.88% ± 3.82%
+PROTEINS(1113) last10: 72.02% ± 4.42%
+PROTEINS(1113) last50: 72.71% ± 4.51%
+总运行时间: 11.86 min
+p = 4, k = 3
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 73.01% ± 3.80%
+PROTEINS(1113) last  : 71.62% ± 5.08%
+PROTEINS(1113) last10: 71.93% ± 4.98%
+PROTEINS(1113) last50: 72.88% ± 4.34%
+总运行时间: 14.28 min
+p = 4, k = 4
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 72.69% ± 3.49%
+PROTEINS(1113) last  : 72.06% ± 5.04%
+PROTEINS(1113) last10: 72.17% ± 4.81%
+PROTEINS(1113) last50: 72.87% ± 4.05%
+总运行时间: 12.95 min
+p = 4, k = 5
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 72.65% ± 3.97%
+PROTEINS(1113) last  : 72.33% ± 6.10%
+PROTEINS(1113) last10: 72.14% ± 5.72%
+PROTEINS(1113) last50: 72.85% ± 4.81%
+总运行时间: 12.21 min
+p = 5, k = 2
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 71.36% ± 3.91%
+PROTEINS(1113) last  : 70.53% ± 4.93%
+PROTEINS(1113) last10: 70.64% ± 5.20%
+PROTEINS(1113) last50: 70.95% ± 4.99%
+总运行时间: 13.65 min
+
+p = 5, k = 3
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 71.61% ± 3.24%
+PROTEINS(1113) last  : 71.07% ± 3.38%
+PROTEINS(1113) last10: 71.45% ± 3.75%
+PROTEINS(1113) last50: 71.78% ± 3.93%
+总运行时间: 16.29 min
+
+p = 5, k = 4
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 72.50% ± 3.86%
+PROTEINS(1113) last  : 72.51% ± 4.93%
+PROTEINS(1113) last10: 72.56% ± 4.97%
+PROTEINS(1113) last50: 72.85% ± 4.96%
+总运行时间: 14.76 min
+
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 72.07% ± 3.67%
+PROTEINS(1113) last  : 72.06% ± 5.08%
+PROTEINS(1113) last10: 72.18% ± 5.01%
+PROTEINS(1113) last50: 72.23% ± 5.03%
+总运行时间: 17.67 min

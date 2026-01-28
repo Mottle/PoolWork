@@ -208,7 +208,7 @@ COX2(467) last50: 80.62% ± 3.85%
 总运行时间: 9.99 min
 IMDB-BINARY(1000) all   : 66.12% ± 4.12%
 IMDB-BINARY(1000) last  : 71.70% ± 4.86%
-IMDB-BINARY(1000) last10: 71.10% ± 4.93%
+IMDB-BINARY(1000) last10: 71.11% ± 4.93%
 IMDB-BINARY(1000) last50: 70.34% ± 4.82%
 总运行时间: 15.52 min
 FRANKENSTEIN(4337) all   : 68.78% ± 1.82%

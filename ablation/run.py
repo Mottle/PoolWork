@@ -1,3 +1,4 @@
+from ast import mod
 import torch_geometric
 import torch_geometric.transforms
 import context
@@ -64,7 +65,7 @@ def train_model(pooler, classifier, train_loader, optimizer, criterion, device, 
         # 2. 前向传播使用 autocast 上下文
         with torch.amp.autocast(device_type=device_type, enabled=use_amp):
             pe = data.pe if hasattr(data, 'pe') else None
-            pooled, additional_loss = pooler(data.x, data.edge_index, data.batch, pe=pe)
+            pooled, additional_loss = pooler(data.x, data.edge_index, data.batch, source = data, pe=pe)
             pooled = torch.nan_to_num(pooled, nan=0.0, posinf=0.0, neginf=0.0)
             out = classifier(pooled)
             loss = compute_loss(criterion(out, data.y), additional_loss)
@@ -119,7 +120,7 @@ def test_model(pooler, classifier, test_loader, criterion, device, use_amp=False
             # 在推理阶段也开启 autocast 以保持精度/性能策略与训练一致
             with torch.amp.autocast(device_type=device_type, enabled=use_amp):
                 pe = data.pe if hasattr(data, 'pe') else None
-                pooled, additional_loss = pooler(data.x, data.edge_index, data.batch, pe=pe)
+                pooled, additional_loss = pooler(data.x, data.edge_index, data.batch, source = data, pe=pe)
                 pooled = torch.nan_to_num(pooled, nan=0.0, posinf=0.0, neginf=0.0)
                 out = classifier(pooled)
                 loss = compute_loss(criterion(out, data.y), additional_loss)
@@ -221,10 +222,10 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
     # 创建模型####
     # pooler = Pooler(input_dim, hidden_dim, num_layers=num_layers, pool_type=pooler_type, gnn_type=gnn_type, layer_norm=layer_norm).to(run_device)
     
-    if model_type == 'hybird':
-        model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 2, k = 3, feature_view=False, dmmp=True).to(run_device)
+    if model_type == 'hybird': #default p = 2, k = 3
+        model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 5, k = 5, feature_view=True, dmmp=True, mode='U').to(run_device)
     elif model_type == 'hybird_gin':
-        model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3, backbone='gin', feature_view=False, dmmp=True).to(run_device)
+        model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3, backbone='gin', feature_view=True, dmmp=True, mode='A').to(run_device)
 
     classifier = Classifier(hidden_dim, hidden_dim, num_classes).to(run_device)
 
@@ -350,9 +351,9 @@ def datasets(sets='common'):
         ]
     elif sets == 'common':
         datasets = [
-            'DD',
+            # 'DD',
             'PROTEINS',
-            'NCI1',
+            # 'NCI1',
             # 'NCI109',
             # 'COX2',
             # 'IMDB-BINARY',
@@ -396,7 +397,7 @@ def datasets(sets='common'):
         use_node_attr = False
         if datasets[i] in ['FRANKENSTEIN']:
             use_node_attr = True
-        yield ReTUDataset(root=DATASET_PATH, name=datasets[i], use_node_attr=use_node_attr)
+        yield ReTUDataset(root=DATASET_PATH, name=datasets[i], use_node_attr=use_node_attr, P = 6)
 
 def set_random_seed(seed):
     import random
@@ -455,7 +456,7 @@ def run(config: BenchmarkConfig):
         # if config.use_simple_datasets:
         #     save_result([(f'{dataset}', all, last, last10, last50)], f'./stgnn/result_simple/{config.model}.txt', dataset_end - dataset_start, config, id == 0)
         # else:
-        save_result([(f'{dataset}', all, last, last10, last50)], f'./ablation/result/{config.model}.txt', dataset_end - dataset_start, config, id == 0)
+        save_result([(f'{dataset}', all, last, last10, last50)], f'./ablation/result/{config.model}_grid.txt', dataset_end - dataset_start, config, id == 0)
     all_end = get_time_sync()
 
     print(f'{config.format()}\n')
@@ -499,7 +500,6 @@ if __name__ == '__main__':
         # 'dgn',
         # 'hpd_gatedgcn',
         # 'phdgn',
-        # 'hybird_gin',
         'hybird',
         # 'hybird_gin'
     ]

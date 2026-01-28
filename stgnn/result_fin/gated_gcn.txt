@@ -68,22 +68,23 @@ COLLAB(5000) last  : 74.20% ± 3.31%
 COLLAB(5000) last10: 74.82% ± 2.09%
 COLLAB(5000) last50: 73.35% ± 3.32%
 总运行时间: 93.10 min
+
 config setting:
-hid_dim: 64, layers: 3, model: gated_gcn, graph_norm: False, batch_size: 64
+hid_dim: 128, layers: 3, model: gated_gcn, graph_norm: True, batch_size: 128
 epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
 use_amp: True
-PROTEINS(1113) all   : 71.91% ± 4.11%
-PROTEINS(1113) last  : 71.71% ± 4.87%
-PROTEINS(1113) last10: 71.63% ± 4.48%
-PROTEINS(1113) last50: 72.07% ± 4.25%
-总运行时间: 7.57 min
-NCI1(4110) all   : 79.60% ± 1.24%
-NCI1(4110) last  : 81.73% ± 1.55%
-NCI1(4110) last10: 81.63% ± 1.61%
-NCI1(4110) last50: 81.66% ± 1.36%
-总运行时间: 23.14 min
-NCI109(4127) all   : 78.69% ± 1.87%
-NCI109(4127) last  : 80.64% ± 2.29%
-NCI109(4127) last10: 80.55% ± 2.34%
-NCI109(4127) last50: 80.46% ± 2.32%
-总运行时间: 31.45 min
+NCI1(4110) all   : 77.23% ± 1.03%
+NCI1(4110) last  : 80.15% ± 0.96%
+NCI1(4110) last10: 80.10% ± 0.93%
+NCI1(4110) last50: 80.10% ± 0.92%
+总运行时间: 24.49 min
+NCI109(4127) all   : 74.81% ± 1.87%
+NCI109(4127) last  : 77.83% ± 2.23%
+NCI109(4127) last10: 77.71% ± 2.13%
+NCI109(4127) last50: 77.62% ± 2.12%
+总运行时间: 22.22 min
+COX2(467) all   : 80.33% ± 1.95%
+COX2(467) last  : 81.01% ± 3.33%
+COX2(467) last10: 80.86% ± 2.89%
+COX2(467) last50: 80.77% ± 2.92%
+总运行时间: 7.59 min

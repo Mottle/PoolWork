@@ -133,3 +133,32 @@ NCI1(4110) last  : 79.78% ± 1.28%
 NCI1(4110) last10: 79.64% ± 1.22%
 NCI1(4110) last50: 79.69% ± 1.32%
 总运行时间: 54.05 min
+NCI109(4127) all   : 77.08% ± 1.97%
+NCI109(4127) last  : 78.92% ± 2.28%
+NCI109(4127) last10: 78.72% ± 2.47%
+NCI109(4127) last50: 78.52% ± 2.24%
+总运行时间: 52.92 min
+COX2(467) all   : 78.90% ± 1.74%
+COX2(467) last  : 78.80% ± 3.11%
+COX2(467) last10: 78.60% ± 2.75%
+COX2(467) last50: 79.12% ± 2.68%
+总运行时间: 6.77 min
+FRANKENSTEIN(4337) all   : 62.50% ± 1.76%
+FRANKENSTEIN(4337) last  : 63.32% ± 2.51%
+FRANKENSTEIN(4337) last10: 63.67% ± 2.32%
+FRANKENSTEIN(4337) last50: 63.31% ± 1.99%
+总运行时间: 34.84 min
+config setting:
+hid_dim: 128, layers: 3, model: hybird, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+IMDB-BINARY(1000) all   : 66.68% ± 5.57%
+IMDB-BINARY(1000) last  : 69.80% ± 7.35%
+IMDB-BINARY(1000) last10: 69.79% ± 6.59%
+IMDB-BINARY(1000) last50: 68.62% ± 6.16%
+总运行时间: 21.00 min
+IMDB-MULTI(1500) all   : 44.50% ± 2.88%
+IMDB-MULTI(1500) last  : 45.93% ± 3.48%
+IMDB-MULTI(1500) last10: 45.79% ± 3.56%
+IMDB-MULTI(1500) last50: 45.62% ± 3.46%
+总运行时间: 14.92 min

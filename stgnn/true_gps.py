@@ -80,7 +80,7 @@ class GraphGPS(nn.Module):
                 attn_dropout=attn_dropout,
                 layer_norm=False,
                 batch_norm=True,
-                equivstable_pe=False
+                equivstable_pe=True
             )
             self.layers.append(layer)
 
@@ -100,20 +100,31 @@ class GraphGPS(nn.Module):
         x = self.node_emb(x)
 
         if pe is not None:
-            pe_proj = self.pe_encoder(pe)
-            x = x + pe_proj # Add PE to features
+            # pe_proj = self.pe_encoder(pe)
+            # x = x + pe_proj # Add PE to features
+            pe = self.pe_encoder(pe)
         else:
             pass
 
         
         if self.use_edge_attr and edge_attr is None:
-            raise ValueError("GINE backbone requires edge_attr, but None provided.")
+            num_edges = edge_index.size(1)
+            in_channels = x.size(-1) 
+            
+            # 生成形状为 [E, D] 的全 1 Tensor
+            # 关键：必须指定 device 和 dtype 与 x 一致，否则后续计算会报错
+            edge_attr = torch.ones(
+                (num_edges, in_channels), 
+                device=x.device, 
+                dtype=x.dtype
+            )
             
         batch_data = Batch(
             x=x, 
             edge_index=edge_index, 
             edge_attr=edge_attr, 
-            batch=batch
+            batch=batch,
+            pe_EquivStableLapPE = pe
         )
 
         for layer in self.layers:
@@ -133,7 +144,7 @@ class GPSLayer(nn.Module):
 
     def __init__(self, dim_h,
                  local_gnn_type, global_model_type, num_heads, act='relu',
-                 pna_degrees=None, equivstable_pe=False, dropout=0.0,
+                 pna_degrees=None, equivstable_pe=True, dropout=0.0,
                  attn_dropout=0.0, layer_norm=False, batch_norm=True,
                  bigbird_cfg=None, log_attn_weights=False):
         super().__init__()
@@ -385,7 +396,7 @@ class GatedGCNLayer(pyg_nn.conv.MessagePassing):
         https://arxiv.org/pdf/1711.07553.pdf
     """
     def __init__(self, in_dim, out_dim, dropout, residual, act='relu',
-                 equivstable_pe=False, **kwargs):
+                 equivstable_pe=True, **kwargs):
         super().__init__(**kwargs)
         self.activation = register.act_dict[act]
         self.A = pyg_nn.Linear(in_dim, out_dim, bias=True)

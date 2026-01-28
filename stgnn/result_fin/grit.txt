@@ -55,3 +55,45 @@ COLLAB(5000) last  : 78.60% ± 1.20%
 COLLAB(5000) last10: 78.83% ± 1.41%
 COLLAB(5000) last50: 78.70% ± 1.41%
 总运行时间: 196.08 min
+config setting:
+hid_dim: 64, layers: 3, model: grit, graph_norm: False, batch_size: 64
+epochs: 200, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+DD(1178) all   : 73.30% ± 2.41%
+DD(1178) last  : 76.14% ± 1.79%
+DD(1178) last10: 76.07% ± 2.44%
+DD(1178) last50: 75.78% ± 2.20%
+总运行时间: 21.38 min
+config setting:
+hid_dim: 64, layers: 3, model: grit, graph_norm: False, batch_size: 64
+epochs: 200, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+PROTEINS(1113) all   : 72.88% ± 3.35%
+PROTEINS(1113) last  : 72.60% ± 3.72%
+PROTEINS(1113) last10: 73.33% ± 3.67%
+PROTEINS(1113) last50: 73.78% ± 3.46%
+总运行时间: 11.90 min
+NCI1(4110) all   : 80.39% ± 1.10%
+NCI1(4110) last  : 83.04% ± 1.32%
+NCI1(4110) last10: 83.06% ± 1.12%
+NCI1(4110) last50: 82.91% ± 1.14%
+总运行时间: 56.12 min
+NCI109(4127) all   : 79.01% ± 1.87%
+NCI109(4127) last  : 82.09% ± 1.40%
+NCI109(4127) last10: 81.95% ± 1.46%
+NCI109(4127) last50: 81.57% ±   %
+总运行时间: 54.97 min
+COX2(467) all   : 78.58% ± 3.92%
+COX2(467) last  : 81.80% ± 6.34%
+COX2(467) last10: 82.10% ± 5.24%
+COX2(467) last50: 81.16% ± 5.28%
+总运行时间: 6.14 min
+config setting:
+hid_dim: 64, layers: 3, model: grit, graph_norm: False, batch_size: 64
+epochs: 200, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+FRANKENSTEIN(4337) all   : 72.54% ± 2.33%
+FRANKENSTEIN(4337) last  : 74.27% ± 3.36%
+FRANKENSTEIN(4337) last10: 74.00% ± 3.06%
+FRANKENSTEIN(4337) last50: 74.05% ± 2.94%
+总运行时间: 52.83 min

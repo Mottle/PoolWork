@@ -63,3 +63,43 @@ NCI1(4110) last  : 81.85% ± 1.78%
 NCI1(4110) last10: 81.89% ± 1.84%
 NCI1(4110) last50: 81.97% ± 1.83%
 总运行时间: 30.19 min
+
+A
+config setting:
+hid_dim: 128, layers: 3, model: hybird_gin, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+DD(1178) all   : 76.08% ± 4.07%
+DD(1178) last  : 76.23% ± 4.93%
+DD(1178) last10: 76.46% ± 4.77%
+DD(1178) last50: 76.53% ± 4.63%
+总运行时间: 29.62 min
+PROTEINS(1113) all   : 74.62% ± 3.05%
+PROTEINS(1113) last  : 73.85% ± 3.70%
+PROTEINS(1113) last10: 73.50% ± 3.65%
+PROTEINS(1113) last50: 74.44% ± 3.68%
+总运行时间: 10.84 min
+NCI1(4110) all   : 80.67% ± 0.76%
+NCI1(4110) last  : 81.95% ± 1.11%
+NCI1(4110) last10: 82.09% ± 1.03%
+NCI1(4110) last50: 82.01% ± 0.89%
+总运行时间: 56.24 min
+config setting:
+hid_dim: 128, layers: 3, model: hybird_gin, graph_norm: True, batch_size: 128
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+NCI109(4127) all   : 79.26% ± 1.88%
+NCI109(4127) last  : 80.52% ± 2.57%
+NCI109(4127) last10: 80.45% ± 2.50%
+NCI109(4127) last50: 80.35% ± 2.34%
+总运行时间: 54.81 min
+COX2(467) all   : 80.27% ± 2.88%
+COX2(467) last  : 82.43% ± 4.24%
+COX2(467) last10: 82.24% ± 4.39%
+COX2(467) last50: 81.69% ± 4.17%
+总运行时间: 8.92 min
+FRANKENSTEIN(4337) all   : 68.45% ± 2.53%
+FRANKENSTEIN(4337) last  : 69.01% ± 3.21%
+FRANKENSTEIN(4337) last10: 68.92% ± 2.97%
+FRANKENSTEIN(4337) last50: 69.15% ± 2.83%
+总运行时间: 42.11 min

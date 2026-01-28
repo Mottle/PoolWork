@@ -366,13 +366,6 @@ class SAN(nn.Module):
             )
 
     def forward(self, x, edge_index, batch, pe, edge_attr=None, *args, **kwargs):
-        """
-        参数改为解耦形式：
-        x: [num_nodes, in_dim]
-        edge_index: [2, num_edges]
-        batch: [num_nodes]
-        edge_attr: [num_edges, edge_dim] (可选)
-        """
         
         # 编码节点
         h = self.node_encoder(x)

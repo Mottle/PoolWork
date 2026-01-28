@@ -22,7 +22,7 @@ from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR, 
 
 from classifier import Classifier
 from span_tree_gnn import SpanTreeGNN
-from graph_gps import GraphGPS
+from true_gps import GraphGPS
 from san import SAN
 from utils.pre_trans import pre_transform_all
 from sat import SAT
@@ -98,7 +98,7 @@ def train_model(pooler, classifier, train_loader, optimizer, criterion, device, 
         with torch.amp.autocast(device_type=device_type, enabled=use_amp):
             pe = data.pe if hasattr(data, 'pe') else None
             # 注意：如果你的模型 forward 接收 pe，确保这里传了
-            pooled = pooler(data.x, data.edge_index, data.batch, pe=pe, spd = data.spd_attr, rw_pos_enc=data.rw_pos_enc) 
+            pooled = pooler(data.x, data.edge_index, data.batch, pe=pe, spd = data.spd_attr, rrwp = data.rrwp, rrwp_abs=data.rrwp_abs) 
             # 如果 pooler 返回的是 (out, loss)，请自行解包，这里假设 GraphGPS 只返回 logits
             # 根据上文 GraphGPS 代码，它只返回 out。如果你的接口有变化请调整。
             if isinstance(pooled, tuple):
@@ -154,7 +154,7 @@ def test_model(pooler, classifier, test_loader, criterion, device, use_amp=False
             # 在推理阶段也开启 autocast 以保持精度/性能策略与训练一致
             with torch.amp.autocast(device_type=device_type, enabled=use_amp):
                 pe = data.pe if hasattr(data, 'pe') else None
-                pooled, additional_loss = pooler(data.x, data.edge_index, data.batch, pe=pe, spd =  data.spd_attr, rw_pos_enc=data.rw_pos_enc)
+                pooled, additional_loss = pooler(data.x, data.edge_index, data.batch, pe=pe, spd =  data.spd_attr, rrwp = data.rrwp, rrwp_abs=data.rrwp_abs)
                 out = classifier(pooled)
                 loss = compute_loss(criterion(out, data.y), additional_loss)
             
@@ -303,7 +303,7 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
             in_channels=input_dim,
             hidden_channels=hidden_dim,
             num_layers=num_layers,
-            heads=4,
+            # heads=4,
             dropout=dropout,
         ).to(run_device)
     else:
@@ -436,13 +436,13 @@ def datasets(sets='common'):
             'IMDB-BINARY',
             'IMDB-MULTI',
             # 'REDDIT-BINARY',
-            'COLLAB',
+            # 'COLLAB',
         ]
     elif sets == 'bio&chem':
         datasets = [
             # 'DD',
-            'PROTEINS',
-            'NCI1',
+            # 'PROTEINS',
+            # 'NCI1',
             'NCI109',
             'COX2',
             'FRANKENSTEIN'
@@ -529,7 +529,7 @@ if __name__ == '__main__':
     # ---------------------------------------
 
     # 将 GraphGPS 加入测试列表
-    models = ['sat']
+    models = ['san', 'sat']
     # models = ['gcn', 'gin', 'gat', 'mix_hop', 'appnp', 'gcn2']
     
     seeds = [0, 114514, 1919810, 77777]

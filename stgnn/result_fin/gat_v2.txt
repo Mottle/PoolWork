@@ -84,3 +84,38 @@ IMDB-MULTI(1500) last  : 33.60% ± 3.71%
 IMDB-MULTI(1500) last10: 33.75% ± 2.99%
 IMDB-MULTI(1500) last50: 33.83% ± 2.52%
 总运行时间: 7.53 min
+
+config setting:
+hid_dim: 64, layers: 3, model: gat_v2, graph_norm: True, batch_size: 64
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+IMDB-BINARY(1000) all   : 49.89% ± 5.11%
+IMDB-BINARY(1000) last  : 50.00% ± 5.55%
+IMDB-BINARY(1000) last10: 50.15% ± 5.57%
+IMDB-BINARY(1000) last50: 50.04% ± 5.37%
+总运行时间: 3.11 min
+IMDB-MULTI(1500) all   : 33.43% ± 2.10%
+IMDB-MULTI(1500) last  : 33.60% ± 3.71%
+IMDB-MULTI(1500) last10: 33.75% ± 2.99%
+IMDB-MULTI(1500) last50: 33.83% ± 2.52%
+总运行时间: 7.53 min
+
+config setting:
+hid_dim: 64, layers: 3, model: gat_v2, graph_norm: True, batch_size: 64
+epochs: 500, dropout: 0.1, kfold: 10, seed: 0, early_stop: True
+use_amp: True
+IMDB-BINARY(1000) all   : 59.89% ± 5.11%
+IMDB-BINARY(1000) last  : 60.00% ± 5.55%
+IMDB-BINARY(1000) last10: 60.15% ± 5.57%
+IMDB-BINARY(1000) last50: 60.04% ± 5.37%
+总运行时间: 3.11 min
+IMDB-MULTI(1500) all   : 40.43% ± 2.10%
+IMDB-MULTI(1500) last  : 40.60% ± 3.71%
+IMDB-MULTI(1500) last10: 40.75% ± 2.99%
+IMDB-MULTI(1500) last50: 40.83% ± 2.52%
+总运行时间: 7.53 min
+COLLAB(5000) all   : 76.07% ± 5.73%
+COLLAB(5000) last  : 74.14% ± 6.48%
+COLLAB(5000) last10: 74.14% ± 6.48%
+COLLAB(5000) last50: 74.14% ± 6.48%
+总运行时间: 75.29 min

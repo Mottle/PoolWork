@@ -354,12 +354,12 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
         model = StackedSIGN(input_dim, hidden_dim, hidden_dim, num_layers=num_layers, num_hops=3, dropout=dropout).to(run_device)
     elif model_type == 'h2gcn':
         model = H2GCN(input_dim, hidden_dim, k = 2, dropout=dropout).to(run_device)
-    elif model_type == 'gcn2':
-        model = BaseLineRc(input_dim, hidden_dim // 2, hidden_dim, backbone='gcn2', num_layers=13 + num_layers, dropout=dropout, embed=True, norm = layer_norm).to(run_device)
+    elif model_type == 'gcn2': #bio 13 + n, 
+        model = BaseLineRc(input_dim, hidden_dim // 2, hidden_dim, backbone='gcn2', num_layers=5 + num_layers, dropout=dropout, embed=True, norm = layer_norm).to(run_device)
     elif model_type == 'gated_gcn':
         model = GatedGCN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
-    elif model_type == 'deeper_gcn':
-        model = DeeperGCN(input_dim, hidden_dim // 2, out_channels=hidden_dim, num_layers=11 + num_layers, dropout=dropout).to(run_device)
+    elif model_type == 'deeper_gcn': #bio 11 + n, 
+        model = DeeperGCN(input_dim, hidden_dim // 2, out_channels=hidden_dim, num_layers=4 + num_layers, dropout=dropout).to(run_device)
     elif model_type == 'dgn':
         model = DGN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout).to(run_device)
     elif model_type == 'ordered_gnn':
@@ -509,19 +509,19 @@ def datasets(sets='common'):
         ]
     elif sets == 'com':
         datasets = [
-            'IMDB-BINARY',
-            'IMDB-MULTI',
+            # 'IMDB-BINARY',
+            # 'IMDB-MULTI',
             # 'REDDIT-BINARY',
             'COLLAB',
         ]
     elif sets == 'bio&chem':
         datasets = [
-            'DD',
-            'PROTEINS',
+            # 'DD',
+            # 'PROTEINS',
             'NCI1',
             'NCI109',
             'COX2',
-            'FRANKENSTEIN'
+            # 'FRANKENSTEIN'
         ]
     elif sets == 'dense':
         datasets = [
@@ -617,12 +617,12 @@ if __name__ == '__main__':
     config.hidden_channels = 128
     config.num_layers = 3
     config.graph_norm = True
-    config.batch_size = 128
+    config.batch_size = 16
     config.epochs = 500
     config.dropout = 0.1
     # config.use_simple_datasets = False
-    config.sets = 'bio&chem'
-    # config.sets = 'com'
+    # config.sets = 'bio&chem'
+    config.sets = 'com'
     config.catch_error = False
     config.early_stop = True
     config.early_stop_epochs = 50
@@ -638,11 +638,13 @@ if __name__ == '__main__':
         # 'mix_hop',
         # 'appnp',
         # 'ordered_gnn',
+        # 'deeper_gcn',
+        # 'gcn2',
         # 'dgn',
         # 'hpd_gatedgcn',
         # 'phdgn',
-        # 'hybird_gin',
-        'hybird'
+        'hybird',
+        'hybird_gin',
     ]
     # models = ['topk']
     seeds = [0, 114514, 1919810, 77777]

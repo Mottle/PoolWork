@@ -1,9 +1,14 @@
+from turtle import forward
 import torch
 from torch_geometric.utils import to_dense_adj
 
 import torch
 from torch_geometric.utils import to_dense_adj
 from torch_geometric.transforms import AddRandomWalkPE
+import torch
+import torch_geometric.transforms as T
+from torch_geometric.utils import to_dense_adj, degree, dense_to_sparse
+from torch_scatter import scatter_add
 
 def compute_spd_hybrid_edge(threshold=80, k_max=4, verbose=False):
     """
@@ -88,6 +93,84 @@ def compute_degree(data, verbose=False):
         print(f"[DEG] Done. Max degree = {deg.max().item()}")
     return data
 
+class AddGRITPE(T.BaseTransform):
+    """
+    计算 GRIT 模型所需的 Random Walk Positional Encoding (RWPE)。
+    
+    输出:
+        data.rrwp_abs: [Num_Nodes, walk_length]  (节点级: RWSE)
+        data.rrwp:     [Num_Edges, walk_length]  (边级: Relative RW probability)
+    """
+    def __init__(self, walk_length=20, attr_name_abs='rrwp_abs', attr_name_rel='rrwp'):
+        self.walk_length = walk_length
+        self.attr_name_abs = attr_name_abs
+        self.attr_name_rel = attr_name_rel
+
+    def forward(self, data):
+        return self.__call__(data)
+
+    def __call__(self, data):
+        # 1. 获取基本信息
+        edge_index = data.edge_index
+        num_nodes = data.num_nodes
+        device = edge_index.device
+
+        # 2. 构造稠密邻接矩阵 (A)
+        # NCI1 等分子图节点少 (<100)，用 Dense 计算最快且方便
+        # [N, N]
+        adj = to_dense_adj(edge_index, max_num_nodes=num_nodes)[0]
+
+        # 3. 计算随机游走转移矩阵 (P = D^-1 * A)
+        # 计算度数
+        deg = adj.sum(dim=1) # [N]
+        deg_inv = deg.pow(-1)
+        deg_inv[deg_inv == float('inf')] = 0 # 处理孤立点
+        
+        # P = D^-1 @ A
+        # 利用广播机制: column_j * row_i_inv
+        P = adj * deg_inv.view(-1, 1) 
+
+        # 4. 迭代计算 P^k 并收集数据
+        # 我们需要收集 k=1 到 k=walk_length 的概率
+        
+        pe_list_abs = [] # 用于存储对角线 (N, K)
+        pe_list_rel = [] # 用于存储边 (E, K)
+        
+        # 用于提取边上概率的索引
+        row, col = edge_index
+        
+        # P_k 初始化为 P^1
+        P_k = P.clone()
+
+        for k in range(self.walk_length):
+            # --- (A) 收集 Absolute PE (对角线) ---
+            # 取对角线元素: P_k[i, i]
+            diag = P_k.diagonal()
+            pe_list_abs.append(diag)
+
+            # --- (B) 收集 Relative PE (边) ---
+            # 只取 data.edge_index 存在的那些边的概率值
+            # P_k[row, col]
+            rel_val = P_k[row, col]
+            pe_list_rel.append(rel_val)
+
+            # --- (C) 迭代: P^{k+1} = P^k @ P ---
+            # 只有最后一步不需要乘
+            if k < self.walk_length - 1:
+                P_k = torch.mm(P_k, P)
+
+        # 5. 堆叠并保存到 data
+        # [N, K]
+        tensor_abs = torch.stack(pe_list_abs, dim=-1)
+        # [E, K]
+        tensor_rel = torch.stack(pe_list_rel, dim=-1)
+
+        # 赋值
+        setattr(data, self.attr_name_abs, tensor_abs)
+        setattr(data, self.attr_name_rel, tensor_rel)
+
+        return data
+
 def pre_transform_all(
     spd_threshold=80,
     spd_k_max=4,
@@ -96,7 +179,8 @@ def pre_transform_all(
 ):
     spd_fn = compute_spd_hybrid_edge(threshold=spd_threshold, k_max=spd_k_max, verbose=verbose)
     deg_fn = compute_degree
-    wpe = AddRandomWalkPE(walk_length=20, attr_name='rw_pos_enc')
+    # wpe = AddRandomWalkPE(walk_length=20, attr_name='rw_pos_enc')
+    wpe_and_rrwp = AddGRITPE()
 
     def transform(data):
         if verbose:
@@ -104,7 +188,7 @@ def pre_transform_all(
 
         data = deg_fn(data, verbose=verbose)
         data = spd_fn(data)
-        data = wpe(data)
+        data = wpe_and_rrwp(data)
 
         if verbose:
             print(f"=== Pre-transform done ===\n")

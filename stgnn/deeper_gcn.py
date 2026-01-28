@@ -58,6 +58,6 @@ class DeeperGCN(torch.nn.Module):
         x = F.dropout(x, p=self.dropout, training=self.training)
 
         global_feature = global_mean_pool(x, batch)
-        global_feature = self.fin_map(global_feature)
+        # global_feature = self.fin_map(global_feature)
 
         return global_feature, 0

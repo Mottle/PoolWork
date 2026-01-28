@@ -11,13 +11,6 @@ class MixHop(nn.Module):
         num_layers: int = 3,
         dropout: float = 0.5,
     ):
-        """
-        参数说明:
-        in_channels: 原始节点特征维度
-        hidden_channels: 隐藏层维度 (也是最终输出的图嵌入维度)
-        num_layers: MixHop 层的数量
-        dropout: Dropout 比率
-        """
         super(MixHop, self).__init__()
         
         self.num_layers = num_layers
