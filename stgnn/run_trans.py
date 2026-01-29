@@ -1,12 +1,9 @@
-import torch_geometric
-import torch_geometric.transforms
 import context
 import torch
 import numpy as np
 from datetime import datetime
 from constant import DATASET_PATH
 from torch import nn
-# from torch_geometric.datasets import TUDataset
 from utils import pre_trans
 from utils.re_tudataset import ReTUDataset
 from torch_geometric.loader import DataLoader
@@ -17,8 +14,8 @@ from torch.utils.data import SubsetRandomSampler
 from benchmark_config import BenchmarkConfig
 from utils.benchmark_result import BenchmarkResult
 from torch.optim import Adam
-# 引入调度器相关模块
-from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR, ReduceLROnPlateau
+
+from torch.optim.lr_scheduler import LinearLR, CosineAnnealingLR, SequentialLR
 
 from classifier import Classifier
 from span_tree_gnn import SpanTreeGNN
