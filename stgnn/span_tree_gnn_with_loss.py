@@ -2,12 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-from torch_geometric.nn import GCNConv, GINConv, GATConv, global_mean_pool, global_max_pool, global_add_pool, GraphNorm
-from torch_geometric.nn import MessagePassing
-from torch_geometric.utils import add_self_loops, degree, to_undirected
-from torch_geometric.data import Data
-import networkx as nx
-from perf_counter import get_time_sync
+from torch_geometric.nn import GCNConv, global_mean_pool, GraphNorm
 
 def kruskal_mst(edge_index: torch.Tensor, edge_weight: torch.Tensor, num_nodes: int):
     # 转为 numpy 加速处理
