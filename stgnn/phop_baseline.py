@@ -1,6 +1,7 @@
 import torch
 from torch import nn
-from torch_geometric.nn import global_mean_pool
+from torch_geometric.nn import global_mean_pool, knn_graph
+from dual_road_gnn import k_farthest_graph
 from torch_geometric.nn.norm import GraphNorm
 import torch.nn.functional as F
 from phop import (
@@ -11,7 +12,7 @@ from phop import (
     PHopLinkGINConv,
 )
 from torch_geometric.nn import GINConv, GCNConv, GATConv
-from dual_road_gnn import k_farthest_graph
+from dual_road_gnn import KRNDualRoadGNN, k_farthest_graph
 from torch_geometric.utils import add_self_loops, degree, dense_to_sparse, to_dense_adj
 from dmmp import DMGGNNConv, DMGatedGCNConv
 
@@ -105,6 +106,7 @@ class HybirdPhopGNN(nn.Module):
         backbone="gcn",
         add_self_loops: bool = False,
         residual: bool = False,
+        aux_type: bool = 'kfn'
     ):
         super(HybirdPhopGNN, self).__init__()
         self.in_channels = max(in_channels, 1)
@@ -117,6 +119,7 @@ class HybirdPhopGNN(nn.Module):
         self.add_self_loop = add_self_loops
         self.push_pe = None
         self.residual = residual
+        self.aux_type = aux_type
         if num_layers < 2:
             raise ValueError("Number of layers should be greater than 1.")
 
@@ -204,10 +207,13 @@ class HybirdPhopGNN(nn.Module):
             graph_norms.append(GraphNorm(self.hidden_channels))
         return graph_norms
 
-    def _build_auxiliary_graph(self, x, batch):
-        return k_farthest_graph(
-            x, self.k, batch, loop=True, cosine=True, direction=True
-        )
+    def _build_auxiliary_graph(self, x, batch, type: str = 'kfn'):
+        if type == 'kfn':
+            return k_farthest_graph(x, self.k, batch, loop=True, cosine=True, direction=True)
+        elif type == 'knn':
+            return knn_graph(x, self.k, batch, loop=True, cosine=True)
+        elif type == 'krn':
+            return k_farthest_graph(x, self.k, batch, loop=True, cosine=True, direction=True)
 
     def process_phop(self, x, edge_index, source=None, mode="A"):
         if source is not None:
@@ -245,7 +251,7 @@ class HybirdPhopGNN(nn.Module):
         originl_x = x
         x = self.embedding(x)
 
-        feature_graph_edge_index = self._build_auxiliary_graph(x, batch)
+        feature_graph_edge_index = self._build_auxiliary_graph(x, batch, self.aux_type)
         SMp = self.process_phop(x, edge_index, source, mode="U")
         FMp = self.process_phop(x, feature_graph_edge_index, mode="U")
 
