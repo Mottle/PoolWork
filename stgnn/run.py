@@ -333,6 +333,10 @@ def build_models(num_node_features, num_classes, config: BenchmarkConfig):
         model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3, backbone='rw').to(run_device)
     elif model_type == 'hybird_gin':
         model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3, backbone='gin').to(run_device)
+    elif model_type == 'hybrid_knn':
+        model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 2, k = 3, aux_type='knn').to(run_device)
+    elif model_type == 'hybrid_krn':
+        model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 2, k = 3, aux_type='krn').to(run_device)
     elif model_type == 'hpd_ggnn':
         model = HybirdPhopGNN(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, p = 3, k = 3, backbone='dmmp_ggnn').to(run_device)
     elif model_type == 'hpd_gatedgcn':
@@ -516,12 +520,12 @@ def datasets(sets='common'):
         ]
     elif sets == 'bio&chem':
         datasets = [
-            # 'DD',
-            # 'PROTEINS',
+            'DD',
+            'PROTEINS',
             'NCI1',
             'NCI109',
             'COX2',
-            # 'FRANKENSTEIN'
+            'FRANKENSTEIN'
         ]
     elif sets == 'dense':
         datasets = [
@@ -617,12 +621,12 @@ if __name__ == '__main__':
     config.hidden_channels = 128
     config.num_layers = 3
     config.graph_norm = True
-    config.batch_size = 16
+    config.batch_size = 128
     config.epochs = 500
     config.dropout = 0.1
     # config.use_simple_datasets = False
-    # config.sets = 'bio&chem'
-    config.sets = 'com'
+    config.sets = 'bio&chem'
+    # config.sets = 'com'
     config.catch_error = False
     config.early_stop = True
     config.early_stop_epochs = 50
@@ -643,8 +647,10 @@ if __name__ == '__main__':
         # 'dgn',
         # 'hpd_gatedgcn',
         # 'phdgn',
-        'hybird',
-        'hybird_gin',
+        # 'hybird',
+        'hybrid_knn'
+        # 'hybrid_krn'
+        # 'hybird_gin',
     ]
     # models = ['topk']
     seeds = [0, 114514, 1919810, 77777]

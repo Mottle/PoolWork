@@ -1,5 +1,6 @@
 {
     "python.analysis.autoImportCompletions": true,
     "python.analysis.typeCheckingMode": "off",
-    "Codegeex.CompletionDelay": 1
+    "Codegeex.CompletionDelay": 1,
+    "python-envs.defaultEnvManager": "ms-python.python:system"
 }
