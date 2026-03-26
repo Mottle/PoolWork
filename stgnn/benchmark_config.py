@@ -20,6 +20,7 @@ class BenchmarkConfig:
         self.lr = 0.001
         self.dropout = 0.5
         self.amp = True
+        self.train_strategy = 'ReduceLROnPlateau'
 
     def apply_random_seed(self):
         if self.seed:
@@ -47,5 +48,6 @@ class BenchmarkConfig:
                f'kfold: {self.kfold}, ' +
                f'seed: {self.seed}, ' +
                f'early_stop: {self.early_stop}\n' + 
-               f'use_amp: {self.amp}\n'
+               f'use_amp: {self.amp}, ' +
+               f'train_strategy {self.train_strategy}\n'
                )
