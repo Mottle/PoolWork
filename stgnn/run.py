@@ -227,8 +227,12 @@ def run_fold(dataset, loader, current_fold: int, config: BenchmarkConfig):
     # 优化器和损失函数
     optimizer = build_optimizer(model, classifier, config)
     criterion = nn.CrossEntropyLoss()
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau( optimizer, mode='min', factor=0.5, patience=10, min_lr=1e-6, verbose=True )
-    
+
+    if config.train_strategy == 'ReduceLROnPlateau':
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau( optimizer, mode='min', factor=0.5, patience=10, min_lr=1e-6, verbose=True )
+    elif config.train_strategy == 'CosineAnnealingLR':
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=config.epochs, eta_min=1e-5)
+
     # 训练循环
     epochs = config.epochs
 
@@ -252,7 +256,10 @@ def run_fold(dataset, loader, current_fold: int, config: BenchmarkConfig):
         val_loss, val_acc     = test_model(model, classifier, val_loader, criterion, run_device, use_amp=use_amp)
         test_loss, test_acc   = test_model(model, classifier, test_loader, criterion, run_device, use_amp=use_amp)
 
-        scheduler.step(val_loss)
+        if config.train_strategy == 'ReduceLROnPlateau':
+            scheduler.step(val_loss)
+        elif config.train_strategy == 'CosineAnnealingLR':
+            scheduler.step()
 
         if epoch > no_record_epoch_num:
             train_loss_list.append(train_loss)
@@ -618,24 +625,25 @@ if __name__ == '__main__':
     # now_str = now.strftime('%Y-%m-%d-%H-%M')
 
     config = BenchmarkConfig()
-    config.hidden_channels = 128
+    config.hidden_channels = 32
     config.num_layers = 3
     config.graph_norm = True
     config.batch_size = 128
     config.epochs = 500
-    config.dropout = 0.1
+    config.dropout = 0.3
+    config.lr = 0.0005
     # config.use_simple_datasets = False
     config.sets = 'bio&chem'
     # config.sets = 'com'
     config.catch_error = False
-    config.early_stop = True
+    config.early_stop = False
     config.early_stop_epochs = 50
     config.seed = None
     config.kfold = 10
 
     models = [
-        # 'gcn',
-        # 'gin',
+        'gcn',
+        'gin',
         # 'gat_v2',
         # 'gat'
         # 'gated_gcn',
@@ -648,7 +656,7 @@ if __name__ == '__main__':
         # 'hpd_gatedgcn',
         # 'phdgn',
         # 'hybird',
-        'hybrid_knn'
+        # 'hybrid_knn'
         # 'hybrid_krn'
         # 'hybird_gin',
     ]
@@ -657,6 +665,7 @@ if __name__ == '__main__':
     for model in models:
         config.model = model
         config.seed = seeds[0]
+        config.train_strategy = 'CosineAnnealingLR'
 
         if config.catch_error:
             try:
